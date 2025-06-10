@@ -115,4 +115,4 @@ Apply Blob Lifecycle Policies to automate tiering to Cool/Archive.
 ## References
 
 - [Microsoft Learn – Configure a lifecycle management policy](https://learn.microsoft.com/en-us/azure/storage/blobs/storage-lifecycle-management-concepts)
-- [Microsoft Tech Community – Azure Storage Options Guide](https://techcommunity.microsoft.com/t5/azure-storage/azure-storage-options-guide/ba-p/1255306)
+- [Microsoft Tech Community – Azure Storage Options Guide](https://techcommunity.microsoft.com/blog/nonprofittechies/azure-storage-options---a-guide-to-choosing-the-right-storage-option/4412411)
