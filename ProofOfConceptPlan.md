@@ -11,7 +11,7 @@ The BC Government faces significant challenges with its current on-premises file
 - **Capacity Constraints**: Meeting the growing demand for large media file storage requires frequent, costly expansions of on-premises systems
 - **Data Growth Crisis**: Media content (video/audio evidence, public service recordings, etc.) continues to grow exponentially with no effective archival strategy
 
-Recent improvements in Azure's Canadian service offerings have created new opportunities to leverage public cloud services while meeting rigorous security and compliance requirements. A cloud-first approach to file storage could deliver significant cost savings while improving service delivery and aligning with the BC Government's mandate for fiscal responsibility and efficient use of taxpayer resources.
+Recent improvements in Azure's Canadian service offerings have created new opportunities to leverage public cloud services while meeting rigorous security and compliance requirements. A cloud-first approach to file storage could deliver significant cost savings while improving service delivery and aligning with the BC Government's mandate for fiscal responsibility and efficient use of taxpayer resources
 
 ## 💡 Overview
 
