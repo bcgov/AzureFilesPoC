@@ -7,7 +7,7 @@ This architecture supports the evaluation of Azure Files with optional integrati
 
 ## Architecture Diagram
 
-![azure files express route drawio](https://github.com/user-attachments/assets/903d5ba0-cbbd-4c86-8635-1be918e8f466)
+![Azure Files ExpressRoute Diagram](azure%20files%20express%20route.drawio.png)
 
 
 This diagram illustrates the hybrid connectivity model using VPN and ExpressRoute, with Azure Files accessed via Private Endpoint and optional integration with Azure Blob Storage for tiering.
@@ -36,13 +36,26 @@ This diagram illustrates the hybrid connectivity model using VPN and ExpressRout
 | NSG (Network Security Groups) | Controls traffic to/from subnets (ensure TCP 445 is allowed). |
 | UDR (User-Defined Routes) | Custom routing to direct traffic through ExpressRoute or VPN. |
 
+For a detailed comparison of network connectivity methods—including VPN, ExpressRoute, and Private Endpoints—see [Azure Files Network Connectivity Options](AzureFilesNetworkConnectivityOptionsAnalysis.md).
+
+[Draw.io Version](azure%20files%20express%20route.drawio)
+This link points to the `.drawio` source file for the architecture diagram. Ensure that the file `azure files express route.drawio` exists in the same directory as your markdown file. If you want to provide access to the editable diagram (not just the PNG image), this link is correct.
+
 ### Monitoring & Security
 
 | **Component** | **Description** |
 |---------------|-----------------|
 | Azure Monitor + Log Analytics | For performance metrics, access logs, and alerts. |
-| Azure Defender for Storage | Threat detection and compliance monitoring. |
+| Microsoft Defender for Storage | Threat detection and compliance monitoring. |
 | Azure Cost Management | For tracking and forecasting storage costs. |
+
+### Identity & Access Management
+
+| **Component** | **Description** |
+|---------------|-----------------|
+| Entra ID (Azure AD) | User and group identity management synchronized with on-premises AD. |
+| NTFS/ACL Integration | Preserves on-premises NTFS permissions for files/folders through Entra ID synchronization. |
+| Azure RBAC | Role-based access control for share-level permissions. |
 
 ### Tiering & Lifecycle Management
 

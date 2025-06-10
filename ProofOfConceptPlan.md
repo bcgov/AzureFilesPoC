@@ -11,7 +11,7 @@ Evaluate Azure Files (and optionally Azure Blob Storage with lifecycle managemen
 - Improving performance, security, and compliance
 
 ## ✅ Azure Files PoC Architecture
-See Azure Files POC Architecture Overview (add link to other github page after i create it)
+See [Azure Files PoC Architecture Overview](ArchitectureOverview.md)
 
 ## ✅ Evaluation Criteria
 ### 1. File Access & Management
@@ -60,9 +60,27 @@ See Azure Files POC Architecture Overview (add link to other github page after i
 - Alerts for stale data or tiering gaps
 - Power BI dashboards or Azure Monitor views
 
-### 7. Supportability & Cost
+### 7. Supportability & Cost Analysis
 - Ease of setup and maintenance
-- Total cost of ownership (storage + egress/ingress + operations)
+- Total cost of ownership framework (detailed calculations to be maintained separately)
+  - Storage costs by tier (Premium vs. Standard vs. Cool/Archive)
+  - Transaction costs for typical workloads
+  - Network egress charges
+  - Backup and snapshot storage costs
+  - Private endpoint and networking costs
+- Cost optimization opportunities:
+  - Savings from automated tiering
+  - Reduction in on-premises infrastructure
+  - Operational efficiency gains
+  - Pay-as-you-go elasticity benefits
+- 5-Year TCO comparison framework (on-premises vs. Azure Files)
+  - Including hardware refresh cycles
+  - Staff time allocation differences
+  - Growth projections
+- Risk assessment of vendor relationship impacts
+  - Potential data center provider cost recovery mechanisms if storage revenue decreases
+  - Contract review for hidden minimum commitments or tier pricing
+  - Strategy for negotiating revised service agreements
 
 ## 🧪 Test Scenarios
 | **Scenario** | **Goal** |
