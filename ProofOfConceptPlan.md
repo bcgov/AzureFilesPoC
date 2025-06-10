@@ -82,10 +82,10 @@ See Azure Files POC Architecture Overview (add link to other github page after i
 ## 📅 Timeline
 | **Phase** | **Duration** | **Activities** |
 |-----------|--------------|----------------|
-| Planning | 1 week | Define scope, assign roles, provision Azure resources |
-| Implementation | 1–2 weeks | Deploy Azure Files, File Sync, Blob Storage, configure networking |
-| Testing | 2–3 weeks | Execute test scenarios, collect metrics |
-| Analysis | 2 weeks | Compare results with S3/GeoDrive, evaluate cost/performance |
-| Reporting | 1 week | Final report, recommendations, stakeholder presentation |
+| Planning |TBC | Define scope, assign roles, provision Azure resources |
+| Implementation | TBC | Deploy Azure Files, File Sync, Blob Storage, configure networking |
+| Testing | TBC | Execute test scenarios, collect metrics |
+| Analysis | TBC | Compare results with S3/GeoDrive, evaluate cost/performance |
+| Reporting | TBC | Final report, recommendations, stakeholder presentation |
 
 
