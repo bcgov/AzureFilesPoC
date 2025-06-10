@@ -1,0 +1,91 @@
+
+# Azure Files PoC Plan
+
+## 🎯 Objectives
+Evaluate Azure Files (and optionally Azure Blob Storage with lifecycle management) for:
+
+- Reducing operational and storage costs
+- Storing and accessing large video/audio files
+- Enabling automated tiering and lifecycle management (assessing tools for setting policies to automatically move files to lower cost tiers)
+- Enhancing reporting and auditability (e.g. monitoring of progress of moving inactive files to cheaper tiers)
+- Improving performance, security, and compliance
+
+## ✅ Azure Files PoC Architecture
+See Azure Files POC Architecture Overview (add link to other github page after i create it)
+
+## ✅ Evaluation Criteria
+### 1. File Access & Management
+- Folder rename support
+- Case sensitivity handling
+- Real-time sync across clients (i.e. when one person adds, changes, or deletes a file, those changes are immediately visible to everyone else using the same shared folder—without needing to refresh, wait, or manually sync)
+- Native SMB/UNC support
+  - SMB is the protocol that lets you open shared folders like `\ServerName\SharedFolder` from File Explorer.
+  - UNC paths are the format used to point to those shared folders (e.g., `\CourtServer\Evidence\Video1.mp4`).
+- NTFS metadata preservation
+  - Who owns the file (file owner)
+  - Who can access it and what they can do (permissions)
+  - When it was created, modified, or accessed (timestamps)
+  - Special file attributes (like read-only, hidden, or system file)
+
+### 2. Performance & Latency
+- Upload/download speed for large files
+- Real-time access for playback systems
+- Stub hydration speed (if using File Sync). i.e. with File Sync, files that are stored in the cloud can appear on your local server as “stubs”—tiny placeholder files that look like the real thing but don’t take up space until you open them. Stub hydration is the process of downloading the full file from the cloud when someone tries to open or use it. This is important because if someone clicks on a video or audio file in court, it needs to start playing quickly. If hydration is slow, users experience delays, which can disrupt court proceedings or investigations.
+
+### 3. Security & Compliance
+- Active Directory integration
+- NTFS permissions enforcement (ACL support). Can use same IDIR groups in Azure Files.
+- Antivirus/ransomware protection
+- Audit logging (access tracking)
+- Encryption (What is the BCPS need here? can we test it in the PoC?)
+
+### 4. Backup & Recovery
+- Snapshot support and rollback
+- Azure Backup integration
+- Encryption key management (BYOK/HSM). Being able to manage your own key (BYOK-bring your own key).
+
+### 5. Tiering & Lifecycle Management
+- Manual vs. automated tiering (Hot → Cool → Archive)
+- Lifecycle rules for archival. Lifecycle rules are automated policies you set up in Azure (usually for Blob Storage) to move files to cheaper storage tiers based on how old or unused they are.
+- Integration with Azure Blob Storage. Azure Blob Storage is designed for scalable, cost-effective storage of large files like video and audio. Integrating Azure Files with Blob Storage allows you to:
+  - Move older or infrequently accessed files from Azure Files to Blob Storage (Cool or Archive tiers)
+  - Use lifecycle rules to automate this movement and reduce costs
+  - Store large volumes of evidence long-term without paying premium storage prices
+- Cost savings from tiering
+
+### 6. Reporting & Monitoring
+- % of data in each tier (Hot, Cool, Archive)
+- GB per tier over time
+- Snapshot history and trends
+- Alerts for stale data or tiering gaps
+- Power BI dashboards or Azure Monitor views
+
+### 7. Supportability & Cost
+- Ease of setup and maintenance
+- Total cost of ownership (storage + egress/ingress + operations)
+
+## 🧪 Test Scenarios
+| **Scenario** | **Goal** |
+|--------------|----------|
+| Upload 1GB+ video file | Measure upload speed, hydration time |
+| Access file from multiple clients | Test real-time sync, concurrency |
+| Apply NTFS permissions | Validate ACL enforcement, AD integration |
+| Move file to Blob Archive | Test lifecycle automation, cost savings |
+| Generate audit report | Validate access logging, traceability |
+| Visualize tier distribution | Assess reporting capabilities |
+| Access large files from Blob | Test playback performance |
+| Rename non-empty folders | Confirm support and behavior |
+| Trigger ransomware simulation | Test detection and recovery |
+| Snapshot rollback | Validate backup and recovery |
+| BYOK encryption test | Validate encryption key control |
+
+## 📅 Timeline
+| **Phase** | **Duration** | **Activities** |
+|-----------|--------------|----------------|
+| Planning | 1 week | Define scope, assign roles, provision Azure resources |
+| Implementation | 1–2 weeks | Deploy Azure Files, File Sync, Blob Storage, configure networking |
+| Testing | 2–3 weeks | Execute test scenarios, collect metrics |
+| Analysis | 2 weeks | Compare results with S3/GeoDrive, evaluate cost/performance |
+| Reporting | 1 week | Final report, recommendations, stakeholder presentation |
+
+
