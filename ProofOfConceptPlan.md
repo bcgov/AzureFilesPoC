@@ -1,14 +1,40 @@
 
 # Azure Files PoC Plan
 
+## 🔍 Problem Statement
+
+The BC Government faces significant challenges with its current on-premises file storage infrastructure:
+
+- **Escalating Costs**: Operating expenditures for storage hardware continue to rise, while operational expenses for maintenance and administration consume an increasing portion of the IT budget
+- **Limited Optimization**: Current on-premises enterprise storage solution with additional tiering software leverage automated policies to move infrequently used data to cheaper cold storage, but those solutions have had challenges with cost per GB.  
+- **Administrative Burden**: Technical staff spend excessive time on storage management rather than on higher-value services to citizens. Current solutions for automated tiering to cheaper storage have significant administrative overhead and additional storage requirements.
+- **Capacity Constraints**: Meeting the growing demand for large media file storage requires frequent, costly expansions of on-premises systems
+- **Data Growth Crisis**: Media content (video/audio evidence, public service recordings, etc.) continues to grow exponentially with no effective archival strategy
+
+Recent improvements in Azure's Canadian service offerings have created new opportunities to leverage public cloud services while meeting rigorous security and compliance requirements. A cloud-first approach to file storage could deliver significant cost savings while improving service delivery and aligning with the BC Government's mandate for fiscal responsibility and efficient use of taxpayer resources.
+
+## 💡 Overview
+
+This proof-of-concept will evaluate Azure Files as a hybrid storage solution that can potentially reduce the total cost of ownership for file storage while maintaining or enhancing security, compliance, and performance. By testing Azure Files with optional Azure Blob Storage integration, we aim to demonstrate a practical path toward:
+
+- Significantly reduced storage costs through cloud economies of scale
+- More effective storage lifecycle management 
+- Enhanced data protection and security capabilities
+- Improved operational efficiency and resource utilization
+- Better management of media files with automated archival capabilities
+
+This initiative aligns directly with the BC Government's Digital Framework principles, particularly "Service Modernization" and "Sustainable & Effective Use of Resources," while ensuring that ministry-specific security and compliance requirements are met or exceeded.
+
 ## 🎯 Objectives
+
 Evaluate Azure Files (and optionally Azure Blob Storage with lifecycle management) for:
 
-- Reducing operational and storage costs
-- Storing and accessing large video/audio files
-- Enabling automated tiering and lifecycle management (assessing tools for setting policies to automatically move files to lower cost tiers)
-- Enhancing reporting and auditability (e.g. monitoring of progress of moving inactive files to cheaper tiers)
-- Improving performance, security, and compliance
+- Reducing operational and storage costs through cloud-based storage and automated tiering (cost reduction)
+- Accommodating large media files (video/audio) with appropriate performance and accessibility (validate technical feasibility)
+- Implementing advanced data lifecycle management with automated policies for tiering and archival (validate storage optimization)
+- Enhancing reporting and auditability capabilities for data governance and cost management (improve accountability)
+- Improving overall security posture and compliance with government standards (strengthen data protection)
+- Demonstrating responsible stewardship of taxpayer resources (improve public value delivery)
 
 ## ✅ Azure Files PoC Architecture
 See [Azure Files PoC Architecture Overview](ArchitectureOverview.md)
@@ -34,10 +60,10 @@ See [Azure Files PoC Architecture Overview](ArchitectureOverview.md)
 
 ### 3. Security & Compliance
 - Active Directory integration
-- NTFS permissions enforcement (ACL support). Can use same IDIR groups in Azure Files.
+- NTFS permissions enforcement (ACL support). Can use same domain security groups in Azure Files.
 - Antivirus/ransomware protection
 - Audit logging (access tracking)
-- Encryption (What is the BCPS need here? can we test it in the PoC?)
+- Encryption (What are the specific requirements here? can we test them in the PoC?)
 
 ### 4. Backup & Recovery
 - Snapshot support and rollback
@@ -103,7 +129,7 @@ See [Azure Files PoC Architecture Overview](ArchitectureOverview.md)
 | Planning |TBC | Define scope, assign roles, provision Azure resources |
 | Implementation | TBC | Deploy Azure Files, File Sync, Blob Storage, configure networking |
 | Testing | TBC | Execute test scenarios, collect metrics |
-| Analysis | TBC | Compare results with S3/GeoDrive, evaluate cost/performance |
+| Analysis | TBC | Compare results with current solutions, evaluate cost/performance |
 | Reporting | TBC | Final report, recommendations, stakeholder presentation |
 
 
