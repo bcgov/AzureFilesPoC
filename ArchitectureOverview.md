@@ -7,7 +7,8 @@ This architecture supports the evaluation of Azure Files with optional integrati
 
 ## Architecture Diagram
 
-![azure files express route architecture](https://github.com/user-attachments/assets/17673597-1fc8-4b9a-be52-04984a8343ad)
+![azure files express route drawio](https://github.com/user-attachments/assets/903d5ba0-cbbd-4c86-8635-1be918e8f466)
+
 
 This diagram illustrates the hybrid connectivity model using VPN and ExpressRoute, with Azure Files accessed via Private Endpoint and optional integration with Azure Blob Storage for tiering.
 
