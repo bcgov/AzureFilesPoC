@@ -148,6 +148,9 @@ See also [Terraform Resources for Azure PoC](./TerraformResourcesForAzurePoC.md)
 
 ### BC Government Specifics and Best Practices:
 
+* **Getting started with Azure:** 
+    * [developer.gov.bc.ca/docs/default/component/public-cloud-techdocs/azure/get-started-with-azure/bc-govs-azure-landing-zone-overview](https://developer.gov.bc.ca/docs/default/component/public-cloud-techdocs/azure/get-started-with-azure/bc-govs-azure-landing-zone-overview/)
+
 * **UDR Management:** As noted in the Networking section, the creation and management of User-Defined Routes (UDRs) for ExpressRoute integration will likely involve collaboration with the OCIO Platform team due to BC Government policies.
 * **Azure File Sync Traffic:** Any hybrid Azure File Sync approach aiming to reduce ExpressRoute traffic for less sensitive file shares will require consultation with an OCIO security architect.
 * **Module Structure:** For insights into how Terraform modules are typically structured within the BC Government, refer to public-facing repositories like:
