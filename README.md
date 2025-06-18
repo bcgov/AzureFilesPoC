@@ -33,8 +33,7 @@ The BC Government is exploring Azure Files as a solution to address several chal
 ## Architecture at a Glance
 
 This PoC implements a hybrid connectivity model with Azure Files accessed via Private Endpoint and optional integration with Azure Blob Storage for tiering:
-
-![Azure Files Architecture Diagram](azure%20files%20express%20route.drawio.png)
+![azure files express route drawio](https://github.com/user-attachments/assets/e2ef13f6-501c-466a-82ee-654add681e0a)
 
 ## Getting Started
 
