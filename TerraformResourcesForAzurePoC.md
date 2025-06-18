@@ -427,8 +427,7 @@ resource "azurerm_network_security_rule" "allow_private_endpoint_access" {
 
 ## 11. Azure Firewall
 
-Deploying Azure Firewall in the Hub VNet.
-
+```terraform
 resource "azurerm_public_ip" "pip_firewall" {
   name                = "pip-firewall-poc"
   location            = azurerm_resource_group.rg_poc.location
@@ -515,10 +514,12 @@ resource "azurerm_route" "default_to_firewall" {
   next_hop_type          = "VirtualAppliance"
   next_hop_in_ip_address = azurerm_firewall.az_firewall.ip_configuration[0].private_ip_address
 }
+```
 
-12. Azure Virtual Network Gateway (for VPN/ExpressRoute)
+## 12. Azure Virtual Network Gateway (for VPN/ExpressRoute)
 Example for an ExpressRoute Gateway. A VPN Gateway would be similar.
 
+```terraform
 resource "azurerm_public_ip" "pip_vnet_gateway" {
   name                = "pip-vnet-gateway-poc"
   location            = azurerm_resource_group.rg_poc.location
@@ -541,8 +542,11 @@ resource "azurerm_virtual_network_gateway" "vnet_gateway" {
     subnet_id                     = azurerm_subnet.subnet_gateway.id
   }
 }
+```
 
-# Example ExpressRoute Connection (requires an existing ExpressRoute circuit)
+### Example ExpressRoute Connection (requires an existing ExpressRoute circuit)
+
+```terraform
 /*
 resource "azurerm_network_connection" "er_connection" {
   name                           = "er-connection-poc"
@@ -553,8 +557,11 @@ resource "azurerm_network_connection" "er_connection" {
   express_route_circuit_peering_id = "/subscriptions/YOUR_SUBSCRIPTION_ID/resourceGroups/YOUR_ER_RG/providers/Microsoft.Network/expressRouteCircuits/YOUR_ER_CIRCUIT_NAME/peerings/AzurePrivatePeering"
 }
 */
+```
 
-# Example VPN Connection
+
+### Example VPN Connection
+```terraform
 /*
 resource "azurerm_vpn_connection" "vpn_connection" {
   name                            = "vpn-connection-poc"
@@ -572,10 +579,12 @@ resource "azurerm_local_network_gateway" "onprem_lgw" {
   address_space       = ["YOUR_ON_PREM_IP_RANGE"]
 }
 */
+```
 
-13. Azure File Sync (Optional)
+## 13. Azure File Sync (Optional)
 Resources for setting up Azure File Sync.
 
+```terraform
 resource "azurerm_storage_sync_service" "afs_service" {
   name                = "afs-syncservice-poc"
   resource_group_name = azurerm_resource_group.rg_poc.name
@@ -600,3 +609,5 @@ resource "azurerm_storage_sync_cloud_endpoint" "afs_cloud_endpoint" {
 # installing the agent on an on-premises Windows Server and registering it, then
 # creating the server endpoint in the sync group via Azure portal or PowerShell.
 # Terraform cannot directly manage the installation of the agent on an on-premises server.
+
+```
