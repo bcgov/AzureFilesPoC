@@ -6,6 +6,49 @@
 
 This directory contains Terraform configuration for deploying an Azure Files Proof of Concept (PoC) environment.
 
+## Directory Structure
+
+This project uses a modular Terraform structure to implement the Azure Files PoC architecture. Below is the high-level structure:
+
+```
+terraform/
+├── environments/           # Environment-specific configurations
+│   ├── dev/              # Development environment
+│   │   ├── main.tf       # Main configuration file
+│   │   ├── variables.tf  # Input variables
+│   │   └── terraform.tfvars # Dev-specific values
+│   ├── test/             # Test environment
+│   └── prod/             # Production environment
+├── modules/              # Reusable modules
+│   ├── networking/       # Network resource modules
+│   │   ├── vnet/        # Virtual Network configuration
+│   │   ├── subnet/      # BC Gov compliant subnet with NSG
+│   │   └── private-endpoint/ # Private endpoint configuration
+│   ├── storage/         # Storage resource modules
+│   │   ├── account/     # Storage account configuration
+│   │   ├── file-share/  # Azure Files configuration
+│   │   └── blob/        # Blob storage with lifecycle
+│   ├── security/        # Security resource modules
+│   │   ├── nsg/         # Network Security Groups
+│   │   └── firewall/    # Azure Firewall configuration
+│   └── dns/             # DNS resource modules
+│       ├── private-dns/ # Private DNS zones
+│       └── resolver/    # DNS resolver configuration
+└── README.md            # This file
+```
+
+For detailed information about each module, including BC Government-specific requirements, implementation details, and usage examples, see:
+- [Terraform Module Structure Documentation](../Resources/TerraformModuleStructure.md)
+
+## Key Reference Documentation
+
+Please review these important resources before proceeding:
+
+- [Terraform Resources for Azure Files PoC](../Resources/TerraformResourcesForAzurePoC.md) - Detailed Terraform configurations and BC Government-specific requirements
+- [Terraform with GitHub Actions Process](../Resources/TerraformWithGithubActionsProcess.md) - CI/CD integration with GitHub Actions
+- [GitHub Actions Resources](../Resources/GitHubActionsResourcesForAzureFilesPoC.md) - GitHub Actions specific configuration and BC Government context
+- [Azure Pipelines Resources](../Resources/AzurePipelinesResources.md) - Azure Pipelines integration and Workload Identity Federation
+
 ## Prerequisites
 
 1. [Terraform](https://www.terraform.io/downloads.html) (v1.0.0 or newer)
@@ -23,17 +66,11 @@ az login
 az account set --subscription "<your-Azure-subscription-ID>"
 ```
 
-### Method 2: Environment Variables (For CI/CD or scripts)
+### Method 2: Workload Identity Federation (For CI/CD)
 
-Set these environment variables (don't store them in files that will be committed to Git):
-
-```powershell
-# PowerShell
-$env:ARM_CLIENT_ID = "<service-principal-client-id>"
-$env:ARM_CLIENT_SECRET = "<service-principal-client-secret>"
-$env:ARM_SUBSCRIPTION_ID = "<azure-subscription-id>"
-$env:ARM_TENANT_ID = "<azure-tenant-id>"
-```
+For GitHub Actions or Azure Pipelines, use Workload Identity Federation (OIDC) authentication. This is the recommended and required approach for BC Government implementations. See:
+- [GitHub Actions OIDC setup](../Resources/GitHubActionsResourcesForAzureFilesPoC.md#github-actions-authentication)
+- [Azure Pipelines OIDC setup](../Resources/AzurePipelinesResources.md#workload-identity-federation-oidc)
 
 ## Configuration
 
@@ -71,8 +108,14 @@ terraform destroy
 
 ## Security Notes
 
+For BC Government security requirements and best practices, refer to:
+- [Terraform Resources - BC Government Specific Requirements](../Resources/TerraformResourcesForAzurePoC.md#important-considerations-for-bc-government-azure-landing-zones)
+- [GitHub Actions Security](../Resources/GitHubActionsResourcesForAzureFilesPoC.md#bc-government-requirements)
+- [Azure Pipelines Security](../Resources/AzurePipelinesResources.md#security-considerations)
+
+Additional security requirements:
 - Never commit secrets to the repository
-- Use environment variables for authentication when possible
+- Use Workload Identity Federation for CI/CD authentication
 - The `terraform.tfvars` file should only contain non-sensitive configuration values
 - Create a `secrets.tfvars` file for sensitive values and add it to `.gitignore`
 - When using sensitive values in Terraform, use the `-var-file=secrets.tfvars` parameter
@@ -89,11 +132,16 @@ This Terraform configuration creates:
 
 ## Development Workflow
 
-This project follows a staged approach to infrastructure development:
+This project follows BC Government's recommended approach to infrastructure development. For detailed process information, refer to:
+- [Terraform with GitHub Actions Process](../Resources/TerraformWithGithubActionsProcess.md#implementation-guide)
+- [Azure Pipelines Implementation](../Resources/AzurePipelinesResources.md#implementation-example)
 
-1. **Local Development First**: Develop and test all Terraform scripts locally before introducing any CI/CD automation
+Development stages:
+1. **Local Development First**: Develop and test all Terraform scripts locally
 2. **Manual Validation**: Perform controlled testing with minimal resources
-3. **GitHub Actions Integration**: Only after successful manual testing
+3. **CI/CD Integration**: Implement using either:
+   - GitHub Actions with self-hosted runners
+   - Azure Pipelines with Workload Identity Federation
 
 ### Current Phase: Local Terraform Development
 

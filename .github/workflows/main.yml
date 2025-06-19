@@ -1,0 +1,50 @@
+name: BC Gov Azure Files Infrastructure
+
+on:
+  # Manual trigger with environment selection
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - test
+          - prod
+      plan_only:
+        description: 'Only run plan (no apply)'
+        required: true
+        type: boolean
+        default: true
+  
+  # Pull request automation
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/**'
+  
+  # Main branch automation (disabled by default for safety)
+  # push:
+  #   branches: [ main ]
+  #   paths:
+  #     - 'terraform/**'
+  #     - '.github/workflows/**'
+
+jobs:
+  validate-terraform:
+    uses: ./.github/workflows/terraform-common.yml
+    with:
+      environment: ${{ github.event.inputs.environment || 'dev' }}
+      plan_only: ${{ github.event.inputs.plan_only || true }}
+      terraform_vars: |
+        {
+          "location": "canadacentral",
+          "project": "azure-files-poc"
+        }
+    secrets:
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
