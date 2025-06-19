@@ -35,10 +35,13 @@ tfplan
 
 # Azure credentials
 .azure/
+.env/
 # Ignore Azure application registration details file anywhere in the codebase
 **/AzureAppRegistrationDetails.txt
 # Original path-specific ignore (redundant but kept for backwards compatibility)
 WorkTracking/OneTimeActivities/AzureAppRegistrationDetails.txt
+# Environment and credential files
+**/*credentials.json
 
 # Editor specific files
 .vscode/
