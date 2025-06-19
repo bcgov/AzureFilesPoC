@@ -8,8 +8,8 @@ This document provides step-by-step guidance for validating the end-to-end CI/CD
 
 Before following this validation guide, ensure you have completed:
 
-1. [Application Registration for Azure](RegisterApplicationInAzure.md) - The registration process must be completed up to Step 4
-2. [GitHub Secrets Configuration](RegisterApplicationInAzure.md#step-4-store-credentials-as-github-secrets) - All required secrets must be stored in GitHub
+1. [Application Registration for Azure](RegisterApplicationInAzureAndOICDInGithub.md) - The registration process must be completed up to Step 4
+2. [GitHub Secrets Configuration](RegisterApplicationInAzureAndOICDInGithub.md#step-4-store-credentials-as-github-secrets) - All required secrets must be stored in GitHub
 3. Basic familiarity with GitHub Actions and Terraform
 
 ## Overview of Validation Process

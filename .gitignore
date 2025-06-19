@@ -33,15 +33,23 @@ terraform.rc
 # Terraform plan output
 tfplan
 
-# Azure credentials
+# Azure credentials - ignore the .env directory except for template files
 .azure/
-.env/
+# Don't ignore the .env directory itself
+!.env/
+# But ignore everything in it
+.env/*
+# Except for template files
+!.env/*.template.json
+
 # Ignore Azure application registration details file anywhere in the codebase
 **/AzureAppRegistrationDetails.txt
 # Original path-specific ignore (redundant but kept for backwards compatibility)
 WorkTracking/OneTimeActivities/AzureAppRegistrationDetails.txt
-# Environment and credential files
+
+# Environment and credential files - exclude templates
 **/*credentials.json
+!**/*credentials.template.json
 
 # Editor specific files
 .vscode/

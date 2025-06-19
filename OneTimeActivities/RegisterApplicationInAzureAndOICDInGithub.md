@@ -125,25 +125,68 @@ az ad sp create --id $appRegistration
 1. Update the Progress Tracking table at the bottom of this document
 2. After all verification points pass, uncomment Step 2 and proceed
 
-## Get details and save to `WorkTracking\OneTimeActivities\AzureAppRegistrationDetails.txt`
-```script
-@"
->> # Azure Application Registration Details
->> Date Created: $(Get-Date -Format "yyyy-MM-dd HH:mm")
->>
->> AZURE_CLIENT_ID: $appRegistration
->> AZURE_TENANT_ID: $tenantId
->> AZURE_SUBSCRIPTION_ID: $subscriptionId
->>
->> Service Principal Object ID: e72f42f8-d9a1-4181-a0b9-5c8644a28aee
->> "@ | Out-File -FilePath ".\WorkTracking\OneTimeActivities\AzureAppRegistrationDetails.txt"
+## Get details and save to `.\env\azure-credentials.json`
+```powershell
+# Get tenant ID and subscription ID
+$tenantId=$(az account show --query tenantId -o tsv)
+$subscriptionId=$(az account show --query id -o tsv)
+
+# Create the .env directory if it doesn't exist
+if (!(Test-Path -Path ".\\.env")) {
+    New-Item -ItemType Directory -Path ".\\.env" | Out-Null
+    Write-Host "Created .env directory"
+}
+
+# Get service principal object ID
+$servicePrincipalObjId=$(az ad sp show --id $appRegistration --query id -o tsv)
+
+# Create JSON credential object
+$credentials = @{
+  "metadata" = @{
+    "dateCreated" = (Get-Date -Format "yyyy-MM-dd HH:mm")
+    "appRegistrationName" = $appName
+  }
+  "azure" = @{
+    "clientId" = $appRegistration
+    "tenantId" = $tenantId
+    "subscriptionId" = $subscriptionId
+    "servicePrincipalObjectId" = $servicePrincipalObjId
+  }
+  "github" = @{
+    "org" = "bcgov"
+    "repo" = "AzureFilesPoC"
+  }
+}
+
+# Save to JSON file
+$credentials | ConvertTo-Json -Depth 3 | Out-File -FilePath ".\\.env\\azure-credentials.json"
+Write-Host "Azure credentials saved to .env/azure-credentials.json"
+
+# Display confirmation
+Write-Host "Saved the following details:"
+Write-Host "- Client ID: $appRegistration"
+Write-Host "- Tenant ID: $tenantId"
+Write-Host "- Subscription ID: $subscriptionId"
+Write-Host "- Service Principal Object ID: $servicePrincipalObjId"
 ```
 
 
 ## Step 2: Grant Permissions to the Service Principal
 
 ```powershell
-# Step 2a: Get the subscription ID (if you don't have it from earlier)
+# Step 2a: Log in to Azure and set the subscription context
+az login
+
+# Verify the current subscription
+$currentSubscription = az account show --query name -o tsv
+$currentSubscriptionId = az account show --query id -o tsv
+Write-Host "Using subscription: $currentSubscription ($currentSubscriptionId)"
+Write-Host "If this is not the correct subscription, use 'az account set --subscription <SUBSCRIPTION_ID>'"
+
+# Set the subscription context (if you have multiple subscriptions)
+# az account set --subscription "<SUBSCRIPTION_ID>"
+
+# Get the subscription ID
 $subscriptionId=$(az account show --query id -o tsv)
 echo "Subscription ID: $subscriptionId"
 
@@ -247,6 +290,20 @@ Reference: This role mapping is derived from the components described in the [Ar
 
 Federated credentials allow GitHub Actions to authenticate to Azure without storing secrets. This follows BC Government best practices for secure CI/CD implementation.
 
+### OIDC Federated Credentials Overview
+
+OpenID Connect (OIDC) federation enables secure, passwordless authentication between GitHub Actions and Azure. Instead of storing long-lived secrets, you create a federated credential in your Azure AD application that establishes a trust relationship with GitHub. This credential specifies which GitHub repository, branch, or environment is allowed to request tokens for your Azure app.
+
+When a GitHub Actions workflow runs, it requests a special OIDC token from GitHub. Azure validates this token against the federated credential configuration. If the request matches the allowed repository and branch/environment, Azure issues a short-lived access token to the workflow. This allows GitHub Actions to authenticate to Azure securely, following best practices and reducing the risk of credential leaks.
+
+For an in-depth understanding of workload identity federation with OIDC, refer to [Introduction to Azure DevOps workload identity federation (OIDC) with Terraform](https://devblogs.microsoft.com/devops/introduction-to-azure-devops-workload-identity-federation-oidc-with-terraform/).
+
+Key points:
+- Federated credentials are configured in Azure AD for your app registration.
+- Each credential references your GitHub organization, repository, and optionally branch or environment.
+- No secrets are stored in GitHub; authentication is handled dynamically via OIDC tokens.
+- This approach is recommended for secure CI/CD pipelines and aligns with BC Government best practices.
+
 ### BC Government OIDC Best Practices
 
 As per BC Government guidelines:
@@ -254,19 +311,78 @@ As per BC Government guidelines:
 - This method eliminates the need for storing long-lived credentials as GitHub secrets
 - For accessing Azure data storage and databases, self-hosted runners on Azure are required as public access is not supported
 - Microsoft provides sample Terraform code for deploying these runners in the `azure-lz-samples` repository
+- You store identity information (NOT secrets) as GitHub secrets
+- the secrets include:   
+    AZURE_CLIENT_ID (the application/client ID)
+    AZURE_TENANT_ID (your Azure tenant ID)
+    AZURE_SUBSCRIPTION_ID (your subscription ID)
+
+Process: 
+1. When a GitHub workflow runs, it requests a special OIDC token from GitHub
+2. This token is sent to Azure AD
+3. Azure AD verifies the token came from the trusted GitHub repository
+4. If verified, Azure AD issues a short-lived access token for Azure resources
 
 Reference: [BC Government IaC and CI/CD Best Practices](https://developer.gov.bc.ca/docs/default/component/public-cloud-techdocs/azure/best-practices/iac-and-ci-cd/#github-actions)
 
+---
+
+### Configure Federated Credentials (OIDC) — Substeps and Status
+
+#### sub-Steps
+| Substep | Description                                                      | Status      |
+|---------|------------------------------------------------------------------|-------------|
+| 3a      | Get App registration ID from JSON file and GitHub info           | Not Started |
+| 3b      | Configure federated credentials for GitHub Actions main branch   | Not Started |
+| 3c      | Configure federated credentials for pull requests                | Not Started |
+| 3d      | Configure federated credentials for environment deployments      | Not Started |
+
+**NOTE:** Update the status column as you complete each substep.
+
 ```powershell
-# Step 3a: Get App registration ID from details file or Azure
-$appRegistration=$(Get-Content .\OneTimeActivities\AzureAppRegistrationDetails.txt | Select-String -Pattern "AZURE_CLIENT_ID: " | ForEach-Object { $_ -replace "AZURE_CLIENT_ID: ", "" })
-echo "Using App Registration ID: $appRegistration"
+# Step 3a: Log in to Azure and set subscription context
+az login
 
-# Step 3b: Set your GitHub repository information
-$githubOrg="bcgov"  # BC Government GitHub organization
-$githubRepo="AzureFilesPoC"  # The name of your repository
+# Clear any cached tokens to avoid "InteractionRequired" errors
+az account clear
+az login
 
-# Step 3c: Configure federated credentials for GitHub Actions main branch
+# Set the subscription context (if you have multiple subscriptions)
+# az account set --subscription "<SUBSCRIPTION_ID>"
+
+# Verify the current subscription
+$currentSubscription = az account show --query name -o tsv
+$currentSubscriptionId = az account show --query id -o tsv
+Write-Host "Using subscription: $currentSubscription ($currentSubscriptionId)"
+Write-Host "If this is not the correct subscription, use 'az account set --subscription <SUBSCRIPTION_ID>'"
+
+# Verify permissions - ensure your account has the necessary roles (e.g., Application Administrator)
+Write-Host "Verifying your permissions for managing application credentials..."
+az role assignment list --assignee (az account show --query user.name -o tsv) --output table
+Write-Host "Make sure you have Application Administrator, Cloud Application Administrator, or Global Administrator roles"
+
+# Get App registration ID and GitHub info from JSON file
+$appCredentials = Get-Content ".\\.env\\azure-credentials.json" | ConvertFrom-Json
+
+# Extract values from the JSON structure
+$appRegistration = $appCredentials.azure.clientId
+$tenantId = $appCredentials.azure.tenantId
+$subscriptionId = $appCredentials.azure.subscriptionId
+$githubOrg = $appCredentials.github.org
+$githubRepo = $appCredentials.github.repo
+
+# Verify Azure login and subscription
+Write-Host "Verifying Azure login..."
+az account show -o table
+
+Write-Host "Using App Registration ID: $appRegistration"
+Write-Host "Using Tenant ID: $tenantId"
+Write-Host "Using Subscription ID: $subscriptionId"
+Write-Host "Using GitHub Organization: $githubOrg" 
+Write-Host "Using GitHub Repository: $githubRepo"
+
+# Step 3b: Configure federated credentials for GitHub Actions main branch
+Write-Host "Creating federated credential for main branch"
 $fedCredMainBranch = @{
     name = "github-federated-identity-main-branch"
     issuer = "https://token.actions.githubusercontent.com"
@@ -274,13 +390,20 @@ $fedCredMainBranch = @{
     audiences = @("api://AzureADTokenExchange")
 }
 
-# Convert to JSON
-$fedCredMainBranchJson = $fedCredMainBranch | ConvertTo-Json
+# Create a temporary JSON file for main branch credential
+$tempMainJsonPath = Join-Path $env:TEMP "maincred_$(Get-Random).json"
+$fedCredMainBranch | ConvertTo-Json | Out-File -FilePath $tempMainJsonPath
 
-# Create the federated credential for main branch
-az ad app federated-credential create --id $appRegistration --parameters $fedCredMainBranchJson
+Write-Host "Creating federated credential for main branch using file: $tempMainJsonPath"
 
-# Step 3d: Configure additional federated credentials for pull requests (optional)
+# Create the federated credential for main branch using the JSON file
+az ad app federated-credential create --id $appRegistration --parameters "@$tempMainJsonPath"
+
+# Clean up temporary file
+Remove-Item -Path $tempMainJsonPath -Force
+
+# Step 3c: Configure additional federated credentials for pull requests
+Write-Host "Creating federated credential for pull requests"
 $fedCredPullRequests = @{
     name = "github-federated-identity-pull-requests"
     issuer = "https://token.actions.githubusercontent.com"
@@ -288,28 +411,44 @@ $fedCredPullRequests = @{
     audiences = @("api://AzureADTokenExchange")
 }
 
-# Convert to JSON
-$fedCredPullRequestsJson = $fedCredPullRequests | ConvertTo-Json
+# Create a temporary JSON file for pull requests credential
+$tempPRJsonPath = Join-Path $env:TEMP "prcred_$(Get-Random).json"
+$fedCredPullRequests | ConvertTo-Json | Out-File -FilePath $tempPRJsonPath
 
-# Create the federated credential for pull requests
-az ad app federated-credential create --id $appRegistration --parameters $fedCredPullRequestsJson
+Write-Host "Creating federated credential for pull requests using file: $tempPRJsonPath"
 
-# Step 3e: Configure federated credentials for environment-specific deployments (optional)
-$environments = @("dev", "test", "prod")
+# Create the federated credential for pull requests using the JSON file
+az ad app federated-credential create --id $appRegistration --parameters "@$tempPRJsonPath"
+
+# Clean up temporary file
+Remove-Item -Path $tempPRJsonPath -Force
+
+# Step 3d: Configure federated credentials for environment-specific deployments
+# Only configure federated credentials for the `dev` environment
+
+# Configure federated credentials for environments
+# For now, we only set up the 'dev' environment
+$environments = @("dev") # Add "test", "prod" when/if needed
 
 foreach ($env in $environments) {
+    Write-Host "Creating federated credential for environment: $env"
     $fedCredEnvironment = @{
         name = "github-federated-identity-${env}-environment"
         issuer = "https://token.actions.githubusercontent.com"
         subject = "repo:${githubOrg}/${githubRepo}:environment:${env}"
         audiences = @("api://AzureADTokenExchange")
     }
+      # Create a temporary JSON file for environment credential
+    $tempEnvJsonPath = Join-Path $env:TEMP "envcred_$(Get-Random).json"
+    $fedCredEnvironment | ConvertTo-Json | Out-File -FilePath $tempEnvJsonPath
+
+    Write-Host "Creating federated credential for environment $env using file: $tempEnvJsonPath"
     
-    # Convert to JSON
-    $fedCredEnvironmentJson = $fedCredEnvironment | ConvertTo-Json
+    # Create the federated credential for environment using the JSON file
+    az ad app federated-credential create --id $appRegistration --parameters "@$tempEnvJsonPath"
     
-    # Create the federated credential for environment
-    az ad app federated-credential create --id $appRegistration --parameters $fedCredEnvironmentJson
+    # Clean up temporary file
+    Remove-Item -Path $tempEnvJsonPath -Force
 }
 ```
 
@@ -321,7 +460,7 @@ foreach ($env in $environments) {
 - Verify that all GitHub federated credentials are listed:
   - `github-federated-identity-main-branch` for main branch
   - `github-federated-identity-pull-requests` for pull requests
-  - Environment-specific credentials (dev, test, prod)
+  - `github-federated-identity-dev-environment` for dev environment
 
 **Verification Using Azure CLI**:
 ```powershell
@@ -329,101 +468,91 @@ foreach ($env in $environments) {
 az ad app federated-credential list --id $appRegistration --query "[].{Name:name, Subject:subject}" -o table
 
 # Expected output should show all federated credentials configured above
+# For example:
+# Name                                     Subject
+# ---------------------------------------  ---------------------------------------------
+# github-federated-identity-main-branch    repo:bcgov/AzureFilesPoC:ref:refs/heads/main
+# github-federated-identity-pull-requests  repo:bcgov/AzureFilesPoC:pull_request
+# github-federated-identity-dev-environment repo:bcgov/AzureFilesPoC:environment:dev
 ```
+
+### Troubleshooting OIDC Configuration Issues
+
+If you encounter the error `InteractionRequired` with code `TokenCreatedWithOutdatedPolicies` or other errors when running the `az ad app federated-credential create` command, follow these troubleshooting steps:
+
+#### Clear Azure CLI Cache and Re-authenticate
+The token might be cached and no longer valid due to updated policies:
+
+```powershell
+# Clear token cache
+az account clear
+
+# Re-authenticate
+az login
+
+# If using service principal
+# az login --service-principal -u <client-id> -p <client-secret> --tenant <tenant-id>
+```
+
+#### Verify Conditional Access Policies
+Check if a new Conditional Access policy in Microsoft Entra ID requires additional authentication factors:
+- Sign in to the Azure portal
+- Navigate to Microsoft Entra ID > Security > Conditional Access
+- Review policies applied to the user or service principal
+
+#### Check Token Lifetime Policies
+The error might be caused by a token issued with a lifetime that no longer complies with policies:
+
+```powershell
+# Check sign-in audience
+az ad app show --id $appRegistration --query "signInAudience"
+```
+
+#### Validate Federated Credential Configuration
+Ensure the parameters in your temporary JSON file are correct:
+- `issuer`: Must be exactly `https://token.actions.githubusercontent.com` for GitHub Actions
+- `subject`: Format is `repo:org/repo:ref:refs/heads/branch` for branches or `repo:org/repo:pull_request` for PRs
+- `audiences`: Should be `["api://AzureADTokenExchange"]`
+
+#### Check Permissions
+Ensure you have sufficient permissions to create federated credentials:
+
+```powershell
+# List roles for current user
+az role assignment list --assignee (az account show --query user.name -o tsv) --output table
+
+# List existing federated credentials (max 20 allowed)
+az ad app federated-credential list --id $appRegistration
+```
+
+#### Verify Application ID
+Make sure you're using the correct application ID (not object ID):
+
+```powershell
+# Find the correct app ID
+az ad app list --display-name "$appName" --query '[0].id' -o tsv
+```
+
+For more detailed guidance, refer to the [Azure DevOps workload identity federation documentation](https://devblogs.microsoft.com/devops/introduction-to-azure-devops-workload-identity-federation-oidc-with-terraform/).
+
+---
 
 **AFTER COMPLETING STEP 3**:
 1. Update the Progress Tracking table at the bottom of this document
 2. After all verification points pass, uncomment Step 4 and proceed
 
-## Step 4: Store Credentials as GitHub Secrets
+## Step 4: Store GitHub Secrets
 
-In GitHub Actions with OIDC authentication, you need to store only the identity information (not secrets) needed to establish the federated trust relationship:
+In this step, you will store the necessary credentials as GitHub secrets. These secrets will be used by GitHub Actions to authenticate to Azure.
 
-1. Go to your GitHub repository
-2. Navigate to Settings > Secrets and variables > Actions
-3. Add the following repository secrets:
-
-   - `AZURE_CLIENT_ID`: The Application (client) ID ($appRegistration)
-   - `AZURE_TENANT_ID`: Your Azure AD tenant ID
+1. Navigate to your GitHub repository
+2. Go to Settings > Secrets and variables > Actions
+3. Click on "New repository secret" for each of the following secrets:
+   - `AZURE_CLIENT_ID`: The Application (client) ID of your app registration
+   - `AZURE_TENANT_ID`: Your Azure tenant ID
    - `AZURE_SUBSCRIPTION_ID`: Your Azure subscription ID
 
-### Using Credentials in Automation Tools
-
-These credentials will be referenced in multiple places throughout your automation workflow:
-
-#### 1. In GitHub Actions Workflows
-
-Your GitHub Actions workflows will use these secrets to authenticate to Azure:
-
-```yaml
-# Example GitHub Actions workflow snippet
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: azure/login@v1
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-```
-
-#### 2. In Terraform GitHub Actions Workflow
-
-When running Terraform in GitHub Actions, the workflow will use these secrets to authenticate:
-
-```yaml
-# Example Terraform GitHub Actions workflow snippet
-jobs:
-  terraform:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: azure/login@v1
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v1
-      
-      - name: Terraform Init
-        run: terraform init
-        # Azure credentials are automatically available to Terraform via the Azure CLI
-```
-
-#### 3. In Azure Pipelines (Optional)
-
-If you choose to use Azure Pipelines in addition to or instead of GitHub Actions:
-
-```yaml
-# Example Azure Pipelines snippet
-- task: AzureCLI@2
-  displayName: 'Azure CLI'
-  inputs:
-    azureSubscription: 'azure-files-poc-service-connection'
-    scriptType: bash
-    scriptLocation: inlineScript
-    inlineScript: |
-      az account show
-```
-
-### Configuring GitHub Workflow Permissions
-
-When creating GitHub workflows that use these secrets, ensure you add the following permissions in your workflow YAML:
-
-```yaml
-permissions:
-  id-token: write # Required for OIDC authentication
-  contents: read  # Required for repository access
-```
-
-This allows the workflow to request and receive an OIDC token from GitHub, which is then exchanged for an Azure access token using the `azure/login` action.
-
-**VERIFICATION POINT 6**:
-- In GitHub, go to Settings > Secrets and variables > Actions
-- Verify all three secrets are present
-- Do not share or expose these secret values
+> **IMPORTANT**: Do not share or expose these secret values. They are sensitive credentials that allow access to your Azure resources.
 
 **AFTER COMPLETING STEP 4**:
 1. Update the Progress Tracking table at the bottom of this document
@@ -480,7 +609,7 @@ For detailed steps, refer to the [Validation Process](ValidationProcess.md) guid
 
 ### Next Steps After Verification
 
-Once the end-to-end validation is complete, you can:
+Once the end-to-end verification is complete, you can:
 - Begin implementing production Terraform code following the guidance in [BC Government IaC and CI/CD documentation](https://developer.gov.bc.ca/docs/default/component/public-cloud-techdocs/azure/best-practices/iac-and-ci-cd/)
 - Configure self-hosted runners if needed for accessing private resources
 - Develop more complex workflows with proper approvals for resource deployments
