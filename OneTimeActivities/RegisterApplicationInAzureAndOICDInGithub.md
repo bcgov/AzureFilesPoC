@@ -243,10 +243,6 @@ Reference: This role mapping is derived from the components described in the [Ar
 
 
 
-<!-- 
-UNCOMMENT THIS SECTION AFTER COMPLETING STEP 2
-========================================
-
 ## Step 3: Configure Federated Credentials (OIDC)
 
 Federated credentials allow GitHub Actions to authenticate to Azure without storing secrets. This follows BC Government best practices for secure CI/CD implementation.
@@ -262,39 +258,82 @@ As per BC Government guidelines:
 Reference: [BC Government IaC and CI/CD Best Practices](https://developer.gov.bc.ca/docs/default/component/public-cloud-techdocs/azure/best-practices/iac-and-ci-cd/#github-actions)
 
 ```powershell
-# Step 3a: Set your GitHub repository information
-$githubOrg="<YOUR_GITHUB_ORG_OR_USERNAME>"  # Replace with your actual GitHub username or organization
-$githubRepo="AzureFilesPoC"                 # The name of your repository
+# Step 3a: Get App registration ID from details file or Azure
+$appRegistration=$(Get-Content .\OneTimeActivities\AzureAppRegistrationDetails.txt | Select-String -Pattern "AZURE_CLIENT_ID: " | ForEach-Object { $_ -replace "AZURE_CLIENT_ID: ", "" })
+echo "Using App Registration ID: $appRegistration"
 
-# Step 3b: Configure federated credentials for GitHub Actions
-az ad app federated-credential create \
-  --id $appRegistration \
-  --parameters @- << EOF
-{
-  "name": "github-federated-identity",
-  "issuer": "https://token.actions.githubusercontent.com",
-  "subject": "repo:${githubOrg}/${githubRepo}:ref:refs/heads/main",
-  "audiences": ["api://AzureADTokenExchange"]
+# Step 3b: Set your GitHub repository information
+$githubOrg="bcgov"  # BC Government GitHub organization
+$githubRepo="AzureFilesPoC"  # The name of your repository
+
+# Step 3c: Configure federated credentials for GitHub Actions main branch
+$fedCredMainBranch = @{
+    name = "github-federated-identity-main-branch"
+    issuer = "https://token.actions.githubusercontent.com"
+    subject = "repo:${githubOrg}/${githubRepo}:ref:refs/heads/main"
+    audiences = @("api://AzureADTokenExchange")
 }
-EOF
+
+# Convert to JSON
+$fedCredMainBranchJson = $fedCredMainBranch | ConvertTo-Json
+
+# Create the federated credential for main branch
+az ad app federated-credential create --id $appRegistration --parameters $fedCredMainBranchJson
+
+# Step 3d: Configure additional federated credentials for pull requests (optional)
+$fedCredPullRequests = @{
+    name = "github-federated-identity-pull-requests"
+    issuer = "https://token.actions.githubusercontent.com"
+    subject = "repo:${githubOrg}/${githubRepo}:pull_request"
+    audiences = @("api://AzureADTokenExchange")
+}
+
+# Convert to JSON
+$fedCredPullRequestsJson = $fedCredPullRequests | ConvertTo-Json
+
+# Create the federated credential for pull requests
+az ad app federated-credential create --id $appRegistration --parameters $fedCredPullRequestsJson
+
+# Step 3e: Configure federated credentials for environment-specific deployments (optional)
+$environments = @("dev", "test", "prod")
+
+foreach ($env in $environments) {
+    $fedCredEnvironment = @{
+        name = "github-federated-identity-${env}-environment"
+        issuer = "https://token.actions.githubusercontent.com"
+        subject = "repo:${githubOrg}/${githubRepo}:environment:${env}"
+        audiences = @("api://AzureADTokenExchange")
+    }
+    
+    # Convert to JSON
+    $fedCredEnvironmentJson = $fedCredEnvironment | ConvertTo-Json
+    
+    # Create the federated credential for environment
+    az ad app federated-credential create --id $appRegistration --parameters $fedCredEnvironmentJson
+}
 ```
 
 **VERIFICATION POINT 5**:
-- In the Azure Portal, go to Azure Active Directory > App registrations
+- In the Azure Portal, go to Microsoft Entra ID (formerly Azure Active Directory)
+- Navigate to App registrations > All applications
 - Find and click on your "ag-pssg-azure-files-poc-ServicePrincipal" app
 - Go to Certificates & secrets > Federated credentials
-- Verify the GitHub federated credential is listed
+- Verify that all GitHub federated credentials are listed:
+  - `github-federated-identity-main-branch` for main branch
+  - `github-federated-identity-pull-requests` for pull requests
+  - Environment-specific credentials (dev, test, prod)
+
+**Verification Using Azure CLI**:
+```powershell
+# List all federated credentials for the app registration
+az ad app federated-credential list --id $appRegistration --query "[].{Name:name, Subject:subject}" -o table
+
+# Expected output should show all federated credentials configured above
+```
 
 **AFTER COMPLETING STEP 3**:
 1. Update the Progress Tracking table at the bottom of this document
 2. After all verification points pass, uncomment Step 4 and proceed
-
-========================================
--->
-
-<!-- 
-UNCOMMENT THIS SECTION AFTER COMPLETING STEP 3
-========================================
 
 ## Step 4: Store Credentials as GitHub Secrets
 
@@ -474,8 +513,8 @@ Use this section to track your progress through the steps. Update this as you co
 | Step | Description | Status | Completed By | Date |
 |------|-------------|--------|-------------|------|
 | 1 | Register Application in Azure AD | Completed | | [DATE] |
-| 2 | Grant Permissions to Service Principal (Specific Roles) | In Progress | | |
-| 3 | Configure Federated Credentials | Not Started | | |
+| 2 | Grant Permissions to Service Principal (Specific Roles) | Completed | | [DATE] |
+| 3 | Configure Federated Credentials | In Progress | | |
 | 4 | Store GitHub Secrets | Not Started | | |
 | 5a | Verify Azure Login | Not Started | | |
 | 5b | Validate Terraform Pipeline | Not Started | | |
