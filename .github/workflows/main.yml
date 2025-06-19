@@ -1,5 +1,13 @@
 name: BC Gov Azure Files Infrastructure
 
+# This workflow is the main entry point for Terraform infrastructure deployments.
+# It uses the reusable terraform-common.yml workflow for the actual Terraform operations.
+#
+# Related workflows:
+# - terraform-common.yml: Reusable workflow with all Terraform steps (init, plan, apply)
+# - terraform-validation.yml: Separate workflow for validating the overall CI/CD process
+# - azure-login-test.yml: Simple workflow for validating Azure authentication
+
 on:
   # Manual trigger with environment selection
   workflow_dispatch:
@@ -19,7 +27,7 @@ on:
         type: boolean
         default: true
   
-  # Pull request automation
+  # Pull request automation - run Terraform plan on PRs
   pull_request:
     branches: [ main ]
     paths:
@@ -34,7 +42,8 @@ on:
   #     - '.github/workflows/**'
 
 jobs:
-  validate-terraform:
+  # Primary Terraform workflow that uses the common reusable workflow
+  deploy-infrastructure:
     uses: ./.github/workflows/terraform-common.yml
     with:
       environment: ${{ github.event.inputs.environment || 'dev' }}
