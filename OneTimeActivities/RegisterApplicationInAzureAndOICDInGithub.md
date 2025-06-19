@@ -1,4 +1,4 @@
-# Registering an Azure Application for GitHub Actions
+# Registering an Azure Application for GitHub Actions (OIDC)
 
 > **⚠️ IMPORTANT: This is a step-by-step guide. Complete one step at a time, verify in the Azure portal, then uncomment and proceed to the next step.**
 
