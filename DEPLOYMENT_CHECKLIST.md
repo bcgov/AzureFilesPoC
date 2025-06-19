@@ -6,8 +6,8 @@ This checklist must be completed and signed off before any resources are deploye
 
 ## Pre-Deployment Review
 
-- [ ] Configuration files have been reviewed by technical team
-- [ ] Resources and costs have been approved by project lead
+- [ ] Configuration files have been reviewed by technical team before running them
+- [ ] Resources and cost impacts have been considered
 - [ ] Security requirements have been validated
 - [ ] Network configuration has been verified
 - [ ] Documentation has been updated to reflect planned resources
@@ -15,13 +15,6 @@ This checklist must be completed and signed off before any resources are deploye
 - [ ] Tags are properly configured for governance and billing
 - [ ] Terraform plan output has been reviewed and approved
 
-## Deployment Approval
-
-**Project Lead Approval**: __________________________ Date: __________
-
-**Technical Lead Approval**: ________________________ Date: __________
-
-**Security Approval** (if required): _________________ Date: __________
 
 ## Post-Deployment Verification
 

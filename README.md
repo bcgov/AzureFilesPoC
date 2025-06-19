@@ -17,6 +17,7 @@ The BC Government is exploring Azure Files as a solution to address several chal
 ### Documentation
 - **[ProofOfConceptPlan.md](ProofOfConceptPlan.md)**: Comprehensive plan outlining objectives, evaluation criteria, and timeline
 - **[ArchitectureOverview.md](ArchitectureOverview.md)**: Detailed architecture design for Azure Files implementation
+- **[ValidationProcess.md](WorkTracking/OneTimeActivities/ValidationProcess.md)**: Step-by-step guide for validating the end-to-end CI/CD pipeline and implementation process
 
 ### Infrastructure as Code
 - **[terraform/](terraform/)**: Infrastructure code and deployment configurations
@@ -35,6 +36,8 @@ The BC Government is exploring Azure Files as a solution to address several chal
 - **[.github/workflows/](.github/workflows/)**:
   - **[terraform-common.yml](.github/workflows/terraform-common.yml)**: Reusable Terraform workflow with OIDC auth
   - **[main.yml](.github/workflows/main.yml)**: Environment-specific deployment workflow
+  - **[azure-login-test.yml](.github/workflows/azure-login-test.yml)**: Simple workflow for validating Azure authentication
+  - **[terraform-validation.yml](.github/workflows/terraform-validation.yml)**: Workflow for validating end-to-end Terraform deployment
 
 ### Resources and Best Practices
 - **[Resources/](Resources/)**:

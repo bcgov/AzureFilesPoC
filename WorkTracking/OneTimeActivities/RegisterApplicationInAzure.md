@@ -1,20 +1,33 @@
 # Registering an Azure Application for GitHub Actions
 
-> **⚠️ IMPORTANT: This is a step-by-step guide. Complete one step at # Step 2c: Role assignments
-# Note: For the purposes of this PoC, we're using specific roles instead of the broad 'Contributor' role
-# This follows the principle of least privilege, granting only the permissions needed for the task
-#
-# The following roles are needed for this PoC:
-# 1. Storage Account Contributor: To manage storage accounts
-# 2. Network Contributor: To configure virtual networks (may be needed later)
-#
-# These role assignments must be done through the Azure Portal since the command line assignment
-# may be restricted in your environment.
-#
-# For reference only (the command below will not work if you don't have sufficient privileges):
-az role assignment create \
-  --assignee $appRegistration \
-  --role "Storage Account Contributor" \ in the Azure portal, then uncomment and proceed to the next step.**
+> **⚠️ IMPORTANT: This is a step-by-step guide. Complete one step at a time, verify in the Azure portal, then uncomment and proceed to the next step.**
+
+## Purpose
+
+This document provides a step-by-step guide for registering an Azure application (service principal) specifically for use with GitHub Actions in the Azure Files Proof of Concept (PoC) project. The registration process establishes the authentication foundation and prerequisites required for secure, automated deployments using Terraform, GitHub Actions with an Azure CI/CD pipeline for infrastructure-as-code (IaC). By following this guide, you will ensure that all automation workflows have the necessary Azure identity, permissions, and security best practices in place before any infrastructure as code (IaC) implementation begins.
+
+After completing this application registration process, refer to the [Validation Process](ValidationProcess.md) guide that provides a structured approach to verify the end-to-end Terraform, GitHub Actions, and Azure integration. This validation process serves as a pattern to follow for all subsequent resource creation in the PoC.
+
+> **⚠️ CRITICAL: This application registration process is a PREREQUISITE that must be completed BEFORE implementing any Terraform automation with GitHub Actions.**
+
+The application registration and service principal creation documented in this guide serve as the foundation for all subsequent automation work:
+
+1. **Authentication Foundation**: The service principal created here provides the identity that GitHub Actions will use to authenticate to Azure.
+
+2. **Required for Automation**: Terraform running in GitHub Actions cannot create its own service principal - it needs this pre-existing identity to function.
+
+3. **Implementation Sequence**:
+   - First: Complete this application registration process (manual, one-time setup)
+   - Then: Develop and test Terraform code locally
+   - Finally: Configure GitHub Actions and/or runners to use this identity for automated deployments
+
+4. **Credential Usage**:
+   - The credentials generated here (client ID, tenant ID, subscription ID) will be stored as GitHub secrets
+   - These secrets will be referenced in GitHub Actions workflows for Azure authentication
+   - No long-lived secrets are used when configuring OIDC (OpenID Connect) federation
+   - All Terraform CI/CD pipelines will use these credentials for authentication
+
+Once this registration process is complete, the service principal details will be stored as GitHub secrets and used in all subsequent automation workflows.
 
 This document guides you through registering an Azure application (service principal) for use with GitHub Actions in the Azure Files PoC project. It is designed to ensure security, verifiability, and auditability through a carefully managed process.
 
@@ -151,19 +164,6 @@ echo "Using App Registration ID: $appRegistration"
 # Execute the following commands to assign these roles:
 
 # 1. Storage Account Contributor: For managing storage accounts hosting Azure Files shares
-# 2. Network Contributor: For setting up VNets, subnets, and networking components
-# 3. Private DNS Zone Contributor: For configuring DNS integration with private endpoints
-# 4. Monitoring Contributor: For setting up monitoring and diagnostics
-
-# These roles are derived from our PoC architecture requirements described in ArchitectureOverview.md,
-# which includes Azure Files shares, network configuration, private endpoints, and monitoring components.
-# This is commonly used to control access and permissions for applications interacting with Azure services.
-# Examples:
-# Storage Account Contributor: Can manage storage accounts.
-# Reader: Can view existing resources, but can’t make changes.
-# Storage Blob Data Contributor: Can read, write, and delete Azure Storage blobs.
-# Key Vault Secrets User: Can read secrets in Azure Key Vault.
-# First, assign Storage Account Contributor role (PRIORITY)
 az role assignment create \
   --assignee $appRegistration \
   --role "Storage Account Contributor" \
@@ -308,6 +308,67 @@ In GitHub Actions with OIDC authentication, you need to store only the identity 
    - `AZURE_TENANT_ID`: Your Azure AD tenant ID
    - `AZURE_SUBSCRIPTION_ID`: Your Azure subscription ID
 
+### Using Credentials in Automation Tools
+
+These credentials will be referenced in multiple places throughout your automation workflow:
+
+#### 1. In GitHub Actions Workflows
+
+Your GitHub Actions workflows will use these secrets to authenticate to Azure:
+
+```yaml
+# Example GitHub Actions workflow snippet
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+```
+
+#### 2. In Terraform GitHub Actions Workflow
+
+When running Terraform in GitHub Actions, the workflow will use these secrets to authenticate:
+
+```yaml
+# Example Terraform GitHub Actions workflow snippet
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
+      
+      - name: Terraform Init
+        run: terraform init
+        # Azure credentials are automatically available to Terraform via the Azure CLI
+```
+
+#### 3. In Azure Pipelines (Optional)
+
+If you choose to use Azure Pipelines in addition to or instead of GitHub Actions:
+
+```yaml
+# Example Azure Pipelines snippet
+- task: AzureCLI@2
+  displayName: 'Azure CLI'
+  inputs:
+    azureSubscription: 'azure-files-poc-service-connection'
+    scriptType: bash
+    scriptLocation: inlineScript
+    inlineScript: |
+      az account show
+```
+
 ### Configuring GitHub Workflow Permissions
 
 When creating GitHub workflows that use these secrets, ensure you add the following permissions in your workflow YAML:
@@ -352,16 +413,44 @@ The test workflow contains the following key components:
 - A minimal az CLI command to verify authentication works
 - No resource modification or creation
 
+### Validating the Overall CI/CD Framework
+
+After confirming basic Azure authentication, validate the end-to-end CI/CD pipeline using the dedicated validation workflow:
+
+1. Navigate to the GitHub Actions tab in your repository
+2. Run the "Terraform Validation Workflow" (`.github/workflows/terraform-validation.yml`)
+3. Use the following settings:
+   - **Environment**: `dev` (or your target environment)
+   - **Cleanup**: `true` (to automatically remove test resources)
+4. Verify the workflow can successfully:
+   - Authenticate to Azure using OIDC
+   - Initialize Terraform
+   - Plan and apply the configuration
+   - Verify resource creation
+   - Delete the test resource after validation
+
+This validation workflow uses a minimal Terraform configuration located in `terraform/validation/` that creates only a simple resource group to verify all components are working together:
+
+- Application registration and OIDC federation
+- GitHub Actions workflow configuration
+- Terraform authentication and permissions
+- GitHub Secrets integration
+- End-to-end resource creation and cleanup
+
+For detailed steps, refer to the [Validation Process](ValidationProcess.md) guide, which serves as a pattern for all future resource creation in this PoC.
+
 ### Next Steps After Verification
 
-Once this basic configuration is verified, you can:
-- Implement Terraform workflows following the guidance in [BC Government IaC and CI/CD documentation](https://developer.gov.bc.ca/docs/default/component/public-cloud-techdocs/azure/best-practices/iac-and-ci-cd/)
+Once the end-to-end validation is complete, you can:
+- Begin implementing production Terraform code following the guidance in [BC Government IaC and CI/CD documentation](https://developer.gov.bc.ca/docs/default/component/public-cloud-techdocs/azure/best-practices/iac-and-ci-cd/)
 - Configure self-hosted runners if needed for accessing private resources
 - Develop more complex workflows with proper approvals for resource deployments
 
 **VERIFICATION POINT 7**:
-- The workflow should show green checkmarks for all steps
-- The output should indicate successful connection to Azure
+- Both login and Terraform validation workflows show green checkmarks for all steps
+- The output indicates successful connection to Azure and resource creation
+- Test resources are automatically cleaned up after validation
+- All validation criteria in the [Validation Process](ValidationProcess.md) are met
 
 **AFTER COMPLETING STEP 5**:
 1. Update the Progress Tracking table at the bottom of this document
@@ -388,7 +477,9 @@ Use this section to track your progress through the steps. Update this as you co
 | 2 | Grant Permissions to Service Principal (Specific Roles) | In Progress | | |
 | 3 | Configure Federated Credentials | Not Started | | |
 | 4 | Store GitHub Secrets | Not Started | | |
-| 5 | Verify Configuration | Not Started | | |
+| 5a | Verify Azure Login | Not Started | | |
+| 5b | Validate Terraform Pipeline | Not Started | | |
+| 6 | Document Completed Setup | Not Started | | |
 
 ## Completion Date
 
@@ -399,3 +490,7 @@ Use this section to track your progress through the steps. Update this as you co
 
 - For security reasons, we're using OIDC federation rather than client secrets.
 - This service principal is dedicated to the Azure Files PoC project only.
+- The credentials from this registration process are used in multiple places:
+  - GitHub Actions workflows for direct Azure operations
+  - Terraform running in GitHub Actions for infrastructure deployment
+  - Any CI/CD pipelines that need to interact with Azure resources

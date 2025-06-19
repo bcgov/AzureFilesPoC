@@ -5,6 +5,8 @@ This directory contains documentation for one-time setup activities required for
 ## Contents
 
 - [RegisterApplicationInAzure.md](RegisterApplicationInAzure.md) - Steps to register an application in Azure AD for GitHub Actions authentication
+- [github-actions-setup.md](github-actions-setup.md) - Configuration steps for GitHub Actions workflows
+- [ValidationProcess.md](ValidationProcess.md) - Steps to validate the end-to-end CI/CD pipeline after completing the Azure application registration
 
 ## Purpose
 
@@ -19,6 +21,15 @@ For each one-time activity:
 3. Record the completion date, status, and results in the document's Progress Tracking table
 4. Uncomment the next step only after successfully completing the current step
 5. Verify the entire activity was successful before proceeding with dependent tasks
+
+## Verification and Validation
+
+After completing the application registration process:
+
+1. Use the [Azure Login Test workflow](../../.github/workflows/azure-login-test.yml) to verify basic authentication
+2. Use the [Terraform Validation workflow](../../.github/workflows/terraform-validation.yml) to validate the end-to-end CI/CD pipeline
+3. Follow the complete [Validation Process](ValidationProcess.md) to ensure all components work together
+4. Apply this validation pattern to all subsequent resource creation in the PoC
 
 ## Security Considerations
 

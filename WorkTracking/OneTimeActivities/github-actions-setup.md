@@ -28,6 +28,35 @@ Before using GitHub Actions:
 1. Your code must be in a GitHub repository
 2. You need admin access to the repository to configure secrets
 3. You need permissions in Azure to create an application registration
+4. Application registration must be completed as described in [RegisterApplicationInAzure.md](./RegisterApplicationInAzure.md)
+
+## Validation Workflow
+
+After setting up the service principal and GitHub secrets, you should validate that GitHub Actions can successfully authenticate to Azure before attempting to deploy any infrastructure.
+
+### How to Run the Validation Test
+
+1. Go to your GitHub repository and navigate to the "Actions" tab
+2. Select the "Azure Login Validation" workflow from the list
+3. Click the "Run workflow" button
+4. Choose whether to use OIDC authentication (recommended) or credential-based authentication
+5. Click the "Run workflow" button to start the validation
+
+### What the Validation Tests
+
+The validation workflow performs these tests:
+1. Authenticates to Azure using your configured credentials
+2. Runs `az account show` to verify the connection
+3. Lists resource groups to confirm proper permissions
+4. Reports success or failure without modifying any resources
+
+### If Validation Fails
+
+If the validation fails:
+1. Check that all GitHub secrets are correctly configured
+2. Verify that the service principal has appropriate roles assigned
+3. For OIDC, confirm that the federated credential is properly configured
+4. Review the error messages in the workflow run logs for specific issues
 
 ## Implementation Process
 
