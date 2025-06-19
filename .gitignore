@@ -1,0 +1,51 @@
+# Terraform files
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+
+# Sensitive variable files
+*.auto.tfvars
+*.auto.tfvars.json
+# Keep terraform.tfvars in version control for shared settings, but exclude any files with secrets
+# If you add secrets to terraform.tfvars, exclude it instead with: terraform.tfvars
+
+# Secret files - Add your specific secret files here
+#secrets.tfvars
+# Generic patterns to catch credential files
+**/*[cC]redential*.txt
+**/*[cC]redential*.json
+**/*[sS]ecret*.txt
+**/*[sS]ecret*.json
+**/*[aA]pp[rR]eg*.txt
+
+# CLI configuration files
+.terraformrc
+terraform.rc
+
+# Local .terraform directories
+**/.terraform/*
+
+# Terraform lock file
+.terraform.lock.hcl
+
+# Terraform plan output
+tfplan
+
+# Azure credentials
+.azure/
+# Ignore Azure application registration details file anywhere in the codebase
+**/AzureAppRegistrationDetails.txt
+# Original path-specific ignore (redundant but kept for backwards compatibility)
+WorkTracking/OneTimeActivities/AzureAppRegistrationDetails.txt
+
+# Editor specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS specific files
+.DS_Store
+Thumbs.db

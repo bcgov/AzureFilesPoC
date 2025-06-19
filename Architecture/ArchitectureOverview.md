@@ -4,13 +4,31 @@
 
 This architecture supports the evaluation of Azure Files with optional integration to Azure Blob Storage. It is designed to ensure secure, performant, and compliant access to large media files (e.g., video/audio) from both on-premises and cloud environments.
 
+### Hub-and-Spoke Architecture Alignment
+
+This design aligns with the BC Government's implementation of the Cloud Adoption Framework (CAF) hub-and-spoke network topology. In this model:
+
+- The **hub** is the central point of connectivity to the on-premises network
+- The **spoke** is the virtual network (VNET) that connects to the hub, containing workload-specific resources
+- This model centralizes shared services in the hub while providing isolation for workloads in the spokes
+
+The BC Government has implemented this using the modern Virtual WAN (vWAN) architecture, where each Project Set is provisioned with a spoke Virtual Network (VNet) that connects to the Virtual Hub (vHub). 
+
+In our PoC architecture:
+- The spoke VNet contains the Azure Files shares, Blob Storage, and other related Azure resources
+- These resources connect to on-premises environments through the hub's connectivity services
+- Private endpoints in the spoke provide secure access to storage resources
+- Network security groups and other controls can be applied at the spoke level
+
+For more details on the BC Government's Azure landing zone architecture, see the [BC Government's Azure Landing Zone Overview](https://developer.gov.bc.ca/docs/default/component/public-cloud-techdocs/azure/get-started-with-azure/bc-govs-azure-landing-zone-overview/#monitoring-and-logging).
+
 ## Architecture Diagram
 
 
 ![azure files express route drawio](https://github.com/user-attachments/assets/403dafc8-8523-4eb2-b8a2-3e9b91a4f8ab)
 
 
-This diagram illustrates the hybrid connectivity model using VPN and ExpressRoute, with Azure Files accessed via Private Endpoint and optional integration with Azure Blob Storage for tiering, leveraging a Hub-Spoke network topology.
+This diagram illustrates the hybrid connectivity model using VPN and ExpressRoute, with Azure Files accessed via Private Endpoint and optional integration with Azure Blob Storage for tiering.
 
 ## Components
 
@@ -23,7 +41,6 @@ This diagram illustrates the hybrid connectivity model using VPN and ExpressRout
 | Azure Storage Account | The foundational Azure service that **hosts** Azure Files shares and optionally Blob Storage containers. All Azure Files shares are deployed within a Storage Account. For this PoC, `StorageV2` (general-purpose v2) or `FileStorage` (for Premium) `account_kind` will be configured. |
 | Azure Blob Storage (Hot/Cool/Archive) | Used for storing large, infrequently accessed **block blobs** with lifecycle-based tiering. When files are moved from Azure Files to Blob Storage for cost optimization, they become block blobs. |
 | Azure File Sync | Synchronizes file shares between on-premises Windows Servers and Azure File Shares, enabling distributed access and caching. **Note:** For a hybrid approach to Azure File Sync that aims to reduce traffic on the ExpressRoute Circuit for less sensitive file shares, **consultation with an OCIO security architect** will be required. |
-| Azure Virtual Machines (VMs) | Compute resources within Azure accessing Azure Files shares. |
 
 ### Networking & Connectivity
 
@@ -41,7 +58,7 @@ This diagram illustrates the hybrid connectivity model using VPN and ExpressRout
 | UDR (User-Defined Routes) | Custom routing tables applied to subnets to direct traffic through specific next hops (e.g., Azure Firewall) instead of default Azure routing. **Note:** Due to BC Government policies, teams are typically not permitted to create their own UDRs; this will likely require collaboration with the OCIO Platform team to connect the project VNet to the required routes. |
 | **Azure Firewall** | A managed, cloud-based network security service deployed in the Hub VNet. It provides centralized network egress filtering, NAT rules, and threat intelligence to protect Azure Virtual Network resources and control traffic between VNets and to the internet. |
 
-For a detailed comparison of network connectivity methods—including VPN, ExpressRoute, and Private Endpoints—see [Azure Files Network Connectivity Options](AzureFilesNetworkConnectivityOptionsAnalysis.md).
+For a detailed comparison of network connectivity methods—including VPN, ExpressRoute, and Private Endpoints—see [Azure Files Network Connectivity Options](./OptionsAnalysis/AzureFilesNetworkConnectivityOptionsAnalysis.md).
 
 [Draw.io Version](azure%20files%20express%20route.drawio)
 This link points to the `.drawio` source file for the architecture diagram. Ensure that the file `azure files express route.drawio` exists in the same directory as your markdown file. If you want to provide access to the editable diagram (not just the PNG image), this link is correct.
@@ -55,6 +72,32 @@ This link points to the `.drawio` source file for the architecture diagram. Ensu
 | Azure Cost Management | For tracking, reporting, and forecasting storage and other Azure resource costs to ensure cost optimization. |
 | **Connection Monitor** | A network performance monitoring service that tracks connectivity latency and packet loss between Azure resources and to external endpoints. |
 | **Policy Analytics** | Used to analyze the effectiveness and compliance of Azure Policies applied across your environment. |
+
+#### Joint Responsibility Model for Monitoring
+
+In accordance with BC Government's Cloud Adoption Framework (CAF), monitoring and logging follows a shared responsibility model leveraging centralized components:
+
+- **Core CAF Monitoring Components**:
+  - Azure Monitor
+  - Azure Activity Logs
+  - Azure Metrics
+  - Centralized Log Analytics Workspace
+
+- **Project Team Responsibilities**:
+  - Configure resource-specific monitoring for Azure Files and Blob Storage
+  - Set up appropriate diagnostic settings to capture access patterns, performance metrics, and security events
+  - Establish and maintain alerts for critical storage events
+  - Consider implementing Azure Monitor Baseline Alerts (AMBA) as a starting point
+  - Create custom Azure Dashboards to visualize storage metrics and logs
+  
+- **Central Platform Team Responsibilities**:
+  - Provide centralized Log Analytics workspaces
+  - Maintain platform-level monitoring for shared infrastructure
+  - Set baseline security monitoring requirements
+
+For this PoC, we'll evaluate both standard Storage Insights and custom monitoring approaches to ensure proper visibility into Azure Files performance, capacity, and access patterns.
+  
+For complete implementation details, see the [BC Government's Azure Landing Zone Monitoring and Logging Guidelines](https://developer.gov.bc.ca/docs/default/component/public-cloud-techdocs/azure/get-started-with-azure/bc-govs-azure-landing-zone-overview/#monitoring-and-logging)
 
 ### Identity & Access Management
 

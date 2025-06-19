@@ -1,8 +1,38 @@
 # Terraform Resources for Azure Files PoC Architecture
 
+[https://developer.gov.bc.ca/docs/default/component/public-cloud-techdocs/azure/best-practices/iac-and-ci-cd/](https://developer.gov.bc.ca/docs/default/component/public-cloud-techdocs/azure/best-practices/iac-and-ci-cd/)
 This document provides Terraform HCL (HashiCorp Configuration Language) examples for provisioning the Azure resources outlined in the Azure Files PoC Architecture Overview. These examples are designed to be a starting point and should be customized with your specific naming conventions, regions, and configurations.
 
 > **Note:** For government-specific policies regarding User-Defined Routes (UDRs) and Azure File Sync, always consult with platform and security teams as mentioned in the architecture overview.
+
+## Required Terraform Providers
+
+The following Terraform providers are required to deploy these resources:
+
+```terraform
+terraform {
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "~> 3.80.0" # Use latest compatible version
+    }
+    azapi = {
+      source  = "azure/azapi"
+      version = "~> 1.9.0"  # Required for creating subnets with NSGs in BC Gov Azure Landing Zones
+    }
+  }
+}
+
+provider "azurerm" {
+  features {}
+  # Authentication is typically handled through Azure CLI or environment variables
+  # Service principal authentication is only needed for CI/CD scenarios
+}
+
+provider "azapi" {
+  # AzAPI provider typically uses the same authentication as AzureRM
+}
+```
 
 ## Preconditions
 
@@ -24,6 +54,18 @@ Before you can deploy these Terraform configurations, ensure you have the follow
 5. **Permissions**: The Azure identity used by Terraform (your user account or Service Principal) must have sufficient permissions to create, update, and delete all the resources defined in these Terraform configurations (e.g., Contributor role at the subscription or resource group level).
 
 6. **Git** (Optional but Recommended): For version control of your Terraform code, Git is highly recommended.
+
+## Important Considerations for BC Government Azure Landing Zones
+
+### Azure Policy and Subnet Creation
+
+The BC Government Azure Landing Zones implement an Azure Policy that requires every subnet to have an associated Network Security Group (NSG) for security controls compliance. Standard Terraform resources don't support creating subnets with an associated NSG in a single step. 
+
+For subnet creation, rather than using the standard `azurerm_subnet` resource, this sample uses the `azapi_resource` from the AzAPI Terraform Provider when creating subnets with NSGs. This approach accommodates the Azure Policy requirements.
+
+### Private Endpoints and DNS Integration
+
+When creating Private Endpoints, be aware that Azure Policy in the landing zones will automatically create DNS zone group associations. To avoid Terraform attempting to remove these associations on subsequent runs, all Private Endpoint resources include a `lifecycle` block with `ignore_changes` for the `private_dns_zone_group` property.
 
 ## 1. Azure Resource Group
 
@@ -50,6 +92,7 @@ resource "azurerm_virtual_network" "vnet_hub" {
   resource_group_name = azurerm_resource_group.rg_poc.name
 }
 
+# Note: Gateway subnet can use standard azurerm_subnet as it's exempt from NSG requirement
 resource "azurerm_subnet" "subnet_gateway" {
   name                 = "GatewaySubnet" # This name is reserved for VPN/ExpressRoute Gateways
   resource_group_name  = azurerm_resource_group.rg_poc.name
@@ -57,6 +100,7 @@ resource "azurerm_subnet" "subnet_gateway" {
   address_prefixes     = ["10.100.0.0/27"] # Must be /27 or larger
 }
 
+# Note: Azure Firewall subnet can use standard azurerm_subnet as it's exempt from NSG requirement
 resource "azurerm_subnet" "subnet_firewall" {
   name                 = "AzureFirewallSubnet" # This name is reserved for Azure Firewall
   resource_group_name  = azurerm_resource_group.rg_poc.name
@@ -111,21 +155,67 @@ resource "azurerm_virtual_network" "vnet_spoke" {
 }
 
 # Subnet for Azure Files Private Endpoint (and potentially VMs accessing it)
-resource "azurerm_subnet" "subnet_storage_workload" {
-  name                 = "snet-storage-workload"
-  resource_group_name  = azurerm_resource_group.rg_poc.name
-  virtual_network_name = azurerm_virtual_network.vnet_spoke.name
-  address_prefixes     = ["10.200.0.0/24"]
-  # Optional: Enable private endpoint network policies if required for specific NSG rules
-  private_endpoint_network_policies_enabled = true
+# Using AzAPI provider to comply with BC Government Azure Policy requiring NSG association
+# First, create the NSG that will be associated with the subnet
+resource "azurerm_network_security_group" "nsg_storage_workload" {
+  name                = "nsg-snet-storage-workload"
+  location            = azurerm_resource_group.rg_poc.location
+  resource_group_name = azurerm_resource_group.rg_poc.name
+}
+
+# Then use AzAPI to create the subnet with NSG in a single step
+resource "azapi_resource" "subnet_storage_workload" {
+  type      = "Microsoft.Network/virtualNetworks/subnets@2023-04-01"
+  name      = "snet-storage-workload"
+  parent_id = azurerm_virtual_network.vnet_spoke.id
+  
+  # Prevent race conditions when creating/updating the VNet and subnet simultaneously
+  locks = [
+    azurerm_virtual_network.vnet_spoke.id
+  ]
+
+  body = jsonencode({
+    properties = {
+      addressPrefix = "10.200.0.0/24"
+      privateEndpointNetworkPolicies = "Disabled"
+      privateLinkServiceNetworkPolicies = "Enabled"
+      networkSecurityGroup = {
+        id = azurerm_network_security_group.nsg_storage_workload.id
+      }
+    }
+  })
+
+  response_export_values = ["*"]
 }
 
 # Subnet for Azure Virtual Machines (if separate from storage workload)
-resource "azurerm_subnet" "subnet_vms" {
-  name                 = "snet-vms"
-  resource_group_name  = azurerm_resource_group.rg_poc.name
-  virtual_network_name = azurerm_virtual_network.vnet_spoke.name
-  address_prefixes     = ["10.200.1.0/24"]
+# Using AzAPI provider to comply with BC Government Azure Policy requiring NSG association
+resource "azurerm_network_security_group" "nsg_vms" {
+  name                = "nsg-snet-vms"
+  location            = azurerm_resource_group.rg_poc.location
+  resource_group_name = azurerm_resource_group.rg_poc.name
+}
+
+resource "azapi_resource" "subnet_vms" {
+  type      = "Microsoft.Network/virtualNetworks/subnets@2023-04-01"
+  name      = "snet-vms"
+  parent_id = azurerm_virtual_network.vnet_spoke.id
+  
+  # Prevent race conditions when creating/updating the VNet and subnet simultaneously
+  locks = [
+    azurerm_virtual_network.vnet_spoke.id
+  ]
+
+  body = jsonencode({
+    properties = {
+      addressPrefix = "10.200.1.0/24"
+      networkSecurityGroup = {
+        id = azurerm_network_security_group.nsg_vms.id
+      }
+    }
+  })
+
+  response_export_values = ["*"]
 }
 ```
 
@@ -280,7 +370,7 @@ resource "azurerm_private_endpoint" "pe_azurefiles" {
   name                = "pe-azurefiles-poc"
   location            = azurerm_resource_group.rg_poc.location
   resource_group_name = azurerm_resource_group.rg_poc.name
-  subnet_id           = azurerm_subnet.subnet_storage_workload.id # Subnet in Spoke VNet
+  subnet_id           = azapi_resource.subnet_storage_workload.id # Updated to reference the AzAPI-created subnet
 
   private_service_connection {
     name                           = "psc-azurefiles"
@@ -289,10 +379,19 @@ resource "azurerm_private_endpoint" "pe_azurefiles" {
     subresource_names              = ["file"] # Crucial for Azure Files
   }
 
-  # Ensure the private endpoint automatically creates/updates DNS entries
+  # Optional: Specify DNS Zone Group if using custom DNS integration
+  # Note: BC Gov Landing Zone policies may automatically associate private endpoints with DNS zones
   private_dns_zone_group {
     name                 = "default"
     private_dns_zone_ids = [azurerm_private_dns_zone.pdz_file.id]
+  }
+  
+  # Prevent Terraform from removing the DNS Zone Group associations created by Azure Policy
+  lifecycle {
+    ignore_changes = [
+      # Ignore changes to private_dns_zone_group as Azure Policy may update it automatically
+      private_dns_zone_group,
+    ]
   }
 }
 ```
@@ -388,10 +487,8 @@ resource "azurerm_network_security_group" "nsg_storage_workload" {
   resource_group_name = azurerm_resource_group.rg_poc.name
 }
 
-resource "azurerm_subnet_network_security_group_association" "nsg_storage_workload_association" {
-  subnet_id                 = azurerm_subnet.subnet_storage_workload.id
-  network_security_group_id = azurerm_network_security_group.nsg_storage_workload.id
-}
+# Note: The NSG association is now handled within the azapi_resource for the subnet
+# No separate azurerm_subnet_network_security_group_association needed
 
 resource "azurerm_network_security_rule" "allow_smb" {
   name                        = "AllowSMBFromHubAndOnPrem"
@@ -419,7 +516,7 @@ resource "azurerm_network_security_rule" "allow_private_endpoint_access" {
   source_port_range           = "*"
   destination_port_range      = "*"
   source_address_prefix       = azurerm_virtual_network.vnet_spoke.address_space[0] # From within Spoke VNet
-  destination_address_prefix  = azurerm_subnet.subnet_storage_workload.address_prefixes[0] # To the Private Endpoint Subnet
+  destination_address_prefix  = jsondecode(azapi_resource.subnet_storage_workload.body).properties.addressPrefix # To the Private Endpoint Subnet
   resource_group_name         = azurerm_resource_group.rg_poc.name
   network_security_group_name = azurerm_network_security_group.nsg_storage_workload.name
 }
@@ -466,7 +563,7 @@ resource "azurerm_firewall_network_rule_collection" "fw_network_rules" {
   rule {
     name                  = "Allow_OnPrem_to_Spoke_SMB"
     source_addresses      = ["YOUR_ON_PREM_IP_RANGE"]
-    destination_addresses = [azurerm_subnet.subnet_storage_workload.address_prefixes[0]]
+    destination_addresses = [jsondecode(azapi_resource.subnet_storage_workload.body).properties.addressPrefix]
     destination_ports     = ["445"]
     protocols             = ["TCP"]
   }
@@ -502,7 +599,7 @@ resource "azurerm_route_table" "spoke_route_table" {
 }
 
 resource "azurerm_subnet_route_table_association" "spoke_subnet_route_table_association" {
-  subnet_id      = azurerm_subnet.subnet_storage_workload.id
+  subnet_id      = azapi_resource.subnet_storage_workload.id
   route_table_id = azurerm_route_table.spoke_route_table.id
 }
 
@@ -557,7 +654,6 @@ resource "azurerm_network_connection" "er_connection" {
   express_route_circuit_peering_id = "/subscriptions/YOUR_SUBSCRIPTION_ID/resourceGroups/YOUR_ER_RG/providers/Microsoft.Network/expressRouteCircuits/YOUR_ER_CIRCUIT_NAME/peerings/AzurePrivatePeering"
 }
 */
-```
 
 
 ### Example VPN Connection
@@ -611,3 +707,93 @@ resource "azurerm_storage_sync_cloud_endpoint" "afs_cloud_endpoint" {
 # Terraform cannot directly manage the installation of the agent on an on-premises server.
 
 ```
+
+## CI/CD Integration for Terraform Deployment
+
+This section provides guidance on implementing CI/CD for Terraform in the BC Government Azure environment.
+
+### Authentication Options
+
+#### 1. GitHub Actions with OpenID Connect (OIDC)
+
+For GitHub Actions, use OIDC authentication instead of long-lived service principal credentials:
+
+```yaml
+# Example GitHub workflow snippet for Terraform with OIDC
+name: 'Terraform Deploy'
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  id-token: write # Required for OIDC
+  contents: read
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+    
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+      
+    - name: Terraform Init
+      run: terraform init
+      
+    - name: Terraform Plan
+      run: terraform plan -out=tfplan
+      
+    - name: Terraform Apply
+      if: github.event_name == 'push'
+      run: terraform apply -auto-approve tfplan
+```
+
+#### 2. Self-Hosted GitHub Runners
+
+For accessing resources not available to public runners (like private storage or databases), BC Government provides an Azure Verified Module for self-hosted runners. Reference the sample implementation at the [Azure Landing Zone Samples repository](https://github.com/bcgov/azure-lz-samples/tree/main/tools/cicd_self_hosted_agents/).
+
+#### 3. Azure DevOps with Managed DevOps Pools
+
+If using Azure DevOps, leverage Managed DevOps Pools through the sample implementation available in the [Azure Landing Zone Samples repository](https://github.com/bcgov/azure-lz-samples/tree/main/tools/cicd_managed_devops_pools/).
+
+### Best Practices for Terraform in CI/CD
+
+1. **Environment Separation**: Use different variable files for different environments (dev, test, prod)
+
+2. **Tag Management**: Always use `lifecycle` blocks with `ignore_changes` for tags that might be modified by Azure policies:
+   ```terraform
+   lifecycle {
+     ignore_changes = [
+       tags["CreatedBy"],
+       tags["CreatedOn"]
+     ]
+   }
+   ```
+
+3. **State Management**: Use remote state storage in Azure Storage Account with state locking enabled:
+   ```terraform
+   terraform {
+     backend "azurerm" {
+       resource_group_name   = "rg-terraform-state"
+       storage_account_name  = "sterraformstatepoc"
+       container_name        = "tfstate"
+       key                   = "azurefiles.terraform.tfstate"
+     }
+   }
+   ```
+
+4. **Cross-Subscription Deployment**: If deploying runners in a different subscription than resources, ensure firewall rules are configured to allow cross-subscription access.
+
+5. **Secure Variables**: Never store sensitive variables in version control. Use GitHub Secrets, Azure KeyVault, or Azure DevOps variable groups.

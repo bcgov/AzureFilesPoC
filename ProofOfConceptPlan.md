@@ -37,7 +37,7 @@ Evaluate Azure Files (and optionally Azure Blob Storage with lifecycle managemen
 - Demonstrating responsible stewardship of taxpayer resources (improve public value delivery)
 
 ## ✅ Azure Files PoC Architecture
-See [Azure Files PoC Architecture Overview](ArchitectureOverview.md)
+See [Azure Files PoC Architecture Overview](/Architecture/ArchitectureOverview.md)
 
 ## ✅ Evaluation Criteria
 ### 1. File Access & Management
