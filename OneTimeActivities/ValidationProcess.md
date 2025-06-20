@@ -8,8 +8,13 @@ This document provides step-by-step guidance for validating the end-to-end CI/CD
 
 Before following this validation guide, ensure you have completed:
 
-1. [Application Registration for Azure](RegisterApplicationInAzureAndOICDInGithub.md) - The registration process must be completed up to Step 4
-2. [GitHub Secrets Configuration](RegisterApplicationInAzureAndOICDInGithub.md#step-4-store-credentials-as-github-secrets) - All required secrets must be stored in GitHub
+1. [Application Registration for Azure](RegisterApplicationInAzureAndOIDC/README.md) - The registration process must be completed up to Step 4
+2. [GitHub Secrets Configuration](RegisterApplicationInAzureAndOIDC/README.md#4-prepare-and-store-github-secrets) - All required secrets must be stored in GitHub: (step 5 was completed)
+   - `AZURE_CLIENT_ID` - From the application registration
+   - `AZURE_TENANT_ID` - Your Azure tenant ID
+   - `AZURE_SUBSCRIPTION_ID` - Your Azure subscription ID
+   
+   You can verify these secrets are configured by checking your credentials file at `.env/azure-credentials.json` under the `github.secrets` section.
 3. Basic familiarity with GitHub Actions and Terraform
 
 ## Overview of Validation Process
@@ -21,11 +26,13 @@ This validation process follows BC Government best practices by ensuring all com
 3. **Terraform Validation** - Confirm Terraform can create simple resources
 4. **CI/CD Workflow Validation** - Ensure the complete pipeline functions correctly
 
+
+
 ## Step 1: Validate Azure Authentication
 
 The first step is to validate basic authentication to Azure:
-
-1. Navigate to the **Actions** tab in your GitHub repository
+1. open  https://github.com/bcgov/AzureFilesPoC/settings
+2. Navigate to the **Actions** tab in your GitHub repository https://github.com/bcgov/AzureFilesPoC/actions
 2. Select the **Azure Login Validation** workflow
 3. Click **Run workflow** and use the default settings (OIDC authentication)
 4. Wait for the workflow to complete and verify:
@@ -37,30 +44,52 @@ The first step is to validate basic authentication to Azure:
 
 This step validates that Terraform can successfully create resources:
 
-### Option A: Local Validation
+### Step 2A: Local Validation
 
-For testing locally on your development machine:
+#### Purpose
+
+The local validation step ensures your development environment is correctly configured to authenticate with Azure and use Terraform. It validates that:
+
+- Your `.env/azure-credentials.json` file contains the required secrets
+- Azure CLI authentication works with your credentials
+- Terraform can initialize, plan, apply, and destroy resources locally
+- Resource creation and cleanup function as expected
+
+This step helps catch configuration or permission issues before running workflows in CI/CD.
+
+
+First, test locally on your development machine using the [Terraform Validation Module](/terraform/validation):
 
 ```shell
-# Navigate to the validation directory
-cd terraform/validation
+# Run the authentication validation script
+./terraform/validation/localhost/validate_authentication.sh
 
-# Initialize Terraform
-terraform init
-
-# Run a plan to see what would be created
-terraform plan
-
-# Apply the configuration (creates the resource group)
-terraform apply
-
-# When finished testing, clean up
-terraform destroy
+# Run the Terraform validation script
+./terraform/validation/localhost/validate_terraform.sh
 ```
 
-### Option B: GitHub Actions Validation
+The scripts above handle:
+1. Extracting credentials from your `.env/azure-credentials.json` file
+2. Authenticating with Azure CLI
+3. Running Terraform init, plan, apply
+4. Verifying resource creation
+5. Cleaning up resources
 
-For validating the complete CI/CD pipeline:
+For detailed instructions and troubleshooting, see the [Local Validation README](/terraform/validation/localhost/README.md).
+
+### Step 2B: GitHub Actions Validation
+
+#### Purpose
+The GitHub Actions validation step ensures your CI/CD pipeline can authenticate with Azure and execute Terraform workflows using the configured secrets. It validates that:
+
+- OIDC authentication works in the GitHub Actions environment
+- The workflow can access and use the required secrets
+- Terraform can initialize, plan, apply, and destroy resources via GitHub Actions
+- Resource creation and cleanup are successful in a non-local context
+
+This step confirms that your automation works as expected in the same environment used for production deployments.
+
+After successful local validation, proceed to validate the complete CI/CD pipeline using the same [Terraform Validation Module](/terraform/validation):
 
 1. Navigate to the **Actions** tab in your GitHub repository
 2. Select the **Terraform Validation Workflow**
@@ -70,7 +99,12 @@ For validating the complete CI/CD pipeline:
 4. Wait for the workflow to complete and verify:
    - All steps show green checkmarks
    - The "Verify Resource Creation" step shows "Succeeded"
+   - You can see the blob URL in the workflow outputs
    - If cleanup is enabled, the resources are removed after validation
+
+This validation uses OIDC authentication with your GitHub secrets to authenticate with Azure.
+
+For detailed instructions and troubleshooting, see the [GitHub Actions Validation README](/terraform/validation/github/README.md).
 
 ## What This Validation Tests
 
@@ -88,11 +122,13 @@ This validation process tests multiple components of your Azure automation:
 
 Your validation is considered successful when all these criteria are met:
 
+- ✅ Required GitHub secrets are properly configured and tracked
 - ✅ Authentication to Azure succeeds using OIDC
 - ✅ GitHub Actions workflows complete without errors
 - ✅ Terraform can create and destroy resources
 - ✅ Service principal has appropriate permissions
 - ✅ All validation resources are properly cleaned up
+- ✅ Credentials file accurately reflects the current state
 
 ## Applying This Process to Future Development
 
