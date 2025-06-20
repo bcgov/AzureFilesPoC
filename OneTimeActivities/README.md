@@ -1,45 +1,54 @@
 # One-Time Activities for Azure Files PoC
 
-This directory contains documentation for one-time setup activities required for the Azure Files Proof of Concept project.
+This directory contains documentation and scripts for one-time onboarding activities required for the Azure Files Proof of Concept project.
 
 ## Contents
 
-- [RegisterApplicationInAzure.md](RegisterApplicationInAzure.md) - Steps to register an application in Azure AD for GitHub Actions authentication
-- [github-actions-setup.md](github-actions-setup.md) - Configuration steps for GitHub Actions workflows
-- [ValidationProcess.md](ValidationProcess.md) - Steps to validate the end-to-end CI/CD pipeline after completing the Azure application registration
+- [RegisterApplicationInAzureAndOIDC/README.md](RegisterApplicationInAzureAndOIDC/README.md) – Main onboarding and OIDC setup guide
+- [github-actions-setup.md](github-actions-setup.md) – Configuration steps for GitHub Actions workflows
+- [ValidationProcess.md](ValidationProcess.md) – Steps to validate the end-to-end CI/CD pipeline after onboarding
 
-## Purpose
+## Quick Start: Onboarding Steps
 
-These activities only need to be performed once during the project setup. They are typically prerequisites for other ongoing work and are documented here for reference.
+The onboarding process is automated and modularized into 5 robust, idempotent scripts for both Unix and Windows. Each script updates the shared `.env/azure-credentials.json` file incrementally and safely.
 
-## Process
+**Run each script in order, verifying each step before proceeding:**
 
-For each one-time activity:
+### Unix/macOS
+```bash
+./RegisterApplicationInAzureAndOIDC/scripts/unix/step1_register_app.sh
+./RegisterApplicationInAzureAndOIDC/scripts/unix/step2_grant_permissions.sh
+./RegisterApplicationInAzureAndOIDC/scripts/unix/step3_configure_oidc.sh
+./RegisterApplicationInAzureAndOIDC/scripts/unix/step4_prepare_github_secrets.sh
+./RegisterApplicationInAzureAndOIDC/scripts/unix/step5_add_github_secrets_cli.sh
+```
 
-1. Follow the documented steps carefully **one at a time**
-2. **Verify each step in the Azure portal or other relevant system before proceeding to the next step**
-3. Record the completion date, status, and results in the document's Progress Tracking table
-4. Uncomment the next step only after successfully completing the current step
-5. Verify the entire activity was successful before proceeding with dependent tasks
+### Windows (PowerShell)
+```powershell
+.\RegisterApplicationInAzureAndOIDC\scripts\windows\step1_register_app.ps1
+.\RegisterApplicationInAzureAndOIDC\scripts\windows\step2_grant_permissions.ps1
+.\RegisterApplicationInAzureAndOIDC\scripts\windows\step3_configure_oidc.ps1
+.\RegisterApplicationInAzureAndOIDC\scripts\windows\step4_prepare_github_secrets.ps1
+.\RegisterApplicationInAzureAndOIDC\scripts\windows\step5_add_github_secrets_cli.ps1
+```
 
-## Verification and Validation
+- Each script is safe to re-run and will not duplicate entries.
+- All scripts dynamically resolve the project root and credentials file location.
+- The onboarding process is fully documented in [RegisterApplicationInAzureAndOIDC/README.md](RegisterApplicationInAzureAndOIDC/README.md).
 
-After completing the application registration process:
+## Transition to Validation
 
-1. Use the [Azure Login Test workflow](../../.github/workflows/azure-login-test.yml) to verify basic authentication
-2. Use the [Terraform Validation workflow](../../.github/workflows/terraform-validation.yml) to validate the end-to-end CI/CD pipeline
-3. Follow the complete [Validation Process](ValidationProcess.md) to ensure all components work together
-4. Apply this validation pattern to all subsequent resource creation in the PoC
+After completing all 5 onboarding scripts and confirming your GitHub secrets are set, proceed to the validation phase:
+
+1. Use the [Azure Login Validation workflow](../../.github/workflows/azure-login-validation.yml) to verify OIDC authentication.
+2. Use the [Terraform Validation workflow](../../.github/workflows/terraform-validation.yml) to validate the end-to-end CI/CD pipeline.
+3. Follow the complete [Validation Process](ValidationProcess.md) for step-by-step instructions and troubleshooting.
 
 ## Security Considerations
 
-Some of these activities involve creating security principals or managing credentials:
-
-1. Always follow the principle of least privilege
-2. Document all security-related changes completely
-3. Validate each step before proceeding to ensure security controls are properly implemented
-4. Record all verification steps performed
-5. Follow the step-by-step approach to ensure nothing is missed
+- All onboarding scripts follow the principle of least privilege and update only the required sections of the credentials file.
+- No secrets are ever written to version control; `.env/azure-credentials.json` is git-ignored.
+- All steps are idempotent and safe to repeat.
 
 ## Why the Step-by-Step Approach?
 
@@ -50,3 +59,11 @@ The step-by-step approach with verification between steps ensures:
 3. **Error Prevention**: Problems are caught early rather than at the end of a long process
 4. **Documentation**: The process is fully documented as you go
 5. **Knowledge Transfer**: The process can be understood and replicated by others
+
+## Progress Tracking
+
+Update the Progress Tracking table in [RegisterApplicationInAzureAndOIDC/README.md](RegisterApplicationInAzureAndOIDC/README.md) as you complete each step.
+
+## Next Steps
+
+After onboarding, always validate your setup before proceeding with any infrastructure automation. The validation process is the authoritative pattern for all future onboarding and resource creation in this PoC.
