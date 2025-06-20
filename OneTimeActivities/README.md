@@ -40,9 +40,10 @@ The onboarding process is automated and modularized into 5 robust, idempotent sc
 
 After completing all 5 onboarding scripts and confirming your GitHub secrets are set, proceed to the validation phase:
 
-1. Use the [Azure Login Validation workflow](../../.github/workflows/azure-login-validation.yml) to verify OIDC authentication.
-2. Use the [Terraform Validation workflow](../../.github/workflows/terraform-validation.yml) to validate the end-to-end CI/CD pipeline.
-3. Follow the complete [Validation Process](ValidationProcess.md) for step-by-step instructions and troubleshooting.
+1. Follow the complete [Validation Process](ValidationProcess.md) for step-by-step instructions and troubleshooting.
+2. Use the [Azure Login Validation workflow](../../.github/workflows/azure-login-validation.yml) to verify OIDC authentication.
+3. Use the [Terraform Validation workflow](../../.github/workflows/terraform-validation.yml) to validate the end-to-end CI/CD pipeline.
+
 
 ## Security Considerations
 
