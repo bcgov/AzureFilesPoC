@@ -1,172 +1,219 @@
-/* 
+/*
  * Azure Files PoC - Terraform Validation Configuration
  * Purpose: Minimal Terraform configuration to validate CI/CD integration
  *
+ * Validation/Test Checklist:
+ * | Resource/Step                | Status   | Notes                        |
+ * |------------------------------|----------|------------------------------|
+ * | Resource Group                | ✅       | Tested and validated         |
+ * | Network Security Group (NSG)  | ✅       | Tested and validated         |
+ * | Subnet (with NSG association) | ✅       | Tested and validated         |
+ * | Storage Account               | ⬜       | Not yet tested               |
+ * | Blob Container                | ⬜       | Not yet tested               |
+ * | Test Blob file                | ⬜       | Not yet tested               |
+ *
  * Dependencies:
  *   - Authenticate with Azure using 'az login' (no client secret needed for OIDC/GitHub Actions)
- *   - Variable values are sourced from terraform.tfvars (see terraform.tfvars.template for structure)
- *   - If using service principal authentication, values can be provided in secrets.tfvars (see secrets.tfvars.template)
+ *   - Variable values are sourced from terraform.tfvars, populated from .env/azure_full_inventory.json
+ *   - If using service principal authentication, values can be provided in secrets.tfvars
+ *   - Requires AzAPI provider for subnet creation with NSG association due to Azure Policy
  *
- * Step 1:
- * This configuration creates only a simple resource group for validation.
- * It's designed to validate authentication, permissions, and workflows without 
- * creating any significant Azure resources or incurring costs.
- *
- * Step 2:
- * Uncomment and validate each resource in the following recommended sequence, skipping any that already exist in your environment:
- *   i.   Network Security Group (NSG) for validation subnet (create if not present)
- *   ii.  Subnet (using AzAPI, with NSG association, create in existing VNet)
- *   iii. Storage Account (with public network access disabled and network rules referencing the subnet)
- *   iv.  Blob Container (in the storage account)
- *   v.   Test Blob file (in the container)
- *
- *   Note: Do NOT create the VNet or resource group if they already exist. Reference them using data sources and variables populated from .env/azure-full-inventory.json and your tfvars files.
- *
- * This incremental approach helps identify policy or permission issues at each stage and ensures compliance with BC Gov Azure Landing Zone requirements.
+ * Note: Do NOT create the VNet or resource group if they exist. Use data sources and variables from .env/azure_full_inventory.json.
  */
 
-# Configure the Azure provider
+# Configure the Azure and AzAPI providers
 terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
       version = "~> 3.0"
     }
+    azapi = {
+      source  = "Azure/azapi"
+      version = "~> 1.0"
+    }
   }
-  
-  # We're keeping the backend as local for this validation module
-  # In a production setup, you would configure a remote backend
 }
 
 provider "azurerm" {
   features {}
 }
 
+provider "azapi" {}
+
 # Variables
-variable "location" {
+variable "dev_location" {
   description = "The Azure region for resources"
   type        = string
-  default     = "canadacentral"
 }
 
 variable "environment" {
   description = "Environment (dev, test, prod)"
   type        = string
-  default     = "dev"
 }
 
-# Variable declarations in `main.tf` inform Terraform about the input variables it should expect.
-# When a variable is declared in this way, Terraform can automatically assign its value from a corresponding entry in `terraform.tfvars` (or other variable definition files) if present.
-# This allows you to separate variable values from your configuration, making your code more reusable and easier to manage.
-variable "resource_group" {
+variable "dev_resource_group" {
   description = "The name of the resource group to use"
   type        = string
+  validation {
+    condition     = length(var.dev_resource_group) > 0
+    error_message = "Resource group name must not be empty."
+  }
 }
-# This variable is expected to be defined in terraform.tfvars or another tfvars file.
+
 variable "common_tags" {
   description = "Common tags to apply to resources"
   type        = map(string)
 }
 
-variable "vnet_name" {
+variable "dev_vnet_name" {
   description = "The name of the existing virtual network"
   type        = string
+  validation {
+    condition     = length(var.dev_vnet_name) > 0
+    error_message = "VNet name must not be empty."
+  }
 }
 
-variable "subnet_name" {
+# Note: The validation subnet uses local values for name and prefix.
+# These variables are not used for the validation subnet, but may be used by other modules or future code.
+variable "dev_subnet_name" {
   description = "The name of the subnet to create in the existing VNet"
+  type        = string
+  default     = ""
+}
+
+# Note: The validation subnet uses a local value for its address prefix.
+# This variable is not used for the validation subnet, but may be used by other modules or future code.
+variable "dev_subnet_address_prefixes" {
+  description = "The address prefixes for the subnet"
+  type        = list(string)
+  default     = []
+}
+
+variable "dev_vnet_resource_group" {
+  description = "The resource group of the VNet"
+  type        = string
+  validation {
+    condition     = length(var.dev_vnet_resource_group) > 0
+    error_message = "VNet resource group name must not be empty."
+  }
+}
+
+variable "dev_subscription_name" {
+  description = "The name of the Azure subscription"
   type        = string
 }
 
-variable "subnet_address_prefixes" {
-  description = "The address prefixes for the subnet"
+variable "dev_subscription_id" {
+  description = "The ID of the Azure subscription"
+  type        = string
+}
+
+variable "dev_storage_account_name" {
+  description = "The name of the storage account for validation"
+  type        = string
+}
+
+variable "dev_file_share_name" {
+  description = "The name of the Azure File Share for validation"
+  type        = string
+}
+
+variable "dev_file_share_quota_gb" {
+  description = "Quota for the Azure File Share in GB"
+  type        = number
+}
+
+variable "dev_vnet_id" {
+  description = "The full Azure resource ID of the VNet"
+  type        = string
+}
+
+variable "dev_vnet_address_space" {
+  description = "The address space of the VNet"
   type        = list(string)
 }
 
-
+variable "dev_dns_servers" {
+  description = "DNS servers for the VNet"
+  type        = list(string)
+}
 
 # Local variables
 locals {
   project_prefix = "ag-pssg-azure-poc"
-  env = var.environment
-  rg_name = "rg-${local.project_prefix}-${local.env}"
-  st_name = lower(replace("st${local.project_prefix}${local.env}01", "-", ""))
-  sc_name = "sc-${local.project_prefix}-${local.env}-01"
+  env            = var.environment
+  rg_name        = "rg-${local.project_prefix}-${local.env}"
+  st_name        = lower(replace("st${local.project_prefix}${local.env}01", "-", ""))
+  sc_name        = "sc-${local.project_prefix}-${local.env}-01"
   validation_tags = {
     Project     = "Azure Files PoC"
     Environment = var.environment
     Purpose     = "Validation"
     Terraform   = "true"
   }
+  dev_subnet_name   = "snet-${local.project_prefix}-${local.env}-storage-pe"
+  # Validation subnet for storage private endpoint
+  # - /28 provides 16 IPs (11 usable in Azure) for validation only
+  # - Not for production workloads
+  # - Change prefix if overlapping with existing subnets
+  dev_subnet_prefix = ["10.46.73.128/28"]
+  nsg_name          = "nsg-${local.project_prefix}-${local.env}-01"
 }
 
-# Simple resource group for validation
+# Resource group for validation
 resource "azurerm_resource_group" "validation" {
   name     = local.rg_name
-  location = var.location
+  location = var.dev_location
   tags     = local.validation_tags
-  
-  # Lifecycle policy to prevent accidental deletion
+
   lifecycle {
     prevent_destroy = false
   }
 }
 
-# Uncomment the following resources one at a time for incremental validation.
-
 # Network Security Group (NSG) for validation subnet
-# Only the resource_group_name is required; subscription is determined by the provider configuration or your Azure CLI context.
 resource "azurerm_network_security_group" "validation" {
-  name                = "nsg-${local.project_prefix}-${local.env}-01"
-  location            = var.location
-  resource_group_name = var.resource_group
+  name                = local.nsg_name
+  location            = var.dev_location
+  resource_group_name = var.dev_resource_group
   tags                = var.common_tags
 }
 
-# Reference the existing VNet using a data block
-# NOTE: The Virtual Network (VNet) is not created by this module. It is expected to already exist as part of your environment (e.g., provided by your platform or landing zone). 
-# Only reference the existing VNet using a data source and variables. Do not attempt to create a new VNet here.
+# Reference the existing VNet
 data "azurerm_virtual_network" "existing" {
-  name                = var.vnet_name
-  resource_group_name = var.resource_group
+  name                = var.dev_vnet_name
+  resource_group_name = var.dev_vnet_resource_group
 }
 
-# Create a new subnet in the existing VNet
-resource "azurerm_subnet" "validation" {
-  name                 = var.subnet_name
-  resource_group_name  = var.resource_group
-  virtual_network_name = data.azurerm_virtual_network.existing.name
-  address_prefixes     = var.subnet_address_prefixes
+# Create subnet using AzAPI with NSG association
+#confirm creation checking azure vnet subnets here
+#https://portal.azure.com/#@bcgov.onmicrosoft.com/resource/subscriptions/d321bcbe-c5e8-4830-901c-dab5fab3a834/resourceGroups/d5007d-dev-networking/providers/Microsoft.Network/virtualNetworks/d5007d-dev-vwan-spoke/subnets
+#or terminal:  az network vnet subnet list --resource-group d5007d-dev-networking --vnet-name d5007d-dev-vwan-spoke -o table
+resource "azapi_resource" "storage_pe_subnet" {
+  type      = "Microsoft.Network/virtualNetworks/subnets@2023-04-01"
+  name      = local.dev_subnet_name
+  parent_id = data.azurerm_virtual_network.existing.id
+  locks     = [data.azurerm_virtual_network.existing.id]
+
+  body = jsonencode({
+    properties = {
+      addressPrefix = local.dev_subnet_prefix[0]
+      networkSecurityGroup = {
+        id = azurerm_network_security_group.validation.id
+      }
+      privateEndpointNetworkPolicies    = "Enabled"
+      privateLinkServiceNetworkPolicies = "Enabled"
+    }
+  })
+
+  response_export_values = ["*"]
 }
 
-# --- VNet creation block intentionally omitted ---
-# The following block is not used. VNet creation is managed outside this module.
-#use the one that comes with the subscription
-# resource "azurerm_virtual_network" "validation" {
-#   name                = "vnet-${local.project_prefix}-${local.env}-01"
-#   address_space       = ["10.10.0.0/16"]
-#   location            = azurerm_resource_group.validation.location
-#   resource_group_name = azurerm_resource_group.validation.name
-#   tags                = local.validation_tags
-# }
+# --- Commented resources for incremental validation ---
 
-# # Subnet with NSG association using AzAPI
-# resource "azapi_resource" "validation_subnet" {
-#   type      = "Microsoft.Network/virtualNetworks/subnets@2023-04-01"
-#   name      = "subnet-validation"
-#   parent_id = azurerm_virtual_network.validation.id
-#   body = jsonencode({
-#     properties = {
-#       addressPrefix = "10.10.1.0/24"
-#       networkSecurityGroup = {
-#         id = azurerm_network_security_group.validation.id
-#       }
-#     }
-#   })
-#   response_export_values = ["*"]
-# }
-
-# # Storage account for blob validation
+# Storage account for validation
 # resource "azurerm_storage_account" "validation" {
 #   name                     = local.st_name
 #   resource_group_name      = azurerm_resource_group.validation.name
@@ -177,19 +224,19 @@ resource "azurerm_subnet" "validation" {
 #   network_rules {
 #     default_action             = "Deny"
 #     bypass                     = ["AzureServices"]
-#     virtual_network_subnet_ids = [azapi_resource.validation_subnet.id]
+#     virtual_network_subnet_ids = [jsondecode(azapi_resource.storage_pe_subnet.output).id]
 #   }
 #   tags = local.validation_tags
 # }
 
-# # Container for blob validation
+# Container for blob validation
 # resource "azurerm_storage_container" "validation" {
 #   name                  = local.sc_name
 #   storage_account_name  = azurerm_storage_account.validation.name
 #   container_access_type = "private"
 # }
 
-# # Hello World blob for validation
+# Hello World blob for validation
 # resource "azurerm_storage_blob" "hello_world" {
 #   name                   = "hello-world.txt"
 #   storage_account_name   = azurerm_storage_account.validation.name
@@ -198,23 +245,59 @@ resource "azurerm_subnet" "validation" {
 #   source_content         = "Hello, World! This is a test file created by Terraform to validate GitHub Actions with OIDC authentication to Azure."
 # }
 
-# Outputs
+# Example private endpoint for storage
+# resource "azurerm_private_endpoint" "storage_pe" {
+#   name                = "pe-${local.st_name}"
+#   location            = azurerm_resource_group.validation.location
+#   resource_group_name = azurerm_resource_group.validation.name
+#   subnet_id           = jsondecode(azapi_resource.storage_pe_subnet.output).id
+#
+#   private_service_connection {
+#     name                           = "psc-${local.st_name}"
+#     private_connection_resource_id = azurerm_storage_account.validation.id
+#     subresource_names              = ["blob"]
+#     is_manual_connection           = false
+#   }
+#
+#   lifecycle {
+#     ignore_changes = [
+#       private_dns_zone_group, # Ignore policy-driven DNS zone associations
+#     ]
+#   }
+# }
+
+# Outputs for debugging and integration
 output "resource_group_name" {
   description = "The name of the validation resource group"
   value       = azurerm_resource_group.validation.name
 }
 
-# output "storage_account_name" {
-#   description = "The name of the validation storage account"
-#   value       = azurerm_storage_account.validation.name
-# }
+output "subnet_id" {
+  description = "The ID of the created subnet"
+  value       = jsondecode(azapi_resource.storage_pe_subnet.output).id
+}
 
-# output "blob_url" {
-#   description = "The URL of the hello-world blob"
-#   value       = "${azurerm_storage_account.validation.primary_blob_endpoint}${azurerm_storage_container.validation.name}/${azurerm_storage_blob.hello_world.name}"
-# }
+output "debug_subnet_name" {
+  description = "The name of the created subnet"
+  value       = local.dev_subnet_name
+}
 
-# output "validation_status" {
-#   description = "Validation status message"
-#   value       = "Terraform validation successful - CI/CD pipeline is working!"
-# }
+output "debug_subnet_resource_group_name" {
+  description = "The resource group name of the subnet"
+  value       = var.dev_resource_group
+}
+
+output "debug_subnet_virtual_network_name" {
+  description = "The virtual network name of the subnet"
+  value       = var.dev_vnet_name
+}
+
+output "debug_subnet_address_prefixes" {
+  description = "The address prefixes of the created subnet"
+  value       = local.dev_subnet_prefix
+}
+
+output "debug_nsg_id" {
+  description = "The ID of the associated NSG"
+  value       = azurerm_network_security_group.validation.id
+}
