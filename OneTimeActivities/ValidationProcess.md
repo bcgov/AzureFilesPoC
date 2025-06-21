@@ -53,6 +53,8 @@ After confirming that Azure authentication works via GitHub Actions, the next ph
 
 - **Step 2A: Localhost Validation** – Run scripts on your local machine to confirm that your credentials, Azure CLI, and Terraform setup can create and destroy resources in Azure. This helps catch local configuration or permission issues before relying on CI/CD.
 
+> **Note:** All onboarding, inventory, and tfvars automation scripts are available and supported for both Unix/macOS (Bash) and Windows (PowerShell). Use the appropriate script for your platform when performing local validation. See the `OneTimeActivities/GetAzureExistingResources/unix` and `windows` folders for details.
+
 For detailed instructions and troubleshooting for Step 2A, see the [Local Validation README](/terraform/validation/localhost/README.md). This document covers prerequisites, environment setup, script usage, expected outputs, and common issues encountered during local validation. It provides step-by-step guidance for running the authentication and Terraform validation scripts, interpreting results, and resolving errors.
 
 **NOTE:**. this approach instead of running terraform scripts through github, it will be using azure CLI and azure login then running scripts locally to debug them before going to github. 
@@ -83,11 +85,13 @@ This step helps catch configuration or permission issues before running workflow
 First, test locally on your development machine using the [Terraform Validation Module](/terraform/validation):
 
 ```shell
-# Run the authentication validation script
-./terraform/validation/localhost/validate_authentication.sh
+# Run the authentication validation script (Bash or PowerShell, depending on your OS)
+./terraform/validation/localhost/validate_authentication.sh   # Unix/macOS
+./terraform/validation/localhost/validate_authentication.ps1  # Windows
 
 # Run the Terraform validation script
-./terraform/validation/localhost/validate_terraform.sh
+./terraform/validation/localhost/validate_terraform.sh        # Unix/macOS
+./terraform/validation/localhost/validate_terraform.ps1       # Windows
 ```
 
 The scripts above handle:

@@ -78,6 +78,7 @@ terraform/
 - [Terraform with GitHub Actions Process](../Resources/TerraformWithGithubActionsProcess.md)
 - [GitHub Actions Resources](../Resources/GitHubActionsResourcesForAzureFilesPoC.md)
 - [Azure Pipelines Resources](../Resources/AzurePipelinesResources.md)
+- [Azure Resource Naming Conventions](../Resources/AzureResourceNamingConventions.md) - Standard naming patterns for all Azure resource types used in this project
 
 ---
 
@@ -110,77 +111,27 @@ terraform/
 
 ---
 
-## Configuration
+## Setup: Create and Populate Your terraform.tfvars File (Automated)
 
-1. Review and update `terraform.tfvars` with your specific values
-2. For sensitive values that shouldn't be in version control, create a `secrets.tfvars` file (it's in .gitignore)
+After running the inventory script for your platform (see below), a file `.env/azure_full_inventory.json` will be created containing a comprehensive inventory of your Azure resources.
 
----
+**Recommended: Automatically populate your tfvars files using the provided automation scripts:**
 
-## Deployment Steps
+- **Unix/macOS (Bash):**
+  ```bash
+  /OneTimeActivities/GetAzureExistingResources/unix/PopulateTfvarsFromDiscoveredResources.sh
+  ```
+- **Windows (PowerShell):**
+  ```powershell
+  .\OneTimeActivities\GetAzureExistingResources\windows\PopulateTfvarsFromDiscoveredResources.ps1
+  ```
 
-> **REMINDER: Never deploy resources without explicit consent and review**
+These scripts will read `.env/azure_full_inventory.json` and `.env/azure-credentials.json`, and automatically generate or update `terraform.tfvars` and `secrets.tfvars` with the correct values. This is the recommended, robust, and cross-platform approach.
 
-1. Initialize Terraform:
-   ```bash
-   terraform init
-   ```
-2. Plan your deployment (safe, creates no resources):
-   ```bash
-   terraform plan -out=tfplan
-   ```
-3. Review the plan output thoroughly with stakeholders.
-4. Apply the deployment (REQUIRES EXPLICIT APPROVAL):
-   ```bash
-   terraform apply tfplan
-   ```
+**Manual method (not recommended):**
+1. Copy `terraform.tfvars.template` to `terraform.tfvars`.
+2. Fill in the variable values using the data from `.env/azure_full_inventory.json` (see onboarding/automation documentation for mapping details).
+3. Do NOT include secrets or sensitive values in this file.
+4. Ensure `terraform.tfvars` is listed in `.gitignore`.
 
----
-
-## Cleanup
-
-To destroy all resources created by this Terraform configuration:
-```bash
-terraform destroy
-```
-
----
-
-## Security Notes
-
-- Never commit secrets to the repository
-- Use Workload Identity Federation for CI/CD authentication
-- The `terraform.tfvars` file should only contain non-sensitive configuration values
-- Create a `secrets.tfvars` file for sensitive values and add it to `.gitignore`
-- When using sensitive values in Terraform, use the `-var-file=secrets.tfvars` parameter
-- For BC Government security requirements and best practices, refer to:
-  - [Terraform Resources - BC Government Specific Requirements](../Resources/TerraformResourcesForAzurePoC.md#important-considerations-for-bc-government-azure-landing-zones)
-  - [GitHub Actions Security](../Resources/GitHubActionsResourcesForAzureFilesPoC.md#bc-government-requirements)
-  - [Azure Pipelines Security](../Resources/AzurePipelinesResources.md#security-considerations)
-
----
-
-## Resources Created
-
-This Terraform configuration creates:
-
-1. Resource Group
-2. Storage Account for Azure Files
-3. Azure File Share
-4. Virtual Network and Subnet with Service Endpoints
-5. Network rules for the storage account
-
----
-
-## Development & Validation Workflow Diagram
-
-```mermaid
-flowchart TD
-    A[Onboarding & OIDC Setup] --> B[Local Validation (Azure CLI & Terraform)]
-    B --> C{Validation Successful?}
-    C -- No --> B
-    C -- Yes --> D[Push to GitHub]
-    D --> E[GitHub Actions Workflow]
-    E --> F[OIDC Auth & Terraform Plan/Apply]
-    F --> G[Azure Resource Deployment]
-```
+This ensures your Terraform configuration references the correct, pre-existing Azure resources and keeps sensitive data out of version control.

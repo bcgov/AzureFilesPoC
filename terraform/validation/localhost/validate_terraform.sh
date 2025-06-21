@@ -19,6 +19,18 @@
 #   - Run from the project root or any subdirectory
 #
 # For more details, see validation/localhost/README.md
+#
+# NOTE: If you see an error like:
+#   Error: building account: could not acquire access token to parse claims: running Azure CLI: exit status 1: ERROR: AADSTS70043: The refresh token has expired or is invalid...
+#
+# This means your Azure CLI session has expired or is invalid. To fix:
+#   1. Run this command in your terminal:
+#        az login --scope https://graph.microsoft.com/.default
+#      (This will open a browser window for you to log in and refresh your credentials.)
+#   2. If you have multiple subscriptions, set the correct one:
+#        az account set --subscription "<your-subscription-id>"
+#   3. Re-run this Terraform validation script.
+#
 
 set -e
 
@@ -86,7 +98,15 @@ CURRENT_ACCOUNT=$(az account show --query id -o tsv 2>/dev/null || echo "")
 
 if [[ -z "$CURRENT_ACCOUNT" ]]; then
     echo -e "${RED}Not authenticated with Azure CLI.${NC}"
-    echo "Please run 'az login' in your terminal and authenticate as your user, then re-run this script."
+    echo "Please run 'az login --scope https://graph.microsoft.com/.default' in your terminal and authenticate as your user, then re-run this script."
+    exit 1
+fi
+
+# Check if the token is expired (simulate by running a simple az command)
+az account get-access-token --resource https://management.azure.com/ > /dev/null 2>&1
+if [[ $? -ne 0 ]]; then
+    echo -e "${RED}Your Azure CLI session has expired or is invalid.${NC}"
+    echo "Please run 'az login --scope https://graph.microsoft.com/.default' to re-authenticate, then re-run this script."
     exit 1
 fi
 
@@ -120,14 +140,10 @@ echo -e "${BLUE}Running Terraform plan...${NC}"
 # Executes a speculative plan to preview changes that Terraform will make to the infrastructure.
 # This command shows which resources will be created, updated, or destroyed, without applying any changes.
 # Useful for reviewing and validating infrastructure modifications before actual deployment.
-terraform plan -out=tfplan
+terraform plan -out=tfplan -var-file=../terraform.tfvars
 
 echo -e "${BLUE}Running Terraform apply...${NC}"
-
-# Applies the changes required to reach the desired state of the configuration.
-# This command executes the actions proposed in the previously generated plan file (tfplan).
-# The -auto-approve flag skips interactive approval, applying changes automatically.
-terraform apply -auto-approve tfplan
+terraform apply tfplan
 
 echo -e "${GREEN}Terraform validation successful!${NC}"
 echo -e "${BLUE}Resource outputs:${NC}"
@@ -142,12 +158,12 @@ if [[ "$CLEANUP" == "y" || "$CLEANUP" == "Y" ]]; then
     echo "Running terraform destroy..."
     # Destroys all resources created by Terraform in the current directory.
     # This command will remove all infrastructure managed by Terraform, reverting the state to empty.
-    # The -auto-approve flag skips interactive approval, destroying resources automatically.
-    terraform destroy -auto-approve
+    # The -auto-approve flag is intentionally omitted to require manual approval for safety.
+    terraform destroy -var-file=../terraform.tfvars
     echo -e "${GREEN}Resources successfully removed.${NC}"
 else
     echo "Resources will be preserved. You can manually clean up later with:"
-    echo "cd $VALIDATION_DIR && terraform destroy"
+    echo "cd $VALIDATION_DIR && terraform destroy -var-file=../terraform.tfvars"
 fi
 
 echo -e "${GREEN}Validation process complete!${NC}"

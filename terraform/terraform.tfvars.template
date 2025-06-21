@@ -1,0 +1,39 @@
+# Copy this file to terraform.tfvars and fill in your real values
+# Do NOT include secrets or sensitive values here
+
+# Variables for Azure Files PoC Terraform Configuration
+# 
+# IMPORTANT CONTEXT:
+# This file only assigns values to variables defined in variables.tf
+# No Azure resources are created just by having this file
+# Resources are only created when you explicitly run 'terraform apply' (which we haven't done)
+#
+# ❗ CRITICAL RULE: make sure that you don't put real values in this file
+#                  use this template and copy as terraform.tfvars that is part of .gitignore
+#                  populate with values contained in .env/azure_full_inventory.json
+#                  that is populated by running OneTimeActivities/GetAzureExistingResources/unix/azure_full_inventory.sh
+
+subscription_name     = ""
+subscription_id       = ""
+resource_group        = ""
+location              = ""
+storage_account_name  = ""
+file_share_name       = ""
+file_share_quota_gb   = 100
+
+# Network settings
+vnet_name             = ""
+vnet_id               = ""
+vnet_address_space    = [""]
+dns_servers           = ""
+subnet_name = ""
+subnet_address_prefixes = [""]
+
+common_tags = {
+  environment     = "dev"
+  project         = "ag-pssg-azure-files-poc"
+  owner           = "ag-pssg-teams"
+  account_coding  = ""
+  billing_group   = ""
+  ministry_name   = "AG"
+}

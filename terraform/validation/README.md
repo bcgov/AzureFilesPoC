@@ -6,6 +6,9 @@ This module provides a minimal Terraform configuration to validate the Azure aut
 
 > **Important**: This module is part of the validation process described in the comprehensive [ValidationProcess.md](/OneTimeActivities/ValidationProcess.md) guide. Please refer to that document for the full end-to-end validation process.
 
+**Guidance** use .sh or .ps1 scripts to run and test your terraform scripts before deploying
+them to github.  
+
 ## Directory Structure
 
 This validation module is organized into two key areas:
@@ -98,3 +101,9 @@ This module specifically verifies that:
 - The validation creates resources in a dedicated validation resource group
 - All resources have appropriate tags for tracking and governance
 - OIDC authentication eliminates the need for long-lived credentials
+
+## ⚠️ Private Endpoints & DNS Automation (Important)
+
+If your Terraform configuration creates Azure Private Endpoints, you **must** account for Azure Policy automation that manages Private DNS Zone associations. Always include a `lifecycle { ignore_changes = [private_dns_zone_group] }` block in your `azurerm_private_endpoint` resources to prevent Terraform from removing DNS associations created by policy.
+
+See [NotesAboutPrivateEndPoints.md](../modules/networking/private-endpoint/NotesAboutPrivateEndPoints.md) for details and code examples.

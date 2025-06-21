@@ -10,11 +10,11 @@ This directory contains documentation and scripts for one-time onboarding activi
 
 ## Quick Start: Onboarding Steps
 
-The onboarding process is automated and modularized into 5 robust, idempotent scripts for both Unix and Windows. Each script updates the shared `.env/azure-credentials.json` file incrementally and safely.
+The onboarding process is automated and modularized into 5 robust, idempotent scripts for both Unix/macOS (Bash) and Windows (PowerShell). Each script updates the shared `.env/azure-credentials.json` file incrementally and safely.
 
 **Run each script in order, verifying each step before proceeding:**
 
-### Unix/macOS
+### Unix/macOS (Bash)
 ```bash
 ./RegisterApplicationInAzureAndOIDC/scripts/unix/step1_register_app.sh
 ./RegisterApplicationInAzureAndOIDC/scripts/unix/step2_grant_permissions.sh
@@ -35,6 +35,20 @@ The onboarding process is automated and modularized into 5 robust, idempotent sc
 - Each script is safe to re-run and will not duplicate entries.
 - All scripts dynamically resolve the project root and credentials file location.
 - The onboarding process is fully documented in [RegisterApplicationInAzureAndOIDC/README.md](RegisterApplicationInAzureAndOIDC/README.md).
+- **All onboarding and automation scripts are maintained and supported for both platforms.**
+
+## Inventory and Terraform Automation (Cross-Platform)
+
+After onboarding, you can use the provided inventory and tfvars population scripts to automate resource discovery and Terraform variable management:
+
+- **Unix/macOS (Bash):**
+  - `OneTimeActivities/GetAzureExistingResources/unix/azure_full_inventory.sh`
+  - `OneTimeActivities/GetAzureExistingResources/unix/PopulateTfvarsFromDiscoveredResources.sh`
+- **Windows (PowerShell):**
+  - `OneTimeActivities/GetAzureExistingResources/windows/azure_full_inventory.ps1`
+  - `OneTimeActivities/GetAzureExistingResources/windows/PopulateTfvarsFromDiscoveredResources.ps1`
+
+These scripts generate and update `.env/azure_full_inventory.json`, `terraform.tfvars`, and `secrets.tfvars` in a robust, cross-platform manner. See the respective script folders for usage instructions.
 
 ## Transition to Validation
 
@@ -43,7 +57,6 @@ After completing all 5 onboarding scripts and confirming your GitHub secrets are
 1. Follow the complete [Validation Process](ValidationProcess.md) for step-by-step instructions and troubleshooting.
 2. Use the [Azure Login Validation workflow](../../.github/workflows/azure-login-validation.yml) to verify OIDC authentication.
 3. Use the [Terraform Validation workflow](../../.github/workflows/terraform-validation.yml) to validate the end-to-end CI/CD pipeline.
-
 
 ## Security Considerations
 

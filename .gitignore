@@ -51,6 +51,10 @@ WorkTracking/OneTimeActivities/AzureAppRegistrationDetails.txt
 **/*credentials.json
 !**/*credentials.template.json
 
+# Ignore existing Azure resource inventory (contains sensitive resource IDs)
+.env/azure-existing-resources.json
+.env/azure_full_inventory.json
+
 # Editor specific files
 .vscode/
 .idea/
@@ -60,3 +64,10 @@ WorkTracking/OneTimeActivities/AzureAppRegistrationDetails.txt
 # OS specific files
 .DS_Store
 Thumbs.db
+
+# Ignore Terraform variable files containing sensitive or environment-specific data
+terraform.tfvars
+
+# Ignore Terraform secrets file
+terraform/secrets.tfvars
+secrets.tfvars

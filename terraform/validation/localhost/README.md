@@ -138,6 +138,29 @@ Follow these steps to validate your setup locally:
    ```
 4. Check the output to verify all components are working correctly
 
+## Incremental Local Validation
+
+A best practice for local validation is to incrementally test your Terraform configuration by enabling and validating one resource or logical group of resources at a time. For example:
+
+1. **Start with the simplest resource** (e.g., just a resource group in `main.tf`).
+2. **Run local validation** using `./validate_terraform.sh` to ensure you have the required permissions and the resource can be created and destroyed successfully.
+3. **Uncomment or add the next resource** (e.g., a storage account), and repeat the validation process.
+4. **Continue incrementally** adding or enabling resources, running the validation script after each change. This helps you:
+   - Quickly identify permission or configuration issues
+   - Minimize the blast radius of errors
+   - Build confidence in your infrastructure code step by step
+
+This incremental approach is especially useful for:
+- Debugging permission issues (e.g., if you can create a resource group but not a storage account)
+- Learning how Terraform and Azure permissions interact
+- Safely building up complex infrastructure
+
+**Tip:**
+- Use comments in your `.tf` files to temporarily disable resources you are not ready to test.
+- Only move to the next resource or step after the previous one is validated and cleaned up successfully.
+
+This approach mirrors how you would build and validate infrastructure in production: one safe, auditable step at a time.
+
 ## Troubleshooting
 
 If validation fails:

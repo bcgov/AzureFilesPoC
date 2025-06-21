@@ -267,6 +267,12 @@ terraform {
 - State encryption at rest
 - Soft delete and versioning enabled
 
+## ⚠️ Private Endpoints & DNS Automation (Important)
+
+When using Terraform with GitHub Actions to deploy Azure Private Endpoints, be aware that Azure Policy will automatically manage Private DNS Zone associations. You **must** add a `lifecycle { ignore_changes = [private_dns_zone_group] }` block to your `azurerm_private_endpoint` resources. This prevents Terraform from removing DNS associations created by policy automation.
+
+For more information and code examples, see [NotesAboutPrivateEndPoints.md](../modules/networking/private-endpoint/NotesAboutPrivateEndPoints.md).
+
 ## Best Practices for BC Government Context
 
 1. **Resource Management**:
