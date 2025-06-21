@@ -51,7 +51,15 @@ This step validates that Terraform can successfully create resources:
 
 After confirming that Azure authentication works via GitHub Actions, the next phase is to ensure your infrastructure-as-code automation is fully functional. This is done in two parts:
 
-- **Step 2A: Local Validation** – Run scripts on your local machine to confirm that your credentials, Azure CLI, and Terraform setup can create and destroy resources in Azure. This helps catch local configuration or permission issues before relying on CI/CD.
+- **Step 2A: Localhost Validation** – Run scripts on your local machine to confirm that your credentials, Azure CLI, and Terraform setup can create and destroy resources in Azure. This helps catch local configuration or permission issues before relying on CI/CD.
+
+For detailed instructions and troubleshooting for Step 2A, see the [Local Validation README](/terraform/validation/localhost/README.md). This document covers prerequisites, environment setup, script usage, expected outputs, and common issues encountered during local validation. It provides step-by-step guidance for running the authentication and Terraform validation scripts, interpreting results, and resolving errors.
+
+**NOTE:**. this approach instead of running terraform scripts through github, it will be using azure CLI and azure login then running scripts locally to debug them before going to github. 
+
+For Step 2B, refer to the [GitHub Actions Validation README](/terraform/validation/github/README.md) for workflow-specific instructions. This includes details on configuring workflow inputs, understanding workflow logs, handling secrets, and troubleshooting CI/CD-specific issues. The README ensures you have all necessary context to validate Terraform automation in the GitHub Actions environment.
+
+Consulting these READMEs ensures you have access to comprehensive instructions and troubleshooting resources for both local and CI/CD validation steps.
 
 - **Step 2B: GitHub Actions Validation** – Run the Terraform validation workflow in GitHub Actions to confirm that your CI/CD pipeline can also create and destroy resources using the same OIDC authentication and secrets. This ensures your automation works in the same environment as production deployments.
 

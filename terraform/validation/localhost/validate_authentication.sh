@@ -39,9 +39,9 @@ if [[ ! -f "$CREDS_FILE" ]]; then
     exit 1
 fi
 
-# Extract values from JSON
+# Extract values from JSON (use only the nested Azure keys)
 CLIENT_ID=$(jq -r '.azure.ad.application.clientId // empty' "$CREDS_FILE")
-TENANT_ID=$(jq -r '.azure.tenantId // empty' "$CREDS_FILE")
+TENANT_ID=$(jq -r '.azure.ad.tenantId // empty' "$CREDS_FILE")
 SUBSCRIPTION_ID=$(jq -r '.azure.subscription.id // empty' "$CREDS_FILE")
 
 # Validate that we have all required values
@@ -59,20 +59,14 @@ echo "- Client ID: ${CLIENT_ID:0:8}..."
 echo "- Tenant ID: ${TENANT_ID:0:8}..."
 echo "- Subscription ID: ${SUBSCRIPTION_ID:0:8}..."
 
-echo -e "${BLUE}Attempting to authenticate with Azure...${NC}"
+echo -e "${BLUE}Attempting to authenticate with Azure using your user account...${NC}"
 
-# Try to login with Azure CLI
-az login --service-principal \
-    --username "$CLIENT_ID" \
-    --tenant "$TENANT_ID" \
-    --allow-no-subscriptions
+# Use interactive/user login for local validation
+az login
 
 if [[ $? -ne 0 ]]; then
     echo -e "${RED}Authentication failed.${NC}"
-    echo "Please check that:"
-    echo "1. Your service principal is correctly configured"
-    echo "2. No client secret is required if you're using OIDC"
-    echo "3. For OIDC, use az login directly as your user instead"
+    echo "Please check that you can log in to Azure interactively."
     exit 1
 fi
 

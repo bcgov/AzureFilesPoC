@@ -60,6 +60,8 @@ resource "azurerm_resource_group" "validation" {
   }
 }
 
+# The following resources are commented out for permission testing
+/*
 # Storage account for blob validation
 resource "azurerm_storage_account" "validation" {
   name                     = "st${replace(local.validation_name, "-", "")}${formatdate("MMdd", timestamp())}"
@@ -85,6 +87,7 @@ resource "azurerm_storage_blob" "hello_world" {
   type                   = "Block"
   source_content         = "Hello, World! This is a test file created by Terraform to validate GitHub Actions with OIDC authentication to Azure."
 }
+*/
 
 # Outputs
 output "resource_group_name" {
@@ -92,6 +95,7 @@ output "resource_group_name" {
   value       = azurerm_resource_group.validation.name
 }
 
+/*
 output "storage_account_name" {
   description = "The name of the validation storage account"
   value       = azurerm_storage_account.validation.name
@@ -101,6 +105,7 @@ output "blob_url" {
   description = "The URL of the hello-world blob"
   value       = "${azurerm_storage_account.validation.primary_blob_endpoint}${azurerm_storage_container.validation.name}/${azurerm_storage_blob.hello_world.name}"
 }
+*/
 
 output "validation_status" {
   description = "Validation status message"

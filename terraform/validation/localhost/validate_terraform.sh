@@ -1,8 +1,24 @@
 #!/bin/bash
 
 # Azure Terraform Local Validation Script
-# This script runs Terraform locally using credentials from your azure-credentials.json file
-# to validate that you can create resources in Azure the same way GitHub Actions would.
+#
+# This script runs Terraform commands (init, plan, apply, destroy) in the
+# terraform/validation directory. It does NOT reference a specific .tf file;
+# instead, Terraform automatically loads all cd "$VALIDATION_DIR".tf files in the current directory.
+# In this case, it uses main.tf (and any other .tf files) in terraform/validation.
+#
+# This script is intended to:
+#   - Validate that your Azure credentials and permissions are correct
+#   - Test that you can create and destroy resources in Azure using Terraform
+#   - Mirror the same Terraform code and process used by GitHub Actions workflows
+#
+# Prerequisites:
+#   - Complete onboarding and OIDC setup (see project documentation)
+#   - Authenticate with Azure CLI (az login)
+#   - Ensure .env/azure-credentials.json is populated
+#   - Run from the project root or any subdirectory
+#
+# For more details, see validation/localhost/README.md
 
 set -e
 
@@ -46,14 +62,15 @@ if [[ ! -f "$CREDS_FILE" ]]; then
     exit 1
 fi
 
-# Extract values from JSON
+# Extract values from JSON (use only the nested Azure keys)
 CLIENT_ID=$(jq -r '.azure.ad.application.clientId // empty' "$CREDS_FILE")
-TENANT_ID=$(jq -r '.azure.tenantId // empty' "$CREDS_FILE")
+TENANT_ID=$(jq -r '.azure.ad.tenantId // empty' "$CREDS_FILE")
 SUBSCRIPTION_ID=$(jq -r '.azure.subscription.id // empty' "$CREDS_FILE")
 
 # Validate that we have all required values
 if [[ -z "$CLIENT_ID" || -z "$TENANT_ID" || -z "$SUBSCRIPTION_ID" ]]; then
     echo -e "${RED}Error: Missing required credentials in $CREDS_FILE${NC}"
+    echo "Please ensure your credentials file has the correct Azure keys."
     exit 1
 fi
 
@@ -63,11 +80,13 @@ echo "- Tenant ID: ${TENANT_ID:0:8}..."
 echo "- Subscription ID: ${SUBSCRIPTION_ID:0:8}..."
 
 # Ensure we're authenticated with Azure CLI
+# (OIDC: user must run 'az login' interactively; no secret required)
 echo -e "${BLUE}Checking Azure authentication status...${NC}"
 CURRENT_ACCOUNT=$(az account show --query id -o tsv 2>/dev/null || echo "")
 
 if [[ -z "$CURRENT_ACCOUNT" ]]; then
-    echo "Not authenticated with Azure CLI. Please run ./validate_authentication.sh first."
+    echo -e "${RED}Not authenticated with Azure CLI.${NC}"
+    echo "Please run 'az login' in your terminal and authenticate as your user, then re-run this script."
     exit 1
 fi
 
@@ -87,16 +106,33 @@ export ARM_USE_CLI=true
 cd "$VALIDATION_DIR"
 
 echo -e "${BLUE}Running Terraform init...${NC}"
+# prepare directory for use with terraform
+# Initializes a Terraform working directory by performing several steps:
+# 1. Loads backend configuration to determine where state is stored.
+# 2. Downloads and installs the required provider plugins.
+# 3. Prepares the working directory for use with Terraform, including creating necessary local files.
+# 4. Validates the configuration files for syntax errors.
+# 5. Optionally configures remote backends and checks for required provider versions.
+# 6. Ensures that all modules referenced in the configuration are downloaded.
 terraform init
 
 echo -e "${BLUE}Running Terraform plan...${NC}"
+# Executes a speculative plan to preview changes that Terraform will make to the infrastructure.
+# This command shows which resources will be created, updated, or destroyed, without applying any changes.
+# Useful for reviewing and validating infrastructure modifications before actual deployment.
 terraform plan -out=tfplan
 
 echo -e "${BLUE}Running Terraform apply...${NC}"
+
+# Applies the changes required to reach the desired state of the configuration.
+# This command executes the actions proposed in the previously generated plan file (tfplan).
+# The -auto-approve flag skips interactive approval, applying changes automatically.
 terraform apply -auto-approve tfplan
 
 echo -e "${GREEN}Terraform validation successful!${NC}"
 echo -e "${BLUE}Resource outputs:${NC}"
+# Show all Terraform outputs in JSON format for easier inspection
+terraform output -json | jq .
 terraform output
 
 echo -e "${BLUE}Cleaning up resources...${NC}"
@@ -104,6 +140,9 @@ read -p "Do you want to clean up the created resources? (y/n): " CLEANUP
 
 if [[ "$CLEANUP" == "y" || "$CLEANUP" == "Y" ]]; then
     echo "Running terraform destroy..."
+    # Destroys all resources created by Terraform in the current directory.
+    # This command will remove all infrastructure managed by Terraform, reverting the state to empty.
+    # The -auto-approve flag skips interactive approval, destroying resources automatically.
     terraform destroy -auto-approve
     echo -e "${GREEN}Resources successfully removed.${NC}"
 else
