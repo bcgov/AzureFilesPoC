@@ -93,8 +93,8 @@ LOCATION=$(jq -r '.resourceGroups[] | select(.name=="'$RESOURCE_GROUP'") | .loca
 VNET_NAME=$(jq -r '.virtualNetworks[0].name // empty' "$INVENTORY_JSON")
 VNET_ID=$(jq -r '.virtualNetworks[0].id // empty' "$INVENTORY_JSON")
 VNET_ADDRESS_SPACE=$(jq -r '.virtualNetworks[0].addressSpace[0] // empty' "$INVENTORY_JSON")
-DNS_SERVERS=$(jq -r '.virtualNetworks[0].dnsServers[0] // empty' "$INVENTORY_JSON")
-
+# Always output DNS servers as a list of strings with double quotes
+DNS_SERVERS_LIST=$(jq -r '.virtualNetworks[0].dnsServers // [] | map("\"" + . + "\"") | join(", ")' "$INVENTORY_JSON")
 # Subnet (if present)
 SUBNET_NAME=$(jq -r '.virtualNetworks[0].subnets[0].name // empty' "$INVENTORY_JSON")
 SUBNET_ADDRESS_PREFIXES=$(jq -r '.virtualNetworks[0].subnets[0].addressPrefix // empty' "$INVENTORY_JSON")
@@ -124,7 +124,7 @@ awk -v dev_subscription_name="$SUBSCRIPTION_NAME" \
     -v dev_vnet_name="$VNET_NAME" \
     -v dev_vnet_id="$VNET_ID" \
     -v dev_vnet_address_space="$VNET_ADDRESS_SPACE" \
-    -v dev_dns_servers="$DNS_SERVERS" \
+    -v dev_dns_servers="$DNS_SERVERS_LIST" \
     -v dev_vnet_resource_group="$VNET_RESOURCE_GROUP" \
     -v dev_subnet_name="$SUBNET_NAME" \
     -v dev_subnet_address_prefixes="$SUBNET_ADDRESS_PREFIXES" \
@@ -144,7 +144,7 @@ awk -v dev_subscription_name="$SUBSCRIPTION_NAME" \
     /^dev_vnet_name[[:space:]]*=.*$/ {print "dev_vnet_name = \"" dev_vnet_name "\""; next}
     /^dev_vnet_id[[:space:]]*=.*$/ {print "dev_vnet_id = \"" dev_vnet_id "\""; next}
     /^dev_vnet_address_space[[:space:]]*=.*$/ {print "dev_vnet_address_space = [\"" dev_vnet_address_space "\"]"; next}
-    /^dev_dns_servers[[:space:]]*=.*$/ {print "dev_dns_servers = \"" dev_dns_servers "\""; next}
+    /^dev_dns_servers[[:space:]]*=.*$/ {print "dev_dns_servers = [" dev_dns_servers "]"; next}
     /^dev_subnet_name[[:space:]]*=.*$/ {print "dev_subnet_name = \"" dev_subnet_name "\""; next}
     /^dev_subnet_address_prefixes[[:space:]]*=.*$/ {print "dev_subnet_address_prefixes = [\"" dev_subnet_address_prefixes "\"]"; next}
     /^dev_vnet_resource_group[[:space:]]*=.*$/ {print "dev_vnet_resource_group = \"" dev_vnet_resource_group "\""; next}
