@@ -71,9 +71,19 @@ SUBSCRIPTION_ID=$(jq -r '.azure.subscription.id // .azure.subscriptionId // empt
 SUBSCRIPTION_NAME=$(jq -r '.resources[] | select(.type=="Microsoft.Network/virtualNetworks") | .tags.billing_group // empty' "$INVENTORY_JSON" | head -n1)
 [ -z "$SUBSCRIPTION_NAME" ] && SUBSCRIPTION_NAME=""
 
-# Resource group: pick the one with tags or fallback to first
-RESOURCE_GROUP=$(jq -r '.resourceGroups[] | select(.tags != null) | .name' "$INVENTORY_JSON" | head -n1)
+# Resource group: pick the one with 'ag-pssg-azure-poc-dev' in the name and tags, else fallback
+RESOURCE_GROUP=$(jq -r '.resourceGroups[] | select((.name | test("ag-pssg-azure-poc-dev"; "i")) and (.tags != null)) | .name' "$INVENTORY_JSON" | head -n1)
+if [ -z "$RESOURCE_GROUP" ]; then
+  RESOURCE_GROUP=$(jq -r '.resourceGroups[] | select(.tags != null) | .name' "$INVENTORY_JSON" | head -n1)
+fi
 [ -z "$RESOURCE_GROUP" ] && RESOURCE_GROUP=$(jq -r '.resourceGroups[0].name // empty' "$INVENTORY_JSON")
+
+# VNet resource group: pick the one with 'dev-networking' in the name
+VNET_RESOURCE_GROUP=$(jq -r '.resourceGroups[] | select(.name | test("dev-networking"; "i")) | .name' "$INVENTORY_JSON" | head -n1)
+[ -z "$VNET_RESOURCE_GROUP" ] && VNET_RESOURCE_GROUP=$(jq -r '.virtualNetworks[0].resourceGroup // empty' "$INVENTORY_JSON")
+
+echo "[DEBUG] RESOURCE_GROUP extracted: $RESOURCE_GROUP" >&2
+echo "[DEBUG] VNET_RESOURCE_GROUP extracted: $VNET_RESOURCE_GROUP" >&2
 
 # Location: from resource group or vnet
 LOCATION=$(jq -r '.resourceGroups[] | select(.name=="'$RESOURCE_GROUP'") | .location' "$INVENTORY_JSON")
@@ -101,46 +111,53 @@ OWNER=$(jq -r '.resources[] | select(.type=="Microsoft.Network/networkSecurityGr
 PROJECT=$(jq -r '.resources[] | select(.type=="Microsoft.Network/networkSecurityGroups") | .tags.project // empty' "$INVENTORY_JSON" | head -n1)
 ENVIRONMENT=$(jq -r '.resources[] | select(.type=="Microsoft.Network/networkSecurityGroups") | .tags.environment // empty' "$INVENTORY_JSON" | head -n1)
 
+# Delete the tfvars file before writing to ensure a clean write
+test -f "$TFVARS_FILE" && rm "$TFVARS_FILE"
+
 # Populate terraform.tfvars from template
-awk -v sub_name="$SUBSCRIPTION_NAME" \
-    -v sub_id="$SUBSCRIPTION_ID" \
-    -v rg="$RESOURCE_GROUP" \
-    -v location="$LOCATION" \
-    -v stg="$STORAGE_ACCOUNT_NAME" \
-    -v share="$FILE_SHARE_NAME" \
-    -v vnet="$VNET_NAME" \
-    -v vnet_id="$VNET_ID" \
-    -v vnet_addr="$VNET_ADDRESS_SPACE" \
-    -v dns="$DNS_SERVERS" \
-    -v subnet="$SUBNET_NAME" \
-    -v subnet_addr="$SUBNET_ADDRESS_PREFIXES" \
+awk -v dev_subscription_name="$SUBSCRIPTION_NAME" \
+    -v dev_subscription_id="$SUBSCRIPTION_ID" \
+    -v dev_location="$LOCATION" \
+    -v dev_resource_group="$RESOURCE_GROUP" \
+    -v dev_storage_account_name="$STORAGE_ACCOUNT_NAME" \
+    -v dev_file_share_name="$FILE_SHARE_NAME" \
+    -v dev_vnet_name="$VNET_NAME" \
+    -v dev_vnet_id="$VNET_ID" \
+    -v dev_vnet_address_space="$VNET_ADDRESS_SPACE" \
+    -v dev_dns_servers="$DNS_SERVERS" \
+    -v dev_vnet_resource_group="$VNET_RESOURCE_GROUP" \
+    -v dev_subnet_name="$SUBNET_NAME" \
+    -v dev_subnet_address_prefixes="$SUBNET_ADDRESS_PREFIXES" \
     -v account_coding="$ACCOUNT_CODING" \
     -v billing_group="$BILLING_GROUP" \
     -v ministry_name="$MINISTRY_NAME" \
     -v owner="$OWNER" \
     -v project="$PROJECT" \
-    -v environment="$ENVIRONMENT" \
     'BEGIN {OFS="\n"}
-    /subscription_name/ {print "subscription_name = \"" sub_name "\""; next}
-    /subscription_id/ {print "subscription_id = \"" sub_id "\""; next}
-    /resource_group/ {print "resource_group = \"" rg "\""; next}
-    /location/ {print "location = \"" location "\""; next}
-    /storage_account_name/ {print "storage_account_name = \"" stg "\""; next}
-    /file_share_name/ {print "file_share_name = \"" share "\""; next}
-    /vnet_name/ {print "vnet_name = \"" vnet "\""; next}
-    /vnet_id/ {print "vnet_id = \"" vnet_id "\""; next}
-    /vnet_address_space/ {print "vnet_address_space = [\"" vnet_addr "\"]"; next}
-    /dns_servers/ {print "dns_servers = \"" dns "\""; next}
-    /subnet_name/ {print "subnet_name = \"" subnet "\""; next}
-    /subnet_address_prefixes/ {print "subnet_address_prefixes = [\"" subnet_addr "\"]"; next}
+    /^dev_subscription_name[[:space:]]*=.*$/ {print "dev_subscription_name = \"" dev_subscription_name "\""; next}
+    /^dev_subscription_id[[:space:]]*=.*$/ {print "dev_subscription_id = \"" dev_subscription_id "\""; next}
+    /^dev_location[[:space:]]*=.*$/ {print "dev_location = \"" dev_location "\""; next}
+    /^dev_resource_group[[:space:]]*=.*$/ {print "dev_resource_group = \"" dev_resource_group "\""; next}
+    /^dev_storage_account_name[[:space:]]*=.*$/ {print "dev_storage_account_name = \"" dev_storage_account_name "\""; next}
+    /^dev_file_share_name[[:space:]]*=.*$/ {print "dev_file_share_name = \"" dev_file_share_name "\""; next}
+    /^dev_file_share_quota_gb[[:space:]]*=.*$/ {print "dev_file_share_quota_gb   = 100"; next}
+    /^dev_vnet_name[[:space:]]*=.*$/ {print "dev_vnet_name = \"" dev_vnet_name "\""; next}
+    /^dev_vnet_id[[:space:]]*=.*$/ {print "dev_vnet_id = \"" dev_vnet_id "\""; next}
+    /^dev_vnet_address_space[[:space:]]*=.*$/ {print "dev_vnet_address_space = [\"" dev_vnet_address_space "\"]"; next}
+    /^dev_dns_servers[[:space:]]*=.*$/ {print "dev_dns_servers = \"" dev_dns_servers "\""; next}
+    /^dev_subnet_name[[:space:]]*=.*$/ {print "dev_subnet_name = \"" dev_subnet_name "\""; next}
+    /^dev_subnet_address_prefixes[[:space:]]*=.*$/ {print "dev_subnet_address_prefixes = [\"" dev_subnet_address_prefixes "\"]"; next}
+    /^dev_vnet_resource_group[[:space:]]*=.*$/ {print "dev_vnet_resource_group = \"" dev_vnet_resource_group "\""; next}
     /account_coding/ {print "  account_coding  = \"" account_coding "\""; next}
     /billing_group/ {print "  billing_group   = \"" billing_group "\""; next}
     /ministry_name/ {print "  ministry_name   = \"" ministry_name "\""; next}
     /owner/ {print "  owner           = \"" owner "\""; next}
     /project/ {print "  project         = \"" project "\""; next}
-    /environment/ {print "  environment     = \"" environment "\""; next}
     {print}
 ' "$TFVARS_TEMPLATE" > "$TFVARS_FILE"
+
+# Guarantee resource_group is set correctly in tfvars
+sed -i.bak "s|^resource_group[[:space:]]*=.*$|resource_group = \"$RESOURCE_GROUP\"|" "$TFVARS_FILE"
 
 CLIENT_ID=$(jq -r '.azure.ad.application.clientId // .github.clientId // empty' "$CREDENTIALS_JSON")
 TENANT_ID=$(jq -r '.azure.ad.tenantId // .github.tenantId // empty' "$CREDENTIALS_JSON")
