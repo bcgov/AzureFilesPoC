@@ -36,7 +36,9 @@ jobs:
           terraform init
 
       - name: Copy tfvars template for CI
-        run: cp ../terraform/terraform.tfvars.template ../terraform/terraform.tfvars
+        run: |
+          cd terraform/validation
+          cp ../terraform.tfvars.template ../terraform.tfvars
 
       - name: Terraform Plan
         run: |
