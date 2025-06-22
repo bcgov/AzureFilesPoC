@@ -1,24 +1,97 @@
-name: Azure Login Validation
+name: Azure Files PoC Terraform Validation
 
 on:
+  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
+  # Triggers the workflow on push events to the main branch
+  push:
+    branches:
+      - main
+    paths:
+      # Rerun if the Terraform code or the workflow itself changes
+      - 'terraform/validation/**'
+      - '.github/workflows/azure-terraform-validation.yml'
+
 jobs:
-  login:
+  terraform:
+    name: 'Terraform Plan and Apply'
     runs-on: ubuntu-latest
+
+    # These permissions are required for OIDC secure login
     permissions:
       id-token: write
       contents: read
+
+    # Specifies the GitHub Environment to use for secrets and protection rules
+    environment: dev
+
+    # Sets the working directory for all subsequent run steps in this job
+    defaults:
+      run:
+        working-directory: ./terraform/validation
+
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Azure Login (OIDC)
+      - name: Log in to Azure using OIDC
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Show Azure Account Info
-        run: az account show
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.8.5
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -no-color
+        env:
+          # This block maps your GitHub Secrets and Variables to the input variables
+          # defined in your main.tf file. The TF_VAR_ prefix is how Terraform finds them.
+          TF_VAR_dev_location: ${{ vars.AZURE_LOCATION }}
+          TF_VAR_environment: "dev"
+          TF_VAR_dev_resource_group: ${{ secrets.DEV_RESOURCE_GROUP_NAME }}
+          TF_VAR_common_tags: '{ "environment" : "dev", "project" : "ag-pssg-azure-poc" }'
+          TF_VAR_dev_vnet_name: ${{ secrets.DEV_VNET_NAME }}
+          TF_VAR_dev_subnet_name: ${{ vars.DEV_SUBNET_NAME }}
+          TF_VAR_dev_subnet_address_prefixes: ${{ vars.DEV_SUBNET_ADDRESS_PREFIXES }}
+          TF_VAR_dev_vnet_resource_group: ${{ secrets.DEV_VNET_RESOURCE_GROUP }}
+          TF_VAR_dev_subscription_name: ${{ secrets.AZURE_SUBSCRIPTION_NAME }}
+          TF_VAR_dev_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          TF_VAR_dev_storage_account_name: ${{ vars.DEV_STORAGE_ACCOUNT_NAME }}
+          TF_VAR_dev_file_share_name: ${{ vars.DEV_FILE_SHARE_NAME }}
+          TF_VAR_dev_file_share_quota_gb: ${{ vars.DEV_FILE_SHARE_QUOTA_GB }}
+          TF_VAR_dev_vnet_id: ${{ secrets.DEV_VNET_ID }}
+          TF_VAR_dev_vnet_address_space: ${{ vars.DEV_VNET_ADDRESS_SPACE }}
+          TF_VAR_dev_dns_servers: ${{ vars.DEV_DNS_SERVERS }}
+
+      - name: Terraform Apply
+        # This safety condition prevents 'apply' from running on feature branches
+        if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+        run: terraform apply -auto-approve -no-color
+        # The apply step needs the exact same environment variables as the plan step
+        env:
+          TF_VAR_dev_location: ${{ vars.AZURE_LOCATION }}
+          TF_VAR_environment: "dev"
+          TF_VAR_dev_resource_group: ${{ secrets.DEV_RESOURCE_GROUP_NAME }}
+          TF_VAR_common_tags: '{ "environment" : "dev", "project" : "ag-pssg-azure-poc" }'
+          TF_VAR_dev_vnet_name: ${{ secrets.DEV_VNET_NAME }}
+          TF_VAR_dev_subnet_name: ${{ vars.DEV_SUBNET_NAME }}
+          TF_VAR_dev_subnet_address_prefixes: ${{ vars.DEV_SUBNET_ADDRESS_PREFIXES }}
+          TF_VAR_dev_vnet_resource_group: ${{ secrets.DEV_VNET_RESOURCE_GROUP }}
+          TF_VAR_dev_subscription_name: ${{ secrets.AZURE_SUBSCRIPTION_NAME }}
+          TF_VAR_dev_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          TF_VAR_dev_storage_account_name: ${{ vars.DEV_STORAGE_ACCOUNT_NAME }}
+          TF_VAR_dev_file_share_name: ${{ vars.DEV_FILE_SHARE_NAME }}
+          TF_VAR_dev_file_share_quota_gb: ${{ vars.DEV_FILE_SHARE_QUOTA_GB }}
+          TF_VAR_dev_vnet_id: ${{ secrets.DEV_VNET_ID }}
+          TF_VAR_dev_vnet_address_space: ${{ vars.DEV_VNET_ADDRESS_SPACE }}
+          TF_VAR_dev_dns_servers: ${{ vars.DEV_DNS_SERVERS }}
