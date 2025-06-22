@@ -14,11 +14,14 @@ jobs:
       contents: read
     runs-on: ubuntu-latest
     environment: dev
+    defaults:
+      run:
+        working-directory: ./terraform/validation
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Log in to Azure
+      - name: Log in to Azure using OIDC
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -31,31 +34,41 @@ jobs:
           terraform_version: 1.8.5
 
       - name: Terraform Init
-        run: |
-          cd terraform/validation
-          terraform init
-
-      - name: Copy tfvars template for CI
-        run: |
-          cd terraform/validation
-          cp ../terraform.tfvars.template ../terraform.tfvars
+        run: terraform init
 
       - name: Terraform Plan
-        run: |
-          cd terraform/validation
-          terraform plan -var-file=../terraform/terraform.tfvars
+        id: plan
+        run: terraform plan -no-color
+        env:
+          TF_VAR_dev_location: ${{ vars.AZURE_LOCATION || 'East US' }}
+          TF_VAR_environment: "dev"
+          TF_VAR_dev_resource_group: ${{ secrets.DEV_RESOURCE_GROUP_NAME }}
+          TF_VAR_dev_vnet_name: ${{ secrets.DEV_VNET_NAME }}
+          TF_VAR_dev_vnet_resource_group: ${{ secrets.DEV_VNET_RESOURCE_GROUP }}
+          TF_VAR_dev_subscription_name: ${{ secrets.AZURE_SUBSCRIPTION_NAME }}
+          TF_VAR_dev_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          TF_VAR_dev_storage_account_name: ${{ vars.DEV_STORAGE_ACCOUNT_NAME || 'stexampledev01' }}
+          TF_VAR_dev_file_share_name: ${{ vars.DEV_FILE_SHARE_NAME || 'fspoc' }}
+          TF_VAR_dev_file_share_quota_gb: ${{ vars.DEV_FILE_SHARE_QUOTA_GB || 5 }}
+          TF_VAR_dev_vnet_id: ${{ secrets.DEV_VNET_ID }}
+          TF_VAR_common_tags: '{ "ManagedBy" = "GitHubActions", "Project" = "AzureFilesPoC" }'
 
       - name: Terraform Apply
-        run: |
-          cd terraform/validation
-          terraform apply -auto-approve -var-file=../terraform/terraform.tfvars
+        if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+        run: terraform apply -auto-approve -no-color
         env:
-          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          ARM_USE_OIDC: true
+          TF_VAR_dev_location: ${{ vars.AZURE_LOCATION || 'East US' }}
+          TF_VAR_environment: "dev"
+          TF_VAR_dev_resource_group: ${{ secrets.DEV_RESOURCE_GROUP_NAME }}
+          TF_VAR_dev_vnet_name: ${{ secrets.DEV_VNET_NAME }}
+          TF_VAR_dev_vnet_resource_group: ${{ secrets.DEV_VNET_RESOURCE_GROUP }}
+          TF_VAR_dev_subscription_name: ${{ secrets.AZURE_SUBSCRIPTION_NAME }}
+          TF_VAR_dev_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          TF_VAR_dev_storage_account_name: ${{ vars.DEV_STORAGE_ACCOUNT_NAME || 'stexampledev01' }}
+          TF_VAR_dev_file_share_name: ${{ vars.DEV_FILE_SHARE_NAME || 'fspoc' }}
+          TF_VAR_dev_file_share_quota_gb: ${{ vars.DEV_FILE_SHARE_QUOTA_GB || 5 }}
+          TF_VAR_dev_vnet_id: ${{ secrets.DEV_VNET_ID }}
+          TF_VAR_common_tags: '{ "ManagedBy" = "GitHubActions", "Project" = "AzureFilesPoC" }'
 
       - name: Terraform Output
-        run: |
-          cd terraform/validation
-          terraform output
+        run: terraform output
