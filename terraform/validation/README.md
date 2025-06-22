@@ -50,29 +50,34 @@ graph TD
 sequenceDiagram
     participant Developer
     participant GitHub
-    participant GitHub Actions Runner
+    participant Runner as GitHub Actions Runner
     participant Azure
 
     Developer->>GitHub: git push to main branch
-    GitHub->>GitHub Actions Runner: Trigger "Terraform Plan and Apply" workflow
+    GitHub->>Runner: Trigger "Terraform Plan and Apply" workflow
 
     Runner->>Runner: 1. Checkout Code
     Note right of Runner: Gets the latest terraform/validation/main.tf
 
     Runner->>Azure: 2. OIDC Login
-    Note right of Runner: Authenticates securely without secrets
+    note over Runner,Azure: Authenticates securely without secrets
+    Azure-->>Runner: Login Success
 
     Runner->>Runner: 3. terraform init
     Note right of Runner: Downloads Azure provider
 
     Runner->>Runner: 4. terraform plan
-    Note right of Runner: Checks Azure state and determines what needs to be created/updated
+    note over Runner: Checks Azure state and determines what needs to be created/updated
 
     Runner->>Runner: 5. terraform apply
-    Note right of Runner: Executes the plan if changes are detected
+    note over Runner: Executes the plan if changes are detected
 
     Runner->>Azure: 6. Create/Update Resources
-    Note right of Runner: API calls are made to provision the infrastructure
+    note over Runner,Azure: API calls are made to provision the infrastructure
+
+    Azure-->>Runner: Success
+    Runner-->>GitHub: Workflow Complete
+    GitHub-->>Developer: Green Checkmark ✅
 ```
 
 ## Azure Resources Created
