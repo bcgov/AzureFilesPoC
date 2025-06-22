@@ -206,63 +206,47 @@ resource "azapi_resource" "storage_pe_subnet" {
 
 
 # Storage account for validation
-resource "azurerm_storage_account" "validation" {
-  name                     = local.st_name
-  resource_group_name      = local.rg_name
-  location                 = var.dev_location
-  account_tier             = "Standard"
-  account_replication_type = "LRS"
-  large_file_share_enabled = true
-  access_tier              = "Hot"
-  tags = merge(
-    local.validation_tags,
-    {
-      account_coding = var.common_tags["account_coding"]
-      billing_group  = var.common_tags["billing_group"]
-      ministry_name  = var.common_tags["ministry_name"]
-    }
-  )
-  public_network_access_enabled = false
-
-  # <-- FIX 5: The `network_rules` block is invalid when public access is disabled. It has been removed.
-}
-
-# Private endpoint for storage (blob and file)
-resource "azurerm_private_endpoint" "storage_pe" {
-  name                = "pe-${local.st_name}"
-  location            = var.dev_location
-  resource_group_name = local.rg_name
-  subnet_id           = jsondecode(azapi_resource.storage_pe_subnet.output).id
-
-  private_service_connection {
-    name                           = "psc-${local.st_name}"
-    private_connection_resource_id = azurerm_storage_account.validation.id
-    subresource_names              = ["blob", "file"]
-    is_manual_connection           = false
-  }
-
-  # If Azure Policy manages the Private DNS Zone, ignore changes to DNS zone group
-  lifecycle {
-    ignore_changes = [
-      private_dns_zone_group
-    ]
-  }
-}
-
-# Container for blob validation
-# resource "azurerm_storage_container" "validation" {
-#   name                  = local.sc_name
-#   storage_account_name  = azurerm_storage_account.validation.name
-#   container_access_type = "private"
+# resource "azurerm_storage_account" "validation" {
+#   name                     = local.st_name
+#   resource_group_name      = local.rg_name
+#   location                 = var.dev_location
+#   account_tier             = "Standard"
+#   account_replication_type = "LRS"
+#   large_file_share_enabled = true
+#   access_tier              = "Hot"
+#   tags = merge(
+#     local.validation_tags,
+#     {
+#       account_coding = var.common_tags["account_coding"]
+#       billing_group  = var.common_tags["billing_group"]
+#       ministry_name  = var.common_tags["ministry_name"]
+#     }
+#   )
+#   public_network_access_enabled = false
+#
+#   # <-- FIX 5: The `network_rules` block is invalid when public access is disabled. It has been removed.
 # }
 
-# Hello World blob for validation
-# resource "azurerm_storage_blob" "hello_world" {
-#   name                   = "hello-world.txt"
-#   storage_account_name   = azurerm_storage_account.validation.name
-#   storage_container_name = azurerm_storage_container.validation.name
-#   type                   = "Block"
-#   source_content         = "Hello, World! This is a test file created by Terraform to validate GitHub Actions with OIDC authentication to Azure."
+# Private endpoint for storage (blob and file)
+# resource "azurerm_private_endpoint" "storage_pe" {
+#   name                = "pe-${local.st_name}"
+#   location            = var.dev_location
+#   resource_group_name = local.rg_name
+#   subnet_id           = jsondecode(azapi_resource.storage_pe_subnet.output).id
+#
+#   private_service_connection {
+#     name                           = "psc-${local.st_name}"
+#     private_connection_resource_id = azurerm_storage_account.validation.id
+#     subresource_names              = ["blob", "file"]
+#     is_manual_connection           = false
+#   }
+#
+#   # If Azure Policy manages the Private DNS Zone, ignore changes to DNS zone group
+#   lifecycle {
+#     ignore_changes = [
+#       private_dns_zone_group
+#     ]
+#   }
 # }
 
 
