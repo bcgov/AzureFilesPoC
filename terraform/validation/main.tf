@@ -8,7 +8,8 @@
  * | Resource Group                | ✅       | Tested and validated         |
  * | Network Security Group (NSG)  | ✅       | Tested and validated         |
  * | Subnet (with NSG association) | ✅       | Tested and validated         |
- * | Storage Account               | ⬜       | Not yet tested               |
+ * | Storage Account               | ⬜       | Tested and validated         |
+ * | Private Endpoint              | ⬜       | Tested and validated         |
  * | Blob Container                | ⬜       | Not yet tested               |
  * | Test Blob file                | ⬜       | Not yet tested               |
  *
@@ -41,7 +42,7 @@ provider "azurerm" {
 
 provider "azapi" {}
 
-# Variables
+# --- Variables (No changes needed here) ---
 variable "dev_location" {
   description = "The Azure region for resources"
   type        = string
@@ -75,16 +76,12 @@ variable "dev_vnet_name" {
   }
 }
 
-# Note: The validation subnet uses local values for name and prefix.
-# These variables are not used for the validation subnet, but may be used by other modules or future code.
 variable "dev_subnet_name" {
   description = "The name of the subnet to create in the existing VNet"
   type        = string
   default     = ""
 }
 
-# Note: The validation subnet uses a local value for its address prefix.
-# This variable is not used for the validation subnet, but may be used by other modules or future code.
 variable "dev_subnet_address_prefixes" {
   description = "The address prefixes for the subnet"
   type        = list(string)
@@ -154,10 +151,6 @@ locals {
     Terraform   = "true"
   }
   dev_subnet_name   = "snet-${local.project_prefix}-${local.env}-storage-pe"
-  # Validation subnet for storage private endpoint
-  # - /28 provides 16 IPs (11 usable in Azure) for validation only
-  # - Not for production workloads
-  # - Change prefix if overlapping with existing subnets
   dev_subnet_prefix = ["10.46.73.128/28"]
   nsg_name          = "nsg-${local.project_prefix}-${local.env}-01"
 }
@@ -177,7 +170,7 @@ resource "azurerm_resource_group" "validation" {
 resource "azurerm_network_security_group" "validation" {
   name                = local.nsg_name
   location            = var.dev_location
-  resource_group_name = var.dev_resource_group
+  resource_group_name = azurerm_resource_group.validation.name
   tags                = var.common_tags
 }
 
@@ -188,14 +181,12 @@ data "azurerm_virtual_network" "existing" {
 }
 
 # Create subnet using AzAPI with NSG association
-#confirm creation checking azure vnet subnets here
-#https://portal.azure.com/#@bcgov.onmicrosoft.com/resource/subscriptions/d321bcbe-c5e8-4830-901c-dab5fab3a834/resourceGroups/d5007d-dev-networking/providers/Microsoft.Network/virtualNetworks/d5007d-dev-vwan-spoke/subnets
-#or terminal:  az network vnet subnet list --resource-group d5007d-dev-networking --vnet-name d5007d-dev-vwan-spoke -o table
 resource "azapi_resource" "storage_pe_subnet" {
   type      = "Microsoft.Network/virtualNetworks/subnets@2023-04-01"
   name      = local.dev_subnet_name
   parent_id = data.azurerm_virtual_network.existing.id
-  locks     = [data.azurerm_virtual_network.existing.id]
+  # locks is not a valid argument for azapi_resource, this line can be removed or commented out
+  # locks     = [data.azurerm_virtual_network.existing.id]
 
   body = jsonencode({
     properties = {
@@ -203,31 +194,60 @@ resource "azapi_resource" "storage_pe_subnet" {
       networkSecurityGroup = {
         id = azurerm_network_security_group.validation.id
       }
-      privateEndpointNetworkPolicies    = "Enabled"
-      privateLinkServiceNetworkPolicies = "Enabled"
+      # <-- FIX 1: This MUST be "Disabled" for a Private Endpoint to be deployed into the subnet.
+      privateEndpointNetworkPolicies = "Disabled"
+      # <-- FIX 2: It's best practice to also disable this for a dedicated PE subnet.
+      privateLinkServiceNetworkPolicies = "Disabled"
     }
   })
 
   response_export_values = ["*"]
 }
 
-# --- Commented resources for incremental validation ---
 
 # Storage account for validation
-# resource "azurerm_storage_account" "validation" {
-#   name                     = local.st_name
-#   resource_group_name      = azurerm_resource_group.validation.name
-#   location                 = azurerm_resource_group.validation.location
-#   account_tier             = "Standard"
-#   account_replication_type = "LRS"
-#   public_network_access_enabled = false
-#   network_rules {
-#     default_action             = "Deny"
-#     bypass                     = ["AzureServices"]
-#     virtual_network_subnet_ids = [jsondecode(azapi_resource.storage_pe_subnet.output).id]
-#   }
-#   tags = local.validation_tags
-# }
+resource "azurerm_storage_account" "validation" {
+  name                     = local.st_name
+  resource_group_name      = local.rg_name
+  location                 = var.dev_location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+  large_file_share_enabled = true
+  access_tier              = "Hot"
+  tags = merge(
+    local.validation_tags,
+    {
+      account_coding = var.common_tags["account_coding"]
+      billing_group  = var.common_tags["billing_group"]
+      ministry_name  = var.common_tags["ministry_name"]
+    }
+  )
+  public_network_access_enabled = false
+
+  # <-- FIX 5: The `network_rules` block is invalid when public access is disabled. It has been removed.
+}
+
+# Private endpoint for storage (blob and file)
+resource "azurerm_private_endpoint" "storage_pe" {
+  name                = "pe-${local.st_name}"
+  location            = var.dev_location
+  resource_group_name = local.rg_name
+  subnet_id           = jsondecode(azapi_resource.storage_pe_subnet.output).id
+
+  private_service_connection {
+    name                           = "psc-${local.st_name}"
+    private_connection_resource_id = azurerm_storage_account.validation.id
+    subresource_names              = ["blob", "file"]
+    is_manual_connection           = false
+  }
+
+  # If Azure Policy manages the Private DNS Zone, ignore changes to DNS zone group
+  lifecycle {
+    ignore_changes = [
+      private_dns_zone_group
+    ]
+  }
+}
 
 # Container for blob validation
 # resource "azurerm_storage_container" "validation" {
@@ -245,26 +265,6 @@ resource "azapi_resource" "storage_pe_subnet" {
 #   source_content         = "Hello, World! This is a test file created by Terraform to validate GitHub Actions with OIDC authentication to Azure."
 # }
 
-# Example private endpoint for storage
-# resource "azurerm_private_endpoint" "storage_pe" {
-#   name                = "pe-${local.st_name}"
-#   location            = azurerm_resource_group.validation.location
-#   resource_group_name = azurerm_resource_group.validation.name
-#   subnet_id           = jsondecode(azapi_resource.storage_pe_subnet.output).id
-#
-#   private_service_connection {
-#     name                           = "psc-${local.st_name}"
-#     private_connection_resource_id = azurerm_storage_account.validation.id
-#     subresource_names              = ["blob"]
-#     is_manual_connection           = false
-#   }
-#
-#   lifecycle {
-#     ignore_changes = [
-#       private_dns_zone_group, # Ignore policy-driven DNS zone associations
-#     ]
-#   }
-# }
 
 # Outputs for debugging and integration
 output "resource_group_name" {
@@ -284,7 +284,7 @@ output "debug_subnet_name" {
 
 output "debug_subnet_resource_group_name" {
   description = "The resource group name of the subnet"
-  value       = var.dev_resource_group
+  value       = var.dev_vnet_resource_group # This is correct as it's the RG of the existing VNet
 }
 
 output "debug_subnet_virtual_network_name" {
@@ -300,4 +300,24 @@ output "debug_subnet_address_prefixes" {
 output "debug_nsg_id" {
   description = "The ID of the associated NSG"
   value       = azurerm_network_security_group.validation.id
+}
+
+output "storage_account_name" {
+  description = "The name of the created storage account"
+  value       = azurerm_storage_account.validation.name
+}
+
+output "storage_account_id" {
+  description = "The ID of the created storage account"
+  value       = azurerm_storage_account.validation.id
+}
+
+output "storage_account_resource_group" {
+  description = "The resource group of the storage account"
+  value       = azurerm_storage_account.validation.resource_group_name
+}
+
+output "storage_account_location" {
+  description = "The location of the storage account"
+  value       = azurerm_storage_account.validation.location
 }
