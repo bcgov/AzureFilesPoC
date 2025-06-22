@@ -40,6 +40,19 @@ RED='\033[0;31m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Manual Azure Login Required
+# ------------------------------------------------------------
+# Before running this script, you must be logged in to Azure CLI
+# with Microsoft Graph permissions. Run the following command:
+#
+#   az login --scope https://graph.microsoft.com/.default
+#
+# This will open a browser window for you to authenticate.
+# If you have multiple subscriptions, set the correct one:
+#   az account set --subscription "<your-subscription-id>"
+#
+# ------------------------------------------------------------
+
 # Find project root (where .env directory exists)
 find_project_root() {
     local current_dir="$PWD"
@@ -91,24 +104,98 @@ echo "- Client ID: ${CLIENT_ID:0:8}..."
 echo "- Tenant ID: ${TENANT_ID:0:8}..."
 echo "- Subscription ID: ${SUBSCRIPTION_ID:0:8}..."
 
+# Remind user to login before proceeding
+echo -e "${BLUE}IMPORTANT: You must be logged in to Azure CLI with Microsoft Graph permissions before running this script.${NC}"
+echo -e "If you have not already done so, run:\n  az login --scope https://graph.microsoft.com/.default\n"
+echo -e "If you have multiple subscriptions, set the correct one with:\n  az account set --subscription '<your-subscription-id>'\n"
+echo -e "Press Enter to continue if you are already logged in, or Ctrl+C to exit and log in manually."
+read -r
+
+# Function to handle Azure CLI errors and force login if needed
+handle_azure_error() {
+    local error_msg=$1
+    if [[ $error_msg =~ "AADSTS70043" ]] || [[ $error_msg =~ "expired" ]]; then
+        echo -e "${RED}Token expired or permission issue detected. Attempting to refresh login...${NC}"
+        az account clear
+        az login --scope "https://graph.microsoft.com/.default"
+        return 0
+    elif [[ $error_msg =~ "authentication needed" ]]; then
+        echo -e "${RED}Authentication needed. Please login again...${NC}"
+        az login --scope "https://graph.microsoft.com/.default"
+        return 0
+    fi
+    return 1
+}
+
+# Function to execute Azure CLI command with retry
+execute_az_command() {
+    local cmd=$1
+    local max_retries=3
+    local retry=0
+    local result
+    while [ $retry -lt $max_retries ]; do
+        result=$(eval "$cmd 2>&1")
+        if [ $? -eq 0 ]; then
+            echo "$result"
+            return 0
+        else
+            if handle_azure_error "$result"; then
+                retry=$((retry + 1))
+                echo "Retrying command... (Attempt $retry of $max_retries)"
+                continue
+            else
+                echo -e "${RED}Error executing command: $cmd${NC}"
+                echo -e "${RED}Error message: $result${NC}"
+                return 1
+            fi
+        fi
+    done
+    echo -e "${RED}Failed after $max_retries retries${NC}"
+    return 1
+}
+
+# Function to check if already logged in
+check_login_status() {
+    local login_check
+    login_check=$(az account show 2>&1)
+    if [ $? -eq 0 ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Function to ensure logged in with correct permissions
+ensure_logged_in() {
+    if ! check_login_status; then
+        echo -e "${RED}Not logged in to Azure CLI. Launching browser for login...${NC}"
+        az login --scope "https://graph.microsoft.com/.default"
+        if [ $? -ne 0 ]; then
+            echo -e "${RED}Login failed. Please try again.${NC}"
+            exit 1
+        fi
+    fi
+    # Verify Graph API permissions
+    echo -e "${BLUE}Verifying Microsoft Graph API permissions...${NC}"
+    local token_check
+    token_check=$(az account get-access-token --resource-type ms-graph 2>&1)
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}Refreshing login with Microsoft Graph permissions...${NC}"
+        az login --scope "https://graph.microsoft.com/.default"
+        if [ $? -ne 0 ]; then
+            echo -e "${RED}Failed to get required Microsoft Graph permissions. Please try again.${NC}"
+            exit 1
+        fi
+    fi
+    # Display current context
+    echo -e "${BLUE}Current Azure context:${NC}"
+    az account show -o table
+    echo -e "\nPress Enter to continue with this context, or Ctrl+C to exit and run 'az login' with different credentials"
+    read -r
+}
+
 # Ensure we're authenticated with Azure CLI
-# (OIDC: user must run 'az login' interactively; no secret required)
-echo -e "${BLUE}Checking Azure authentication status...${NC}"
-CURRENT_ACCOUNT=$(az account show --query id -o tsv 2>/dev/null || echo "")
-
-if [[ -z "$CURRENT_ACCOUNT" ]]; then
-    echo -e "${RED}Not authenticated with Azure CLI.${NC}"
-    echo "Please run 'az login --scope https://graph.microsoft.com/.default' in your terminal and authenticate as your user, then re-run this script."
-    exit 1
-fi
-
-# Check if the token is expired (simulate by running a simple az command)
-az account get-access-token --resource https://management.azure.com/ > /dev/null 2>&1
-if [[ $? -ne 0 ]]; then
-    echo -e "${RED}Your Azure CLI session has expired or is invalid.${NC}"
-    echo "Please run 'az login --scope https://graph.microsoft.com/.default' to re-authenticate, then re-run this script."
-    exit 1
-fi
+ensure_logged_in
 
 if [[ "$CURRENT_ACCOUNT" != "$SUBSCRIPTION_ID" ]]; then
     echo "Switching to correct subscription..."
@@ -125,6 +212,13 @@ export ARM_USE_CLI=true
 # Navigate to the validation directory
 cd "$VALIDATION_DIR"
 
+# Check if tfvars file exists
+TFVARS_FILE="$PROJECT_ROOT/terraform/terraform.tfvars"
+if [[ ! -f "$TFVARS_FILE" ]]; then
+    echo -e "${RED}Error: terraform.tfvars not found at $TFVARS_FILE${NC}"
+    exit 1
+fi
+
 echo -e "${BLUE}Running Terraform init...${NC}"
 # prepare directory for use with terraform
 # Initializes a Terraform working directory by performing several steps:
@@ -140,7 +234,7 @@ echo -e "${BLUE}Running Terraform plan...${NC}"
 # Executes a speculative plan to preview changes that Terraform will make to the infrastructure.
 # This command shows which resources will be created, updated, or destroyed, without applying any changes.
 # Useful for reviewing and validating infrastructure modifications before actual deployment.
-terraform plan -out=tfplan -var-file=../terraform.tfvars
+terraform plan -out=tfplan -var-file="$TFVARS_FILE"
 
 echo -e "${BLUE}Running Terraform apply...${NC}"
 terraform apply tfplan

@@ -15,7 +15,17 @@ Before following this validation guide, ensure you have completed:
    - `AZURE_SUBSCRIPTION_ID` - Your Azure subscription ID
    
    You can verify these secrets are configured by checking your credentials file at `.env/azure-credentials.json` under the `github.secrets` section.
-3. Basic familiarity with GitHub Actions and Terraform
+3. **Run the Azure resource inventory automation:**
+   - Use the provided inventory script for your platform to generate `.env/azure_full_inventory.json`:
+     - Unix/macOS: `OneTimeActivities/GetAzureExistingResources/unix/azure_full_inventory.sh`
+     - Windows: `OneTimeActivities/GetAzureExistingResources/windows/azure_full_inventory.ps1`
+   - This file is required for onboarding, tfvars population, and validation automation.
+4. **Populate Terraform variable files using automation:**
+   - Use the population script to generate/update `terraform.tfvars` and `secrets.tfvars` from `.env/azure_full_inventory.json`:
+     - Unix/macOS: `OneTimeActivities/GetAzureExistingResources/unix/PopulateTfvarsFromDiscoveredResources.sh`
+     - Windows: `OneTimeActivities/GetAzureExistingResources/windows/PopulateTfvarsFromDiscoveredResources.ps1`
+   - This ensures all required variables (including new naming conventions) are set for validation.
+5. Basic familiarity with GitHub Actions and Terraform
 
 ## Overview of Validation Process
 

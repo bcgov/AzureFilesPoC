@@ -37,6 +37,29 @@ This document describes recommended naming conventions for all Azure resource ty
 | Route Table              | rt       | rt-ag-pssg-azure-poc-dev            |                                                               |
 | Application Gateway      | agw      | agw-ag-pssg-azure-poc-dev           |                                                               |
 
+## Subnet Naming Convention
+**Purpose:** Ensure subnets are clearly identified by project, environment, and function, and are easily discoverable in large environments.
+
+**Format:**
+```
+subnet-<project>-<env>-<function>
+```
+- `subnet`: Literal prefix for all subnets.
+- `<project>`: Short project or application code (e.g., `d5007d`, `ag-pssg-azure-poc`).
+- `<env>`: Environment code (`dev`, `test`, `prod`, etc.).
+- `<function>`: Purpose or usage of the subnet (e.g., `storage-pe`, `app`, `db`, `private-endpoints`).
+
+**Examples:**
+- `subnet-d5007d-dev-storage-pe` (Storage Private Endpoint subnet for dev)
+- `subnet-ag-pssg-azure-poc-prod-app` (App subnet for production)
+- `subnet-hrms-test-db` (Database subnet for HRMS test environment)
+
+**Best Practices:**
+- Use a dedicated subnet for each major function (e.g., app, db, private endpoints).
+- For private endpoint subnets, use the suffix `-pe` or `-storage-pe` as appropriate.
+- Use a `/28` address range for private endpoint subnets unless a larger range is required.
+- Document all subnets and their purposes in your network design documentation.
+
 ## Multiple Instances Example
 
 If you need multiple file shares, blob containers, or other resources, add a numeric or descriptive suffix:

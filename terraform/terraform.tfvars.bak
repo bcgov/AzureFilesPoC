@@ -13,27 +13,29 @@
 #                  populate with values contained in .env/azure_full_inventory.json
 #                  that is populated by running OneTimeActivities/GetAzureExistingResources/unix/azure_full_inventory.sh
 
-dev_subscription_name     = ""
-dev_subscription_id       = ""
-dev_location              = ""
-dev_resource_group        = ""
-dev_storage_account_name  = ""
-dev_file_share_name       = ""
+environment               = "dev"
+dev_location = "canadacentral"
+dev_subscription_name = "d5007d"
+dev_subscription_id = "d321bcbe-c5e8-4830-901c-dab5fab3a834"
+dev_resource_group = "rg-ag-pssg-azure-poc-dev"
+dev_storage_account_name = ""
+dev_file_share_name = ""
 dev_file_share_quota_gb   = 100
 
 # Network settings
-dev_vnet_name             = ""
-dev_vnet_id               = ""
-dev_vnet_address_space    = [""]
-dev_dns_servers           = [""]
-dev_subnet_name           = ""
+dev_vnet_name = "d5007d-dev-vwan-spoke"
+dev_vnet_id = "/subscriptions/d321bcbe-c5e8-4830-901c-dab5fab3a834/resourceGroups/d5007d-dev-networking/providers/Microsoft.Network/virtualNetworks/d5007d-dev-vwan-spoke"
+dev_vnet_address_space = ["10.46.73.0/24"]
+dev_dns_servers = ["10.53.244.4"]
+dev_subnet_name = ""
 dev_subnet_address_prefixes = [""]
-dev_vnet_resource_group   = ""
+dev_vnet_resource_group = "d5007d-dev-networking"
+
 
 common_tags = {
   project         = "ag-pssg-azure-files-poc"
   owner           = "ag-pssg-teams"
-  account_coding  = ""
-  billing_group   = ""
+  account_coding  = "105150471019063011500000"
+  billing_group   = "d5007d"
   ministry_name   = "AG"
 }
