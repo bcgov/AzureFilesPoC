@@ -1,66 +1,45 @@
-# Development Environment Variables
+# --- terraform/environments/dev/variables.tf ---
+#
+# This file defines the "contract" or inputs required to deploy the 'dev' environment.
+# The variable names align with the project-wide convention.
 
-variable "resource_group_name" {
-  description = "AG/PSSG Azure Files PoC resource group"
+variable "dev_location" {
+  description = "The primary Azure region for the dev environment."
   type        = string
-  default     = "ag-pssg-azure-files-poc-dev-rg"
 }
 
-variable "location" {
-  description = "Azure region to deploy resources"
+variable "dev_resource_group" {
+  description = "The name of the new resource group for PoC services."
   type        = string
-  default     = "canadacentral"
 }
 
-variable "storage_account_name" {
-  description = "AG/PSSG Azure Files PoC storage account"
+variable "dev_storage_account_name" {
+  description = "The globally unique name for the PoC storage account."
   type        = string
-  default     = "agpssgfilespocdevsa"
 }
 
-variable "file_share_name" {
-  description = "AG/PSSG Azure Files PoC Azure file share"
+variable "dev_vnet_name" {
+  description = "The name of the existing VNet to connect to."
   type        = string
-  default     = "ag-pssg-poc-dev-share"
 }
 
-variable "file_share_quota_gb" {
-  description = "Size of the file share in GB"
-  type        = number
-  default     = 100
-}
-
-variable "vnet_name" {
-  description = "AG/PSSG Azure Files PoC virtual network"
+variable "dev_vnet_resource_group" {
+  description = "The name of the resource group where the existing VNet is located."
   type        = string
-  default     = "ag-pssg-files-poc-dev-vnet"
 }
 
-variable "vnet_address_space" {
-  description = "Address space for the virtual network"
+variable "dev_subnet_name" {
+  description = "The name of the new subnet for private endpoints."
+  type        = string
+}
+
+variable "dev_subnet_address_prefixes" {
+  description = "A list of CIDR address blocks for the new subnet."
   type        = list(string)
-  default     = ["10.0.0.0/16"]
-}
-
-variable "subnet_name" {
-  description = "AG/PSSG Azure Files PoC subnet"
-  type        = string
-  default     = "ag-pssg-files-poc-dev-subnet"
-}
-
-variable "subnet_address_prefixes" {
-  description = "Address prefixes for the subnet"
-  type        = list(string)
-  default     = ["10.0.1.0/24"]
 }
 
 variable "common_tags" {
-  description = "Tags to apply to all resources"
+  description = "A map of common tags to apply to all resources."
   type        = map(string)
-  default = {
-    project     = "ag-pssg-azure-files-poc"
-    owner       = "ag-pssg-teams"
-    ministry    = "ag-pssg"
-    costcenter  = "ag-pssg-financecode"
-  }
+  default     = {}
 }

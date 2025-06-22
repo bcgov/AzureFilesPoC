@@ -92,17 +92,9 @@ The following resources will be created in your Azure subscription when this scr
 | Storage Account              | `azurerm_storage_account.validation`      | `stagpssgazurepocdev01`                             |
 | Private Endpoint             | `azurerm_private_endpoint.storage_pe`     | `pe-stagpssgazurepocdev01`                          |
 
-## Prerequisites and Dependencies
-
-### For Local Validation (localhost)
-1.  **Required Tools:** You must have [Terraform CLI](https://developer.hashicorp.com/terraform/downloads) and [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) installed.
-2.  **Azure Authentication:** You must be logged in via `az login` and have selected the correct subscription.
-3.  **Variables File:** A populated `terraform.tfvars` file must exist in the parent `terraform/` directory.
-
-### For CI/CD Validation (GitHub Actions)
-The automated pipeline requires the configuration detailed in [RegisterApplicationInAzureAndOIDCInGithub.md](../../OneTimeActivities/RegisterApplicationInAzureAndOIDCInGithub.md) and a complete set of repository secrets and variables under **Settings > Secrets and variables > Actions**.
-
 ## How to Use
+
+This validation can be run via the automated GitHub Actions workflow or manually from your local machine for debugging.
 
 ### Method 1: GitHub Actions Validation (Primary)
 The primary way to use this module is through the automated `azure-terraform-validation.yml` workflow:
@@ -112,25 +104,29 @@ The primary way to use this module is through the automated `azure-terraform-val
 
 ### Method 2: Localhost Validation (For Debugging)
 Use this method to test and debug Terraform changes on your local machine before committing.
+> **For a detailed guide on using helper scripts for local validation, see the [Localhost Validation README](./localhost/README.md).**
 
-#### A) Manual Terraform Commands
-This approach is best for understanding the raw Terraform workflow.
-```shell
-# Navigate to this directory
-cd terraform/validation
+## Troubleshooting
 
-# Initialize, Plan, Apply, and Destroy using a variables file
-terraform init
-terraform plan -var-file=../terraform.tfvars
-terraform apply -var-file=../terraform.tfvars
-terraform destroy -var-file=../terraform.tfvars
-```
+### Error: "A resource with the ID ... already exists"
+You may encounter this error during the `terraform apply` step in the GitHub Actions workflow.
 
-#### B) Using Helper Scripts
-For a more guided and repeatable local test, you can use the provided helper scripts.
-> **For a detailed guide on this process, including prerequisites and troubleshooting, see the [Localhost Validation README](./localhost/README.md).**
+> `Error: A resource with the ID "/subscriptions/.../resourceGroups/rg-ag-pssg-azure-poc-dev" already exists - to be managed via Terraform this resource needs to be imported into the State.`
+
+**Why this happens:** This error occurs when Terraform's "memory" (its state file) is out of sync with the reality in Azure. A previous workflow run likely failed after creating the resource group, leaving it as an "orphan" that the new workflow doesn't know it's supposed to be managing.
+
+**Solution (for this PoC Environment):**
+Since this is a non-production validation environment, the simplest solution is to perform a "clean slate" reset.
+
+1.  **Navigate to the Azure Portal**.
+2.  Find and click on **Resource groups**.
+3.  In the filter box, search for the resource group named **`rg-ag-pssg-azure-poc-dev`**.
+4.  Click on the resource group to open its overview page.
+5.  Click the **"Delete resource group"** button.
+6.  You will be prompted to type the name of the resource group to confirm. Enter `rg-ag-pssg-azure-poc-dev` and click **Delete**.
+7.  Once the deletion is complete, **re-run the failed GitHub Actions workflow**. It will now succeed from a clean state.
+
+> ⚠️ **Warning:** This deletion method should **only** be used in non-production environments like this one. In a live production environment, the correct (but more advanced) solution is to use the `terraform import` command to adopt the existing resource into the state.
 
 ## ⚠️ Important Note on Private Endpoints
 If your Terraform configuration creates Azure Private Endpoints, you **must** account for any Azure Policy that manages Private DNS Zone associations. Always include a `lifecycle { ignore_changes = [private_dns_zone_group] }` block in your `azurerm_private_endpoint` resources to prevent Terraform from fighting with the policy automation.
-
-See [NotesAboutPrivateEndPoints.md](../modules/networking/private-endpoint/NotesAboutPrivateEndPoints.md) for details and code examples.

@@ -32,14 +32,14 @@ resolve_script_path() {
 resolve_script_path
 
 ENV_DIR="$PROJECT_ROOT/.env"
-TERRAFORM_DIR="$PROJECT_ROOT/terraform"
+TERRAFORM_VALIDATION_DIR="$PROJECT_ROOT/terraform/validation"
 
 INVENTORY_JSON="$ENV_DIR/azure_full_inventory.json"
 CREDENTIALS_JSON="$ENV_DIR/azure-credentials.json"
-TFVARS_TEMPLATE="$TERRAFORM_DIR/terraform.tfvars.template"
-SECRETS_TEMPLATE="$TERRAFORM_DIR/secrets.tfvars.template"
-TFVARS_FILE="$TERRAFORM_DIR/terraform.tfvars"
-SECRETS_FILE="$TERRAFORM_DIR/secrets.tfvars"
+TFVARS_TEMPLATE="$TERRAFORM_VALIDATION_DIR/terraform.tfvars.template"
+SECRETS_TEMPLATE="$TERRAFORM_VALIDATION_DIR/secrets.tfvars.template"
+TFVARS_FILE="$TERRAFORM_VALIDATION_DIR/terraform.tfvars"
+SECRETS_FILE="$TERRAFORM_VALIDATION_DIR/secrets.tfvars"
 
 if [ ! -f "$INVENTORY_JSON" ]; then
   echo "Error: $INVENTORY_JSON not found. Run azure_full_inventory.sh first." >&2

@@ -67,7 +67,9 @@ Thumbs.db
 
 # Ignore Terraform variable files containing sensitive or environment-specific data
 terraform.tfvars
+terraform.tfvars.bak
 
 # Ignore Terraform secrets file
 terraform/secrets.tfvars
 secrets.tfvars
+secrets.tfvars.bak

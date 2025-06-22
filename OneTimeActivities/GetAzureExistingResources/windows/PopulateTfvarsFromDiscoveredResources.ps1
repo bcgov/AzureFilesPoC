@@ -10,14 +10,14 @@ Set-StrictMode -Version Latest
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $ProjectRoot = Resolve-Path "$ScriptDir\..\..\.."
 $EnvDir = Join-Path $ProjectRoot ".env"
-$TerraformDir = Join-Path $ProjectRoot "terraform"
+$TerraformValidationDir = Join-Path $ProjectRoot "terraform/validation"
 
 $InventoryJson = Join-Path $EnvDir "azure_full_inventory.json"
 $CredentialsJson = Join-Path $EnvDir "azure-credentials.json"
-$TfvarsTemplate = Join-Path $TerraformDir "terraform.tfvars.template"
-$SecretsTemplate = Join-Path $TerraformDir "secrets.tfvars.template"
-$TfvarsFile = Join-Path $TerraformDir "terraform.tfvars"
-$SecretsFile = Join-Path $TerraformDir "secrets.tfvars"
+$TfvarsTemplate = Join-Path $TerraformValidationDir "terraform.tfvars.template"
+$SecretsTemplate = Join-Path $TerraformValidationDir "secrets.tfvars.template"
+$TfvarsFile = Join-Path $TerraformValidationDir "terraform.tfvars"
+$SecretsFile = Join-Path $TerraformValidationDir "secrets.tfvars"
 
 if (!(Test-Path $InventoryJson)) { Write-Error "$InventoryJson not found. Run azure_full_inventory.ps1 first."; exit 1 }
 if (!(Test-Path $TfvarsTemplate)) { Write-Error "$TfvarsTemplate not found."; exit 1 }
