@@ -1,109 +1,131 @@
-# Terraform Validation Module
+# Terraform Local and CI/CD Validation Module
 
 ## Purpose
 
-This module provides a minimal Terraform configuration to validate the Azure authentication, permissions, and CI/CD workflow without creating significant resources or incurring costs. It's designed as a "smoke test" for your Terraform infrastructure-as-code setup.
+This module provides a comprehensive Terraform configuration to validate the end-to-end setup for deploying Azure infrastructure. It is designed to be run in two distinct ways:
 
-> **Important**: This module is part of the validation process described in the comprehensive [ValidationProcess.md](/OneTimeActivities/ValidationProcess.md) guide. Please refer to that document for the full end-to-end validation process.
+1.  **Locally (`localhost`):** For rapid development, debugging, and testing of Terraform scripts using your personal Azure CLI credentials.
+2.  **Via CI/CD (`github`):** As a "smoke test" to confirm that the automated GitHub Actions pipeline, OIDC authentication, permissions, and variable injection are all working correctly.
 
-**Guidance** use .sh or .ps1 scripts to run and test your terraform scripts before deploying
-them to github.  
+> **Important**: This module is part of the validation process described in the comprehensive [ValidationProcess.md](../../OneTimeActivities/ValidationProcess.md) guide. Please refer to that document for the full end-to-end context.
 
-## Directory Structure
+## File & Directory Structure
 
-This validation module is organized into two key areas:
+This section describes the key files within the `terraform/validation` directory.
 
-- **[localhost/](localhost/)** - Documentation and scripts for running validation locally
-- **[github/](github/)** - Documentation for running validation through GitHub Actions
+| File / Directory      | Description                                                                                             |
+|-----------------------|---------------------------------------------------------------------------------------------------------|
+| `README.md`           | **(This file)** The high-level overview of the validation module, its purpose, and how to use it.         |
+| `main.tf`             | The core Terraform code that defines all the Azure resources to be created for this validation test.    |
+| `localhost/`          | A directory containing a detailed "how-to" guide and helper scripts for running validation on your local machine. |
 
-Both validation methods use the same underlying Terraform code but with different authentication mechanisms.
+## How It Works: Visualized
 
-## What This Module Creates
+These diagrams illustrate the components and the CI/CD process flow for this validation.
 
-- A resource group with appropriate tags
-- A storage account with minimal configuration
-- A private blob container
-- A "Hello World" text blob
+### Component Relationships
 
-## Relationship to One-Time Activities
+```mermaid
+graph TD
+    subgraph GitHub Repository
+        A[terraform/validation/main.tf]
+        B[../../.github/workflows/azure-terraform-validation.yml]
+        C[Repository Secrets & Variables]
+    end
 
-This validation module works in conjunction with the one-time setup activities described in:
-- [RegisterApplicationInAzureAndOIDC](/OneTimeActivities/RegisterApplicationInAzureAndOIDC/README.md) - For Azure AD app registration and OIDC configuration
-- [github-actions-setup.md](/OneTimeActivities/github-actions-setup.md) - For GitHub Actions setup documentation
+    subgraph Azure
+        E[Azure Resources]
+    end
 
-The validation process verifies that those one-time activities were completed correctly by testing:
-1. OIDC authentication from GitHub Actions to Azure
-2. Service principal permissions to create Azure resources
-3. Terraform's ability to create, modify, and delete resources
+    D[Developer] -- git push --> B
+    B -- Reads Configuration & Triggers --> G[GitHub Actions Runner]
+    C -- Injects Securely Into --> G
+    G -- Executes --> A
+    A -- Provisions / Updates --> E
+```
+
+### CI/CD Sequence Diagram
+
+```mermaid
+sequenceDiagram
+    participant Developer
+    participant GitHub
+    participant GitHub Actions Runner
+    participant Azure
+
+    Developer->>GitHub: git push to main branch
+    GitHub->>GitHub Actions Runner: Trigger "Terraform Plan and Apply" workflow
+
+    Runner->>Runner: 1. Checkout Code
+    Note right of Runner: Gets the latest terraform/validation/main.tf
+
+    Runner->>Azure: 2. OIDC Login
+    Note right of Runner: Authenticates securely without secrets
+
+    Runner->>Runner: 3. terraform init
+    Note right of Runner: Downloads Azure provider
+
+    Runner->>Runner: 4. terraform plan
+    Note right of Runner: Checks Azure state and determines what needs to be created/updated
+
+    Runner->>Runner: 5. terraform apply
+    Note right of Runner: Executes the plan if changes are detected
+
+    Runner->>Azure: 6. Create/Update Resources
+    Note right of Runner: API calls are made to provision the infrastructure
+```
+
+## Azure Resources Created
+
+The following resources will be created in your Azure subscription when this script is applied.
+
+| Azure Resource Type          | Terraform Resource Name                 | Azure Resource Name (Pattern)                     |
+|------------------------------|-----------------------------------------|---------------------------------------------------|
+| Resource Group               | `azurerm_resource_group.validation`       | `rg-ag-pssg-azure-poc-dev`                          |
+| Network Security Group       | `azurerm_network_security_group.validation` | `nsg-ag-pssg-azure-poc-dev-01`                      |
+| Subnet                       | `azapi_resource.storage_pe_subnet`        | `snet-ag-pssg-azure-poc-dev-storage-pe`             |
+| Storage Account              | `azurerm_storage_account.validation`      | `stagpssgazurepocdev01`                             |
+| Private Endpoint             | `azurerm_private_endpoint.storage_pe`     | `pe-stagpssgazurepocdev01`                          |
+
+## Prerequisites and Dependencies
+
+### For Local Validation (localhost)
+1.  **Required Tools:** You must have [Terraform CLI](https://developer.hashicorp.com/terraform/downloads) and [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) installed.
+2.  **Azure Authentication:** You must be logged in via `az login` and have selected the correct subscription.
+3.  **Variables File:** A populated `terraform.tfvars` file must exist in the parent `terraform/` directory.
+
+### For CI/CD Validation (GitHub Actions)
+The automated pipeline requires the configuration detailed in [RegisterApplicationInAzureAndOIDCInGithub.md](../../OneTimeActivities/RegisterApplicationInAzureAndOIDCInGithub.md) and a complete set of repository secrets and variables under **Settings > Secrets and variables > Actions**.
 
 ## How to Use
 
-### Local Validation
+### Method 1: GitHub Actions Validation (Primary)
+The primary way to use this module is through the automated `azure-terraform-validation.yml` workflow:
+1.  **Commit and push** a change to this directory (`terraform/validation/`).
+2.  The workflow will automatically trigger, plan the changes, and apply them to your Azure environment.
+3.  After the `Terraform Apply` step succeeds, log in to the Azure Portal to validate that the resources were created correctly.
 
-To run this validation locally:
+### Method 2: Localhost Validation (For Debugging)
+Use this method to test and debug Terraform changes on your local machine before committing.
 
+#### A) Manual Terraform Commands
+This approach is best for understanding the raw Terraform workflow.
 ```shell
 # Navigate to this directory
 cd terraform/validation
 
-# Initialize Terraform
+# Initialize, Plan, Apply, and Destroy using a variables file
 terraform init
-
-# Plan to see what would be created
-terraform plan
-
-# Apply the configuration (creates the resources)
-terraform apply
-
-# When finished testing, clean up
-terraform destroy
+terraform plan -var-file=../terraform.tfvars
+terraform apply -var-file=../terraform.tfvars
+terraform destroy -var-file=../terraform.tfvars
 ```
 
-### CI/CD Validation
+#### B) Using Helper Scripts
+For a more guided and repeatable local test, you can use the provided helper scripts.
+> **For a detailed guide on this process, including prerequisites and troubleshooting, see the [Localhost Validation README](./localhost/README.md).**
 
-This module is used by the `terraform-validation.yml` GitHub Actions workflow to verify that:
-
-1. GitHub Actions can successfully authenticate to Azure using OIDC
-2. The service principal has the necessary permissions
-3. Terraform can plan and apply infrastructure changes
-4. The entire CI/CD workflow functions correctly
-
-For step-by-step guidance on running the full validation process, see the comprehensive [ValidationProcess.md](/OneTimeActivities/ValidationProcess.md) guide.
-
-## Important Notes
-
-- This validation module creates minimal resources that incur very low costs (storage account)
-- All resources can be safely deleted after validation using `terraform destroy`
-- Use this module before implementing more complex Terraform configurations
-
-## What This Validation Verifies
-
-This module specifically verifies that:
-
-1. The Azure AD application registration and OIDC setup in [RegisterApplicationInAzureAndOIDC](/OneTimeActivities/RegisterApplicationInAzureAndOIDC/README.md) was completed correctly
-2. The GitHub secrets for Azure authentication were properly configured
-3. The service principal has sufficient permissions to create and manage resources
-4. The GitHub Actions workflow can successfully authenticate to Azure using OIDC
-5. Terraform can create, manage, and delete Azure resources through the CI/CD pipeline
-
-## Best Practices
-
-- Run this validation module when:
-  - Setting up a new environment
-  - Changing authentication methods
-  - Modifying service principal permissions
-  - Updating GitHub Actions workflows
-  - Making significant changes to your Terraform structure
-
-## Security Considerations
-
-- This module follows the principle of least privilege
-- The validation creates resources in a dedicated validation resource group
-- All resources have appropriate tags for tracking and governance
-- OIDC authentication eliminates the need for long-lived credentials
-
-## ⚠️ Private Endpoints & DNS Automation (Important)
-
-If your Terraform configuration creates Azure Private Endpoints, you **must** account for Azure Policy automation that manages Private DNS Zone associations. Always include a `lifecycle { ignore_changes = [private_dns_zone_group] }` block in your `azurerm_private_endpoint` resources to prevent Terraform from removing DNS associations created by policy.
+## ⚠️ Important Note on Private Endpoints
+If your Terraform configuration creates Azure Private Endpoints, you **must** account for any Azure Policy that manages Private DNS Zone associations. Always include a `lifecycle { ignore_changes = [private_dns_zone_group] }` block in your `azurerm_private_endpoint` resources to prevent Terraform from fighting with the policy automation.
 
 See [NotesAboutPrivateEndPoints.md](../modules/networking/private-endpoint/NotesAboutPrivateEndPoints.md) for details and code examples.

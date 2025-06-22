@@ -43,6 +43,38 @@
  *
  * -------------------------------------------------------------------------------------------------
  *
+ * GITHUB DEPENDENCIES:
+ * This pipeline requires the following secrets and variables to be configured in your GitHub
+ * repository settings under "Settings > Secrets and variables > Actions".
+ *
+ * GITHUB SECRETS
+ * | Secret Name                 | Description                                                                     |
+ * |-----------------------------|---------------------------------------------------------------------------------|
+ * | AZURE_CLIENT_ID             | The Client ID (or Application ID) of the Azure Service Principal for OIDC auth. |
+ * | AZURE_SUBSCRIPTION_ID       | The ID of the Azure subscription where resources will be deployed.              |
+ * | AZURE_SUBSCRIPTION_NAME     | The display name of the Azure subscription (for reference).                     |
+ * | AZURE_TENANT_ID             | The Tenant ID of the Azure Active Directory instance for OIDC authentication.   |
+ * | DEV_RESOURCE_GROUP_NAME     | The name of the resource group this validation will create.                     |
+ * | DEV_SUBSCRIPTION_ID         | The ID of the development subscription (can be the same as AZURE_...).          |
+ * | DEV_SUBSCRIPTION_NAME       | The name of the development subscription (can be the same as AZURE_...).        |
+ * | DEV_VNET_ID                 | The full Azure Resource ID of the existing Virtual Network to connect to.       |
+ * | DEV_VNET_NAME               | The name of the existing Virtual Network where the new subnet will be created.  |
+ * | DEV_VNET_RESOURCE_GROUP     | The name of the Resource Group where the existing Virtual Network is located.   |
+ *
+ * GITHUB VARIABLES
+ * | Variable Name                 | Description                                                                     |
+ * |-------------------------------|---------------------------------------------------------------------------------|
+ * | AZURE_LOCATION                | The Azure region where all new resources will be deployed (e.g., 'canadacentral').|
+ * | DEV_DNS_SERVERS               | A list of DNS server IP addresses for the VNet (e.g., `["10.0.0.4"]`).           |
+ * | DEV_FILE_SHARE_NAME           | The desired name for the Azure File Share inside the storage account.           |
+ * | DEV_FILE_SHARE_QUOTA_GB       | The size of the file share in Gigabytes (e.g., `10`). Must be a number.         |
+ * | DEV_STORAGE_ACCOUNT_NAME      | The globally unique name for the new Azure Storage Account.                     |
+ * | DEV_SUBNET_ADDRESS_PREFIXES   | The CIDR block for the new subnet as a list (e.g., `["10.0.1.0/24"]`).           |
+ * | DEV_SUBNET_NAME               | The desired name for the new subnet to be created.                              |
+ * | DEV_VNET_ADDRESS_SPACE        | The address space of the existing VNet as a list (e.g., `["10.0.0.0/16"]`).     |
+ *
+ * -------------------------------------------------------------------------------------------------
+ *
  * KEY CONCEPTS VALIDATED:
  *   ✅ CI/CD Pipeline Execution: The GitHub Actions workflow triggers and runs successfully.
  *   ✅ Secure OIDC Authentication: Connects to Azure without long-lived secrets.

@@ -1,170 +1,105 @@
-# Local Validation for Azure OIDC Setup
+# Localhost Validation Guide
 
-This folder contains scripts and instructions for validating your Azure AD application registration and OIDC setup locally before using GitHub Actions.
+This document is the detailed "how-to" guide for running the validation module from your local machine. For a high-level overview of the module's purpose and the CI/CD process, please refer to the main [Validation README](../README.md).
 
-## Purpose
+## Purpose of Local Validation
 
-Local validation allows you to verify that:
-1. Your Azure credentials are correctly configured
-2. Your service principal has the necessary permissions
-3. You can authenticate and create resources in Azure
-
-This validation serves as a pre-check before running the GitHub Actions workflows to ensure everything is set up correctly.
-
-**NOTE:**  
-This approach validates and tests Terraform scripts locally using the Azure CLI and interactive `az login` authentication, rather than running them directly through GitHub Actions. By running scripts locally, you can debug and verify your Azure and Terraform setup before pushing changes to GitHub. This ensures that your Terraform scripts work as expected and that your Azure OIDC configuration is correct, reducing the risk of errors in CI/CD pipelines. Once local validation passes, you can confidently proceed to GitHub Actions-based workflows, which use OIDC for passwordless authentication.
+Running Terraform locally is essential for rapid development and debugging. This process allows you to:
+- **Test Changes Quickly:** Iterate on `.tf` files without waiting for a full CI/CD pipeline run.
+- **Debug Interactively:** See detailed error messages and state changes directly in your terminal.
+- **Validate Permissions:** Confirm your personal Azure account or a test service principal has the necessary permissions before configuring the pipeline.
+- **Test Incrementally:** Safely enable one resource at a time to isolate issues, as described in the best practices section below.
 
 ## Prerequisites
 
-Before running local validation:
-1. Complete all steps in the [RegisterApplicationInAzureAndOIDC](../../OneTimeActivities/RegisterApplicationInAzureAndOIDC/README.md) process
-2. Completed ## Step 1: Validate Azure Authentication in (../../OneTimeActivities/ValidationProcess.md)
-2. Have the `.env/azure-credentials.json` file properly populated
-3. Have Azure CLI installed locally
+Before running local validation, ensure you have completed the following setup:
 
-## Validation Scripts
+1.  **Required Tools Installed:**
+    - [Terraform CLI](https://developer.hashicorp.com/terraform/downloads)
+    - [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli)
 
-### 1. Basic Authentication Validation
+2.  **Authenticated to Azure:**
+    - Run `az login` in your terminal and follow the prompts to sign in to your Azure account.
+    - Ensure you have selected the correct subscription: `az account set --subscription "Your-Subscription-Name-or-ID"`
 
-This script validates that you can authenticate to Azure using the credentials from your `.env/azure-credentials.json` file:
+3.  **Configured Variables File:**
+    - A `terraform.tfvars` file must exist in the parent `terraform/` directory.
+    - If it doesn't exist, copy the template: `cp terraform/terraform.tfvars.template terraform/terraform.tfvars`.
+    - Populate this file with the required values for your development environment.
 
-```bash
-./validate_authentication.sh
-```
+## How to Run Validation Locally
 
-If this script runs without errors, your local Azure authentication is set up correctly and you can proceed to the next step.
+The validation process is managed by helper scripts for consistency and ease of use.
 
-### 2. Terraform Validation
+1.  **Navigate to this directory** from the repository root:
+    ```bash
+    cd terraform/validation/localhost
+    ```
 
-This script runs Terraform locally using your Azure credentials to ensure you can deploy resources as expected:
+2.  **(Optional First Run) Validate Authentication:**
+    This script simply confirms your Azure CLI can authenticate successfully.
+    ```bash
+    ./validate_authentication.sh
+    ```
 
-```bash
-./validate_terraform.sh
-```
+3.  **Run the Full Terraform Validation:**
+    This script will initialize, plan, and apply the Terraform configuration.
+    ```bash
+    ./validate_terraform.sh
+    ```
+    The script will create all the resources defined in `main.tf` and then prompt you if you want to destroy them upon completion.
 
-If both scripts complete successfully, your local environment is ready for further testing or for running the GitHub Actions workflows.
+## The Local Validation Process
 
-This script runs Terraform locally using the same credentials that would be used by GitHub Actions:
-
-```bash
-./validate_terraform.sh
-```
-
-## How Local Validation Works
-
-Unlike GitHub Actions which uses OIDC federation for passwordless authentication, local validation:
-1. Reads credentials from your `.env/azure-credentials.json` file
-2. Uses Azure CLI to authenticate with these credentials
-3. Runs the shell script [`validate_terraform.sh`](./validate_terraform.sh), which:
-   - Changes directory to `terraform/validation`
-   - Sets environment variables for the Azure provider
-   - Runs the following Terraform commands:
-     - `terraform init`: Initializes the working directory, downloads providers, and prepares the environment
-     - `terraform plan -out=tfplan`: Creates a speculative plan showing what changes will be made
-     - `terraform apply -auto-approve tfplan`: Applies the planned changes to create/update resources
-     - `terraform output`: Shows the outputs from the Terraform configuration
-     - `terraform destroy -auto-approve`: (Optional) Destroys all resources created during validation
-   - All `.tf` files in the directory (such as `main.tf`) are loaded and processed by Terraform automatically
-4. Runs the same Terraform code used by the GitHub Actions workflow
-
-### Local Validation Sequence Diagram
+This diagram shows the sequence of events when you run the `validate_terraform.sh` script.
 
 ```mermaid
 sequenceDiagram
-    participant User as User
-    participant Shell as validate_terraform.sh
-    participant Dir as terraform/validation/
-    participant TF as Terraform CLI
-    participant TFConf as main.tf (and other .tf files)
+    participant User
+    participant Script as validate_terraform.sh
+    participant TerraformCLI as Terraform CLI
+    participant Azure
 
-    User->>Shell: Run ./validate_terraform.sh
-    Shell->>Dir: cd terraform/validation
-    Shell->>TF: terraform init
-    TF->>TFConf: Load all .tf files
-    TF-->>Shell: Directory initialized
-    Shell->>TF: terraform plan -out=tfplan
-    TF->>TFConf: Parse resources, build plan
-    TF-->>Shell: Show plan (what will change)
-    Shell->>TF: terraform apply -auto-approve tfplan
-    TF->>TFConf: Apply changes (create/update resources)
-    TF-->>Shell: Show outputs
-    Shell->>TF: terraform output
-    TF-->>Shell: Display outputs
-    Shell->>User: Prompt for cleanup
-    User-->>Shell: (y/n)
-    alt If user chooses cleanup
-        Shell->>TF: terraform destroy -auto-approve
-        TF->>TFConf: Destroy resources
-        TF-->>Shell: Confirm destruction
-    end
-    Shell->>User: Validation complete
+    User->>Script: Executes ./validate_terraform.sh
+    note right of User: User has already run 'az login'
+
+    Script->>TerraformCLI: Runs 'terraform init'
+    TerraformCLI-->>Script: Providers downloaded
+
+    Script->>TerraformCLI: Runs 'terraform plan'
+    TerraformCLI->>Azure: Reads current state (if any)
+    Azure-->>TerraformCLI: Returns state
+    TerraformCLI-->>Script: Shows plan of changes
+
+    Script->>TerraformCLI: Runs 'terraform apply'
+    TerraformCLI->>Azure: Sends API calls to create/update resources
+    Azure-->>TerraformCLI: Confirms resource creation
+    TerraformCLI-->>Script: Apply successful
+
+    Script->>User: "Do you want to destroy resources? (y/n)"
+    User->>Script: Responds 'y'
+
+    Script->>TerraformCLI: Runs 'terraform destroy'
+    TerraformCLI->>Azure: Sends API calls to delete resources
+    Azure-->>TerraformCLI: Confirms resource deletion
+    TerraformCLI-->>Script: Destroy successful
 ```
 
-### Step-by-Step Details
+## Best Practice: Incremental Local Validation
 
-1. **User runs `./validate_terraform.sh`**
-   - Starts the local validation process.
-2. **Script changes directory to `terraform/validation/`**
-   - Ensures all Terraform commands run in the correct context.
-3. **Script sets environment variables for Azure provider**
-   - Ensures Terraform uses the right credentials and subscription.
-4. **Script runs `terraform init`**
-   - Downloads providers, prepares the directory, and loads all `.tf` files.
-5. **Script runs `terraform plan -out=tfplan`**
-   - Shows what changes will be made, without making any changes yet.
-6. **Script runs `terraform apply -auto-approve tfplan`**
-   - Applies the planned changes, creating/updating resources.
-7. **Script runs `terraform output`**
-   - Displays outputs defined in the Terraform configuration.
-8. **Script prompts user for cleanup**
-   - If user chooses yes, runs `terraform destroy -auto-approve` to remove all resources.
-9. **Script completes**
-   - Local validation is done; user can review results or proceed to CI/CD validation.
+The most effective way to debug and build infrastructure is to enable one logical group of resources at a time. This isolates errors and helps you understand dependencies.
 
-This sequence ensures you understand exactly how the shell script, directory, `.tf` files, and Terraform CLI interact during local validation.
+1.  **Start Simple:** In `main.tf`, comment out all `resource` blocks except for the most basic one (e.g., `azurerm_resource_group.validation`).
+2.  **Run Validation:** Execute `./validate_terraform.sh`. Confirm it creates and destroys the resource group successfully. This validates your core permissions.
+3.  **Add the Next Resource:** Uncomment the next resource (e.g., `azurerm_network_security_group.validation`).
+4.  **Repeat:** Run the validation script again. Continue this process, adding one resource at a time until your entire configuration is enabled and validated.
 
-## Running Local Validation
-
-Follow these steps to validate your setup locally:
-
-1. Make sure you're in the project root directory
-2. Run the authentication validation script:
-   ```
-   ./terraform/validation/localhost/validate_authentication.sh
-   ```
-3. If successful, run the Terraform validation script:
-   ```
-   ./terraform/validation/localhost/validate_terraform.sh
-   ```
-4. Check the output to verify all components are working correctly
-
-## Incremental Local Validation
-
-A best practice for local validation is to incrementally test your Terraform configuration by enabling and validating one resource or logical group of resources at a time. For example:
-
-1. **Start with the simplest resource** (e.g., just a resource group in `main.tf`).
-2. **Run local validation** using `./validate_terraform.sh` to ensure you have the required permissions and the resource can be created and destroyed successfully.
-3. **Uncomment or add the next resource** (e.g., a storage account), and repeat the validation process.
-4. **Continue incrementally** adding or enabling resources, running the validation script after each change. This helps you:
-   - Quickly identify permission or configuration issues
-   - Minimize the blast radius of errors
-   - Build confidence in your infrastructure code step by step
-
-This incremental approach is especially useful for:
-- Debugging permission issues (e.g., if you can create a resource group but not a storage account)
-- Learning how Terraform and Azure permissions interact
-- Safely building up complex infrastructure
-
-**Tip:**
-- Use comments in your `.tf` files to temporarily disable resources you are not ready to test.
-- Only move to the next resource or step after the previous one is validated and cleaned up successfully.
-
-This approach mirrors how you would build and validate infrastructure in production: one safe, auditable step at a time.
+This incremental approach is invaluable for quickly identifying permission issues and configuration errors with minimal blast radius.
 
 ## Troubleshooting
 
-If validation fails:
-- Ensure all steps in the RegisterApplicationInAzureAndOIDC process were completed
-- Verify the permissions assigned to your service principal
-- Check that your `.env/azure-credentials.json` file contains the correct values
-- Make sure you're authenticated to the right Azure subscription
+If validation fails, check the following:
+- Are you logged into the correct Azure account and subscription? Run `az account show`.
+- Does your `terraform/terraform.tfvars` file contain correct and complete values?
+- Does your user account have the necessary RBAC permissions (e.g., "Contributor") on the target subscription?
+- Review the detailed error message from Terraform for specific clues.
