@@ -1,6 +1,6 @@
 /*
  * Azure Files PoC - Terraform Validation Configuration
- * Purpose: Minimal Terraform configuration to validate CI/CD integration
+ * STEP 1: Create base network resources only.
  */
 
 # Configure the Azure and AzAPI providers
@@ -23,7 +23,7 @@ provider "azurerm" {
 
 provider "azapi" {}
 
-# --- All your variable definitions are correct ---
+# --- All your variable definitions are correct and should remain ---
 variable "dev_location" { type = string }
 variable "environment" { type = string }
 variable "dev_resource_group" { type = string }
@@ -43,20 +43,13 @@ variable "dev_dns_servers" { type = list(string) }
 
 # Local variables
 locals {
-  project_prefix = "ag-pssg-azure-poc"
-  env            = var.environment
-  rg_name        = "rg-${local.project_prefix}-${local.env}"
-  st_name        = var.dev_storage_account_name
-  sc_name        = "sc-${local.project_prefix}-${local.env}-01"
-  validation_tags = {
-    Project     = "Azure Files PoC"
-    Environment = var.environment
-    Purpose     = "Validation"
-    Terraform   = "true"
-  }
+  project_prefix    = "ag-pssg-azure-poc"
+  env               = var.environment
+  rg_name           = "rg-${local.project_prefix}-${local.env}"
+  st_name           = var.dev_storage_account_name
+  nsg_name          = "nsg-${local.project_prefix}-${local.env}-01"
   dev_subnet_name   = var.dev_subnet_name
   dev_subnet_prefix = var.dev_subnet_address_prefixes
-  nsg_name          = "nsg-${local.project_prefix}-${local.env}-01"
 }
 
 # Resource group for validation
@@ -96,41 +89,41 @@ resource "azapi_resource" "storage_pe_subnet" {
   response_export_values = ["id"]
 }
 
-# --- FIX: THIS ENTIRE BLOCK IS NOW UNCOMMENTED ---
-# Storage account for validation
-resource "azurerm_storage_account" "validation" {
-  name                     = local.st_name
-  resource_group_name      = azurerm_resource_group.validation.name
-  location                 = var.dev_location
-  account_tier             = "Standard"
-  account_replication_type = "LRS"
-  large_file_share_enabled = true
-  access_tier              = "Hot"
-  tags                     = var.common_tags
-  public_network_access_enabled = false
-}
+# --- COMMENTED OUT FOR STEP 1 ---
+# The Storage Account will not be created in this run.
+# resource "azurerm_storage_account" "validation" {
+#   name                     = local.st_name
+#   resource_group_name      = azurerm_resource_group.validation.name
+#   location                 = var.dev_location
+#   account_tier             = "Standard"
+#   account_replication_type = "LRS"
+#   large_file_share_enabled = true
+#   access_tier              = "Hot"
+#   tags                     = var.common_tags
+#   public_network_access_enabled = false
+# }
 
-# --- FIX: THIS ENTIRE BLOCK IS NOW UNCOMMENTED ---
-# Private endpoint for storage (blob and file)
-resource "azurerm_private_endpoint" "storage_pe" {
-  name                = "pe-${local.st_name}"
-  location            = var.dev_location
-  resource_group_name = azurerm_resource_group.validation.name
-  subnet_id           = jsondecode(azapi_resource.storage_pe_subnet.output).id
+# --- COMMENTED OUT FOR STEP 1 ---
+# The Private Endpoint will not be created in this run.
+# resource "azurerm_private_endpoint" "storage_pe" {
+#   name                = "pe-${local.st_name}"
+#   location            = var.dev_location
+#   resource_group_name = azurerm_resource_group.validation.name
+#   subnet_id           = jsondecode(azapi_resource.storage_pe_subnet.output).id
+#
+#   private_service_connection {
+#     name                           = "psc-${local.st_name}"
+#     is_manual_connection           = false
+#     private_connection_resource_id = azurerm_storage_account.validation.id
+#     subresource_names              = ["blob", "file"]
+#   }
+#
+#   lifecycle {
+#     ignore_changes = [ private_dns_zone_group ]
+#   }
+# }
 
-  private_service_connection {
-    name                           = "psc-${local.st_name}"
-    is_manual_connection           = false
-    private_connection_resource_id = azurerm_storage_account.validation.id
-    subresource_names              = ["blob", "file"]
-  }
-
-  lifecycle {
-    ignore_changes = [ private_dns_zone_group ]
-  }
-}
-
-# --- All your outputs will now work correctly ---
+# --- Outputs for the resources that ARE being created ---
 output "resource_group_name" {
   description = "The name of the validation resource group"
   value       = azurerm_resource_group.validation.name
@@ -141,22 +134,24 @@ output "subnet_id" {
   value       = jsondecode(azapi_resource.storage_pe_subnet.output).id
 }
 
-output "storage_account_name" {
-  description = "The name of the created storage account"
-  value       = azurerm_storage_account.validation.name
-}
-
-output "storage_account_id" {
-  description = "The ID of the created storage account"
-  value       = azurerm_storage_account.validation.id
-}
-
-output "storage_account_resource_group" {
-  description = "The resource group of the storage account"
-  value       = azurerm_storage_account.validation.resource_group_name
-}
-
-output "storage_account_location" {
-  description = "The location of the storage account"
-  value       = azurerm_storage_account.validation.location
-}
+# --- COMMENTED OUT FOR STEP 1 ---
+# These outputs are disabled because they depend on the storage account.
+# output "storage_account_name" {
+#   description = "The name of the created storage account"
+#   value       = azurerm_storage_account.validation.name
+# }
+#
+# output "storage_account_id" {
+#   description = "The ID of the created storage account"
+#   value       = azurerm_storage_account.validation.id
+# }
+#
+# output "storage_account_resource_group" {
+#   description = "The resource group of the storage account"
+#   value       = azurerm_storage_account.validation.resource_group_name
+# }
+#
+# output "storage_account_location" {
+#   description = "The location of the storage account"
+#   value       = azurerm_storage_account.validation.location
+# }
