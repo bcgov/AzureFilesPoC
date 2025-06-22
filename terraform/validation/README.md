@@ -82,15 +82,15 @@ sequenceDiagram
 
 ## Azure Resources Created
 
-The following resources will be created in your Azure subscription when this script is applied.
+The following resources will be created in your Azure subscription when this script is applied. The names are based on the variables provided to the script.
 
-| Azure Resource Type          | Terraform Resource Name                 | Azure Resource Name (Pattern)                     |
+| Azure Resource Type          | Terraform Resource Name                 | Example Azure Resource Name Pattern               |
 |------------------------------|-----------------------------------------|---------------------------------------------------|
-| Resource Group               | `azurerm_resource_group.validation`       | `rg-ag-pssg-azure-poc-dev`                          |
-| Network Security Group       | `azurerm_network_security_group.validation` | `nsg-ag-pssg-azure-poc-dev-01`                      |
-| Subnet                       | `azapi_resource.storage_pe_subnet`        | `snet-ag-pssg-azure-poc-dev-storage-pe`             |
-| Storage Account              | `azurerm_storage_account.validation`      | `stagpssgazurepocdev01`                             |
-| Private Endpoint             | `azurerm_private_endpoint.storage_pe`     | `pe-stagpssgazurepocdev01`                          |
+| Resource Group               | `azurerm_resource_group.validation`       | `rg-<project>-<env>`                              |
+| Network Security Group       | `azurerm_network_security_group.validation` | `nsg-<project>-<env>-01`                          |
+| Subnet                       | `azapi_resource.storage_pe_subnet`        | `snet-<project>-<env>-storage-pe`                 |
+| Storage Account              | `azurerm_storage_account.validation`      | `<unique-storage-name>`                           |
+| Private Endpoint             | `azurerm_private_endpoint.storage_pe`     | `pe-<unique-storage-name>`                        |
 
 ## How to Use
 
@@ -106,27 +106,30 @@ The primary way to use this module is through the automated `azure-terraform-val
 Use this method to test and debug Terraform changes on your local machine before committing.
 > **For a detailed guide on using helper scripts for local validation, see the [Localhost Validation README](./localhost/README.md).**
 
+## Manual Resource Cleanup
+
+The preferred method for cleanup is `terraform destroy`. However, if the environment is left in a broken state due to a failed pipeline run or if you are blocked by Azure Policy, you may need to delete resources manually from the Azure Portal. **You must delete resources in the correct order to resolve dependencies.**
+
+**Required Deletion Order:**
+1.  **Delete the Private Endpoint:** This unlocks the subnet.
+    -   Navigate to the resource group created by this script (e.g., `rg-my-project-dev`).
+    -   Find and delete the **Private Endpoint** resource (e.g., `pe-mystorageaccount`).
+2.  **Delete the Storage Account:**
+    -   In the same resource group, delete the **Storage Account** resource (e.g., `stmyprojectdev01`).
+3.  **Disassociate the NSG from the Subnet:**
+    -   **Note:** This step is often blocked by Azure Policy. If it fails, you must contact your Azure Platform team for a policy exemption or to perform this step for you.
+    -   Navigate to your *existing* networking resource group and Virtual Network.
+    -   Find the subnet created by this script (e.g., `snet-my-project-dev-pe`).
+    -   In the subnet settings, change the "Network security group" dropdown to **None** and save.
+4.  **Delete the Subnet:**
+    -   While on the Subnets page of your VNet, you can now delete the subnet from the previous step.
+5.  **Delete the Network Security Group:**
+    -   Navigate back to the resource group created by this script.
+    -   You can now successfully delete the **NSG** resource (e.g., `nsg-my-project-dev-01`).
+6.  **Finally, delete the Resource Group:**
+    -   The resource group created by this script should now be empty or only contain resources that can be deleted. You can now delete the resource group itself.
+
 ## Troubleshooting
 
 ### Error: "A resource with the ID ... already exists"
-You may encounter this error during the `terraform apply` step in the GitHub Actions workflow.
-
-> `Error: A resource with the ID "/subscriptions/.../resourceGroups/rg-ag-pssg-azure-poc-dev" already exists - to be managed via Terraform this resource needs to be imported into the State.`
-
-**Why this happens:** This error occurs when Terraform's "memory" (its state file) is out of sync with the reality in Azure. A previous workflow run likely failed after creating the resource group, leaving it as an "orphan" that the new workflow doesn't know it's supposed to be managing.
-
-**Solution (for this PoC Environment):**
-Since this is a non-production validation environment, the simplest solution is to perform a "clean slate" reset.
-
-1.  **Navigate to the Azure Portal**.
-2.  Find and click on **Resource groups**.
-3.  In the filter box, search for the resource group named **`rg-ag-pssg-azure-poc-dev`**.
-4.  Click on the resource group to open its overview page.
-5.  Click the **"Delete resource group"** button.
-6.  You will be prompted to type the name of the resource group to confirm. Enter `rg-ag-pssg-azure-poc-dev` and click **Delete**.
-7.  Once the deletion is complete, **re-run the failed GitHub Actions workflow**. It will now succeed from a clean state.
-
-> ⚠️ **Warning:** This deletion method should **only** be used in non-production environments like this one. In a live production environment, the correct (but more advanced) solution is to use the `terraform import` command to adopt the existing resource into the state.
-
-## ⚠️ Important Note on Private Endpoints
-If your Terraform configuration creates Azure Private Endpoints, you **must** account for any Azure Policy that manages Private DNS Zone associations. Always include a `lifecycle { ignore_changes = [private_dns_zone_group] }` block in your `azurerm_private_endpoint` resources to prevent Terraform from fighting with the policy automation.
+This error occurs when Terraform's state is out of sync with Azure. The solution is to manually clean up the resources (see section above) and re-run the workflow. The name of the resource group to delete will be explicitly mentioned in the error message.
