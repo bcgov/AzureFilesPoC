@@ -11,25 +11,6 @@
  *
  * -------------------------------------------------------------------------------------------------
  *
- * HIGH-LEVEL VALIDATION PROCESS:
- * This validation was performed in two distinct phases to ensure a stable, step-by-step
- * verification of the pipeline:
- *
- *   1. STEP 1: NETWORK FOUNDATION DEPLOYMENT
- *      - Action: Looks up the pre-existing Resource Group, then creates a Network Security Group (NSG) 
- *        and a new Subnet within an existing Virtual Network.
- *      - Purpose: To confirm base connectivity, successful OIDC authentication, and the ability
- *        to create resources within existing Azure infrastructure from the pipeline.
- *
- *   2. STEP 2: PAAS SERVICE DEPLOYMENT
- *      - Action: Creates a policy-compliant Storage Account (no public access) and a Private
- *        Endpoint connecting it to the new subnet.
- *      - Purpose: To validate policy compliance, dependency management (the PE depends on the
- *        subnet and storage account), and the successful creation of services on the foundation
- *        built in Step 1.
- *
- * -------------------------------------------------------------------------------------------------
- *
  * AZURE RESOURCES CREATED/REFERENCED BY THIS SCRIPT:
  * The following resources will be managed in your Azure subscription when this script is applied.
  *
@@ -41,53 +22,12 @@
  * | **Create**  | Storage Account              | azurerm_storage_account.validation      | `st<projectcode><env>01` (globally unique)        |
  * | **Create**  | Private Endpoint             | azurerm_private_endpoint.storage_pe     | `pe-<storage-account-name>`                       |
  *
- * -------------------------------------------------------------------------------------------------
- *
- * GITHUB DEPENDENCIES:
- * This pipeline requires the following secrets and variables to be configured in your GitHub
- * repository settings under "Settings > Secrets and variables > Actions".
- *
- * GITHUB SECRETS
- * | Secret Name                 | Description                                                                     |
- * |-----------------------------|---------------------------------------------------------------------------------|
- * | AZURE_CLIENT_ID             | The Client ID (or Application ID) of the Azure Service Principal for OIDC auth. |
- * | AZURE_SUBSCRIPTION_ID       | The ID of the Azure subscription where resources will be deployed.              |
- * | AZURE_SUBSCRIPTION_NAME     | The display name of the Azure subscription (for reference).                     |
- * | AZURE_TENANT_ID             | The Tenant ID of the Azure Active Directory instance for OIDC authentication.   |
- * | DEV_RESOURCE_GROUP_NAME     | The name of the **existing** resource group this validation will use (e.g., 'rg-my-project-dev'). |
- * | DEV_SUBSCRIPTION_ID         | The ID of the development subscription (can be the same as AZURE_...).          |
- * | DEV_SUBSCRIPTION_NAME       | The name of the development subscription (can be the same as AZURE_...).        |
- * | DEV_VNET_ID                 | The full Azure Resource ID of the existing Virtual Network to connect to.       |
- * | DEV_VNET_NAME               | The name of the existing VNet where the new subnet will be created (e.g., 'vnet-my-spoke-dev'). |
- * | DEV_VNET_RESOURCE_GROUP     | The name of the Resource Group where the existing VNet is located (e.g., 'rg-my-networking-dev'). |
- *
- * GITHUB VARIABLES
- * | Variable Name                 | Description                                                                     |
- * |-------------------------------|---------------------------------------------------------------------------------|
- * | AZURE_LOCATION                | The Azure region where all new resources will be deployed (e.g., 'canadacentral').|
- * | DEV_DNS_SERVERS               | A list of DNS server IP addresses for the VNet (e.g., `["10.0.0.4"]`).           |
- * | DEV_FILE_SHARE_NAME           | The desired name for the Azure File Share inside the storage account.           |
- * | DEV_FILE_SHARE_QUOTA_GB       | The size of the file share in Gigabytes (e.g., `10`). Must be a number.         |
- * | DEV_STORAGE_ACCOUNT_NAME      | The globally unique name for the new Azure Storage Account (e.g., 'stmyprojectdev01').|
- * | DEV_SUBNET_ADDRESS_PREFIXES   | The CIDR block for the new subnet as a list (e.g., `["10.0.1.0/24"]`).           |
- * | DEV_SUBNET_NAME               | The desired name for the new subnet to be created (e.g., 'snet-pe-dev').        |
- * | DEV_VNET_ADDRESS_SPACE        | The address space of the existing VNet as a list (e.g., `["10.0.0.0/16"]`).     |
- *
- * -------------------------------------------------------------------------------------------------
- *
- * KEY CONCEPTS VALIDATED:
- *   ✅ CI/CD Pipeline Execution: The GitHub Actions workflow triggers and runs successfully.
- *   ✅ Secure OIDC Authentication: Connects to Azure without long-lived secrets.
- *   ✅ GitHub Secrets & Variables: Securely passes values to Terraform using TF_VAR_ environment vars.
- *   ✅ Incremental/Phased Deployment: The two-step process proves safe, additive changes.
- *   ✅ Azure Policy Compliance: The private storage account is created without being blocked.
- *   ✅ Terraform State Management: The pipeline correctly identifies existing resources and only
- *      adds what's new, preserving the existing infrastructure.
- *
  */
 
-# Configure the Azure and AzAPI providers
+# Configure the Azure and AzAPI providers, and set the required Terraform version.
 terraform {
+  required_version = "~> 1.0" # FIX: Added required_version to satisfy tflint.
+
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
@@ -107,28 +47,54 @@ provider "azurerm" {
 provider "azapi" {}
 
 # --- Variable Definitions ---
-variable "dev_location" { type = string }
-variable "environment" { type = string }
-variable "dev_resource_group" { type = string }
-variable "common_tags" { type = map(string) }
-variable "dev_vnet_name" { type = string }
-variable "dev_subnet_name" { type = string }
-variable "dev_subnet_address_prefixes" { type = list(string) }
-variable "dev_vnet_resource_group" { type = string }
-variable "dev_subscription_name" { type = string }
-variable "dev_subscription_id" { type = string }
-variable "dev_storage_account_name" { type = string }
-variable "dev_file_share_name" { type = string }
-variable "dev_file_share_quota_gb" { type = number }
-variable "dev_vnet_id" { type = string }
-variable "dev_vnet_address_space" { type = list(string) }
-variable "dev_dns_servers" { type = list(string) }
+# FIX: Removed all unused variable declarations to satisfy tflint.
+# Only variables that are actively used in this validation script are declared.
+variable "environment" {
+  description = "The target environment, e.g., 'dev'."
+  type        = string
+}
+
+variable "dev_resource_group" {
+  description = "The name of the pre-existing resource group to use for validation."
+  type        = string
+}
+
+variable "dev_vnet_name" {
+  description = "The name of the pre-existing VNet to add a subnet to."
+  type        = string
+}
+
+variable "dev_vnet_resource_group" {
+  description = "The name of the resource group where the pre-existing VNet is located."
+  type        = string
+}
+
+variable "dev_subnet_name" {
+  description = "The name for the new subnet to be created."
+  type        = string
+}
+
+variable "dev_subnet_address_prefixes" {
+  description = "A list of CIDR blocks for the new subnet."
+  type        = list(string)
+}
+
+variable "dev_storage_account_name" {
+  description = "The globally unique name for the validation storage account."
+  type        = string
+}
+
+variable "common_tags" {
+  description = "A map of common tags to apply to all resources."
+  type        = map(string)
+  default     = {}
+}
+
 
 # Local variables
 locals {
-  project_prefix = "ag-pssg-azure-poc"
-  env            = var.environment
-  # The RG name now comes directly from the variable, which is populated by a GitHub secret.
+  project_prefix    = "ag-pssg-azure-poc"
+  env               = var.environment
   rg_name           = var.dev_resource_group
   st_name           = var.dev_storage_account_name
   nsg_name          = "nsg-${local.project_prefix}-${local.env}-01"
@@ -136,10 +102,7 @@ locals {
   dev_subnet_prefix = var.dev_subnet_address_prefixes
 }
 
-# ---
-# FIX: Change from a 'resource' block to a 'data' block.
-# This tells Terraform to look up the existing resource group instead of creating a new one.
-# ---
+# Look up the existing resource group instead of creating a new one.
 data "azurerm_resource_group" "validation" {
   name = local.rg_name
 }
@@ -148,8 +111,8 @@ data "azurerm_resource_group" "validation" {
 # This will be created inside the existing resource group.
 resource "azurerm_network_security_group" "validation" {
   name                = local.nsg_name
-  location            = data.azurerm_resource_group.validation.location # Get location from the data source
-  resource_group_name = data.azurerm_resource_group.validation.name     # Get name from the data source
+  location            = data.azurerm_resource_group.validation.location
+  resource_group_name = data.azurerm_resource_group.validation.name
   tags                = var.common_tags
 }
 
@@ -178,8 +141,8 @@ resource "azapi_resource" "storage_pe_subnet" {
 # Create the Storage Account.
 resource "azurerm_storage_account" "validation" {
   name                          = local.st_name
-  resource_group_name           = data.azurerm_resource_group.validation.name     # Use the existing RG
-  location                      = data.azurerm_resource_group.validation.location # Use the existing RG's location
+  resource_group_name           = data.azurerm_resource_group.validation.name
+  location                      = data.azurerm_resource_group.validation.location
   account_tier                  = "Standard"
   account_replication_type      = "LRS"
   large_file_share_enabled      = true
@@ -191,8 +154,8 @@ resource "azurerm_storage_account" "validation" {
 # Create the Private Endpoint.
 resource "azurerm_private_endpoint" "storage_pe" {
   name                = "pe-${local.st_name}"
-  location            = data.azurerm_resource_group.validation.location # Use the existing RG's location
-  resource_group_name = data.azurerm_resource_group.validation.name     # Use the existing RG
+  location            = data.azurerm_resource_group.validation.location
+  resource_group_name = data.azurerm_resource_group.validation.name
   subnet_id           = jsondecode(azapi_resource.storage_pe_subnet.output).id
 
   private_service_connection {
