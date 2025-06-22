@@ -126,8 +126,8 @@ variable "dev_dns_servers" { type = list(string) }
 
 # Local variables
 locals {
-  project_prefix    = "ag-pssg-azure-poc"
-  env               = var.environment
+  project_prefix = "ag-pssg-azure-poc"
+  env            = var.environment
   # The RG name now comes directly from the variable, which is populated by a GitHub secret.
   rg_name           = var.dev_resource_group
   st_name           = var.dev_storage_account_name
@@ -177,14 +177,14 @@ resource "azapi_resource" "storage_pe_subnet" {
 
 # Create the Storage Account.
 resource "azurerm_storage_account" "validation" {
-  name                     = local.st_name
-  resource_group_name      = data.azurerm_resource_group.validation.name # Use the existing RG
-  location                 = data.azurerm_resource_group.validation.location # Use the existing RG's location
-  account_tier             = "Standard"
-  account_replication_type = "LRS"
-  large_file_share_enabled = true
-  access_tier              = "Hot"
-  tags                     = var.common_tags
+  name                          = local.st_name
+  resource_group_name           = data.azurerm_resource_group.validation.name     # Use the existing RG
+  location                      = data.azurerm_resource_group.validation.location # Use the existing RG's location
+  account_tier                  = "Standard"
+  account_replication_type      = "LRS"
+  large_file_share_enabled      = true
+  access_tier                   = "Hot"
+  tags                          = var.common_tags
   public_network_access_enabled = false
 }
 
