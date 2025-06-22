@@ -55,13 +55,25 @@ jobs:
       - name: Run tflint
         run: tflint --init && tflint --recursive
 
-      # --- QUALITY GATES: Terraform Security Scan (tfsec) ---
-      - name: Setup tfsec
-        uses: aquasecurity/tfsec-action@v1.0.3
+      # --- QUALITY GATES: Terraform Security Scan (Trivy) ---
+      # Replacing the deprecated tfsec with Trivy for IaC scanning.
+      - name: Run Trivy IaC vulnerability scanner
+        uses: aquasecurity/trivy-action@master
         with:
-          version: latest
-      - name: Run tfsec
-        run: tfsec .
+          # Scan type 'config' is for Infrastructure as Code files
+          scan-type: 'config'
+          
+          # Tell Trivy to scan the current directory (which is ./terraform/validation)
+          input: '.'
+          
+          # Only fail the pipeline for HIGH and CRITICAL severity issues
+          severity: 'HIGH,CRITICAL'
+          
+          # Ensure the pipeline fails if issues of the specified severity are found
+          exit-code: '1'
+          
+          # Output format for better readability in logs
+          format: 'table'
 
       # This step only PLANS the changes. It doesn't touch Azure.
       - name: Terraform Plan
