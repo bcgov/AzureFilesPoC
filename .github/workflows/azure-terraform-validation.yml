@@ -56,23 +56,14 @@ jobs:
         run: tflint --init && tflint --recursive
 
       # --- QUALITY GATES: Terraform Security Scan (Trivy) ---
-      # Replacing the deprecated tfsec with Trivy for IaC scanning.
       - name: Run Trivy IaC vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          # Scan type 'config' is for Infrastructure as Code files
           scan-type: 'config'
-          
-          # Tell Trivy to scan the current directory (which is ./terraform/validation)
-          input: '.'
-          
-          # Only fail the pipeline for HIGH and CRITICAL severity issues
+          # FIX: Explicitly tell Trivy to scan the validation directory.
+          input: './terraform/validation'
           severity: 'HIGH,CRITICAL'
-          
-          # Ensure the pipeline fails if issues of the specified severity are found
           exit-code: '1'
-          
-          # Output format for better readability in logs
           format: 'table'
 
       # This step only PLANS the changes. It doesn't touch Azure.
@@ -112,8 +103,6 @@ jobs:
 
       # --- THIS IS THE KEY STEP ---
       # This step runs 'terraform apply', which CREATES the resources in Azure.
-      # It does NOT run 'terraform destroy'.
-      # After this step completes successfully, your resources will exist in the Azure Portal.
       - name: Terraform Apply
         if: (steps.plan.outputs.exitcode == 2) && (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch')
         run: terraform apply -auto-approve -no-color
