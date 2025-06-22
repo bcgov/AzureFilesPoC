@@ -1,4 +1,4 @@
-#tree -a -I '.git|.DS_Store|node_modules|__pycache__' > Tr eStructure.txt
+#tree -a -I '.git|.DS_Store|node_modules|__pycache__' > TreeStructure.txt
 .
 ├── .env
 │   ├── azure_full_inventory.json
@@ -10,9 +10,8 @@
 │   ├── secrets-variables-checklist.md
 │   └── workflows
 │       ├── azure-login-validation.yml
-│       ├── azure-terraform-validation.yml
 │       ├── main.yml
-│       ├── terraform-common.yml
+│       ├── reusable-terraform-workflow.yml
 │       └── terraform-validation.yml
 ├── .gitignore
 ├── Architecture
@@ -23,6 +22,8 @@
 │       └── AzureFilesNetworkConnectivityOptionsAnalysis.md
 ├── azure-credentials.template.json
 ├── DEPLOYMENT_CHECKLIST.md
+├── llm_code_snapshot.js
+├── llm_code_snapshot.txt
 ├── OneTimeActivities
 │   ├── GetAzureExistingResources
 │   │   ├── README.md
@@ -57,6 +58,8 @@
 │   │   │       └── step5_add_github_secrets_cli.ps1
 │   │   └── validation
 │   └── ValidationProcess.md
+├── package-lock.json
+├── package.json
 ├── ProofOfConceptPlan.md
 ├── README.md
 ├── Resources
@@ -78,10 +81,6 @@
 │   │   ├── prod
 │   │   └── test
 │   ├── modules
-│   │   ├── bc-gov-azure-files
-│   │   │   ├── main.tf
-│   │   │   ├── outputs.tf
-│   │   │   └── variables.tf
 │   │   ├── core
 │   │   │   └── resource-group
 │   │   │       ├── main.tf
@@ -166,4 +165,4 @@
 │       └── tfplan
 └── TreeStructure.txt
 
-56 directories, 110 files
+55 directories, 110 files
