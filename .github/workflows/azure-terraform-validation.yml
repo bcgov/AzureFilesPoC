@@ -3,20 +3,27 @@ name: Azure Files PoC Terraform Validation
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
     paths:
       - 'terraform/validation/**'
       - '.github/workflows/azure-terraform-validation.yml'
 
 jobs:
-  validate-terraform:
+  terraform:
+    # Restored original job name as requested
+    name: 'Terraform Plan and Apply'
+    runs-on: ubuntu-latest
     permissions:
       id-token: write
       contents: read
-    runs-on: ubuntu-latest
+
     environment: dev
+
     defaults:
       run:
         working-directory: ./terraform/validation
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -38,37 +45,59 @@ jobs:
 
       - name: Terraform Plan
         id: plan
-        run: terraform plan -no-color
+        # FIX: Add -detailed-exitcode and allow the step to "fail" on exit code 2
+        run: terraform plan -no-color -detailed-exitcode
+        continue-on-error: true
         env:
-          TF_VAR_dev_location: ${{ vars.AZURE_LOCATION || 'East US' }}
+          TF_VAR_dev_location: ${{ vars.AZURE_LOCATION }}
           TF_VAR_environment: "dev"
           TF_VAR_dev_resource_group: ${{ secrets.DEV_RESOURCE_GROUP_NAME }}
+          TF_VAR_common_tags: '{ "environment" : "dev", "project" : "ag-pssg-azure-poc" }'
           TF_VAR_dev_vnet_name: ${{ secrets.DEV_VNET_NAME }}
+          TF_VAR_dev_subnet_name: ${{ vars.DEV_SUBNET_NAME }}
+          TF_VAR_dev_subnet_address_prefixes: ${{ vars.DEV_SUBNET_ADDRESS_PREFIXES }}
           TF_VAR_dev_vnet_resource_group: ${{ secrets.DEV_VNET_RESOURCE_GROUP }}
           TF_VAR_dev_subscription_name: ${{ secrets.AZURE_SUBSCRIPTION_NAME }}
           TF_VAR_dev_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          TF_VAR_dev_storage_account_name: ${{ vars.DEV_STORAGE_ACCOUNT_NAME || 'stexampledev01' }}
-          TF_VAR_dev_file_share_name: ${{ vars.DEV_FILE_SHARE_NAME || 'fspoc' }}
-          TF_VAR_dev_file_share_quota_gb: ${{ vars.DEV_FILE_SHARE_QUOTA_GB || 5 }}
+          TF_VAR_dev_storage_account_name: ${{ vars.DEV_STORAGE_ACCOUNT_NAME }}
+          TF_VAR_dev_file_share_name: ${{ vars.DEV_FILE_SHARE_NAME }}
+          TF_VAR_dev_file_share_quota_gb: ${{ vars.DEV_FILE_SHARE_QUOTA_GB }}
           TF_VAR_dev_vnet_id: ${{ secrets.DEV_VNET_ID }}
-          TF_VAR_common_tags: '{ "ManagedBy" = "GitHubActions", "Project" = "AzureFilesPoC" }'
+          TF_VAR_dev_vnet_address_space: ${{ vars.DEV_VNET_ADDRESS_SPACE }}
+          TF_VAR_dev_dns_servers: ${{ vars.DEV_DNS_SERVERS }}
+
+      # FIX: Add a step to check the plan's exit code
+      - name: Check Terraform Plan Exit Code
+        # This step runs ONLY if the plan step "failed"
+        if: steps.plan.outcome == 'failure'
+        run: |
+          # If the exit code was 2, it means changes are planned, which is NOT an error.
+          # If it was any other code, it's a real error, so we fail the workflow.
+          if [ ${{ steps.plan.outputs.exitcode }} -ne 2 ]; then
+            echo "Terraform plan failed with an unexpected exit code: ${{ steps.plan.outputs.exitcode }}"
+            exit 1
+          else
+            echo "Terraform plan has changes, which is expected."
+          fi
 
       - name: Terraform Apply
-        if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+        # This safety condition is essential
+        if: (steps.plan.outputs.exitcode == 2) && (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch')
         run: terraform apply -auto-approve -no-color
         env:
-          TF_VAR_dev_location: ${{ vars.AZURE_LOCATION || 'East US' }}
+          TF_VAR_dev_location: ${{ vars.AZURE_LOCATION }}
           TF_VAR_environment: "dev"
           TF_VAR_dev_resource_group: ${{ secrets.DEV_RESOURCE_GROUP_NAME }}
+          TF_VAR_common_tags: '{ "environment" : "dev", "project" : "ag-pssg-azure-poc" }'
           TF_VAR_dev_vnet_name: ${{ secrets.DEV_VNET_NAME }}
+          TF_VAR_dev_subnet_name: ${{ vars.DEV_SUBNET_NAME }}
+          TF_VAR_dev_subnet_address_prefixes: ${{ vars.DEV_SUBNET_ADDRESS_PREFIXES }}
           TF_VAR_dev_vnet_resource_group: ${{ secrets.DEV_VNET_RESOURCE_GROUP }}
           TF_VAR_dev_subscription_name: ${{ secrets.AZURE_SUBSCRIPTION_NAME }}
           TF_VAR_dev_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          TF_VAR_dev_storage_account_name: ${{ vars.DEV_STORAGE_ACCOUNT_NAME || 'stexampledev01' }}
-          TF_VAR_dev_file_share_name: ${{ vars.DEV_FILE_SHARE_NAME || 'fspoc' }}
-          TF_VAR_dev_file_share_quota_gb: ${{ vars.DEV_FILE_SHARE_QUOTA_GB || 5 }}
+          TF_VAR_dev_storage_account_name: ${{ vars.DEV_STORAGE_ACCOUNT_NAME }}
+          TF_VAR_dev_file_share_name: ${{ vars.DEV_FILE_SHARE_NAME }}
+          TF_VAR_dev_file_share_quota_gb: ${{ vars.DEV_FILE_SHARE_QUOTA_GB }}
           TF_VAR_dev_vnet_id: ${{ secrets.DEV_VNET_ID }}
-          TF_VAR_common_tags: '{ "ManagedBy" = "GitHubActions", "Project" = "AzureFilesPoC" }'
-
-      - name: Terraform Output
-        run: terraform output
+          TF_VAR_dev_vnet_address_space: ${{ vars.DEV_VNET_ADDRESS_SPACE }}
+          TF_VAR_dev_dns_servers: ${{ vars.DEV_DNS_SERVERS }}
