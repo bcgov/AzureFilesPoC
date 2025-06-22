@@ -73,3 +73,9 @@ terraform.tfvars.bak
 terraform/secrets.tfvars
 secrets.tfvars
 secrets.tfvars.bak
+
+#ignore the packaged code as a bundle .txt
+llm_code_snapshot.txt
+node_modules/
+package.json
+package-lock.json

@@ -24,7 +24,7 @@ jobs:
         working-directory: ./terraform/validation
 
     steps:
-      # ... (checkout, login, setup, init steps are all correct) ...
+      # --- INITIAL SETUP STEPS ---
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -42,6 +42,26 @@ jobs:
 
       - name: Terraform Init
         run: terraform init
+
+      # --- QUALITY GATES: Terraform Format Check ---
+      - name: Terraform Format Check (fmt)
+        run: terraform fmt -check -recursive
+
+      # --- QUALITY GATES: Terraform Lint (tflint) ---
+      - name: Setup tflint
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: v0.50.3
+      - name: Run tflint
+        run: tflint --init && tflint --recursive
+
+      # --- QUALITY GATES: Terraform Security Scan (tfsec) ---
+      - name: Setup tfsec
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          version: latest
+      - name: Run tfsec
+        run: tfsec .
 
       # This step only PLANS the changes. It doesn't touch Azure.
       - name: Terraform Plan

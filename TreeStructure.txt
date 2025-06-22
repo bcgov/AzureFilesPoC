@@ -1,0 +1,169 @@
+#tree -a -I '.git|.DS_Store|node_modules|__pycache__' > Tr eStructure.txt
+.
+├── .env
+│   ├── azure_full_inventory.json
+│   ├── azure_inventory.log
+│   ├── azure-credentials.json
+│   ├── azure-credentials.template.json
+│   └── README.md
+├── .github
+│   ├── secrets-variables-checklist.md
+│   └── workflows
+│       ├── azure-login-validation.yml
+│       ├── azure-terraform-validation.yml
+│       ├── main.yml
+│       ├── terraform-common.yml
+│       └── terraform-validation.yml
+├── .gitignore
+├── Architecture
+│   ├── ArchitectureOverview.md
+│   ├── azure files express route.drawio
+│   ├── azure files express route.drawio.png
+│   └── OptionsAnalysis
+│       └── AzureFilesNetworkConnectivityOptionsAnalysis.md
+├── azure-credentials.template.json
+├── DEPLOYMENT_CHECKLIST.md
+├── OneTimeActivities
+│   ├── GetAzureExistingResources
+│   │   ├── README.md
+│   │   ├── unix
+│   │   │   ├── azure_full_inventory.sh
+│   │   │   └── PopulateTfvarsFromDiscoveredResources.sh
+│   │   └── windows
+│   │       ├── azure_full_inventory.ps1
+│   │       └── PopulateTfvarsFromDiscoveredResources.ps1
+│   ├── GetAzureFilesPoC
+│   │   └── OneTimeActivities
+│   │       └── GetAzureExistingResources
+│   │           └── unix
+│   │               └── azure_full_inventory.sh
+│   ├── github-actions-setup.md
+│   ├── README.md
+│   ├── RegisterApplicationInAzureAndOICDInGithub.md
+│   ├── RegisterApplicationInAzureAndOIDC
+│   │   ├── README.md
+│   │   ├── scripts
+│   │   │   ├── unix
+│   │   │   │   ├── step1_register_app.sh
+│   │   │   │   ├── step2_grant_permissions.sh
+│   │   │   │   ├── step3_configure_oidc.sh
+│   │   │   │   ├── step4_prepare_github_secrets.sh
+│   │   │   │   └── step5_add_github_secrets_cli.sh
+│   │   │   └── windows
+│   │   │       ├── step1_register_app.ps1
+│   │   │       ├── step2_grant_permissions.ps1
+│   │   │       ├── step3_configure_oidc.ps1
+│   │   │       ├── step4_prepare_github_secrets.ps1
+│   │   │       └── step5_add_github_secrets_cli.ps1
+│   │   └── validation
+│   └── ValidationProcess.md
+├── ProofOfConceptPlan.md
+├── README.md
+├── Resources
+│   ├── AzureObjectsNamingConventions.md
+│   ├── AzurePipelinesResources.md
+│   ├── AzureResourceNamingConventions.md
+│   ├── BcGovAzurePolicyTerraformNotes.md
+│   ├── GitHubActionsResourcesForAzureFilesPoC.md
+│   ├── TerraformModuleStructure.md
+│   ├── TerraformResourcesForAzurePoC.md
+│   └── TerraformWithGithubActionsProcess.md
+├── terraform
+│   ├── environments
+│   │   ├── dev
+│   │   │   ├── main.tf
+│   │   │   ├── outputs.tf
+│   │   │   ├── terraform.tfvars
+│   │   │   └── variables.tf
+│   │   ├── prod
+│   │   └── test
+│   ├── modules
+│   │   ├── bc-gov-azure-files
+│   │   │   ├── main.tf
+│   │   │   ├── outputs.tf
+│   │   │   └── variables.tf
+│   │   ├── core
+│   │   │   └── resource-group
+│   │   │       ├── main.tf
+│   │   │       ├── outputs.tf
+│   │   │       └── variables.tf
+│   │   ├── dns
+│   │   │   ├── private-dns
+│   │   │   │   ├── main.tf
+│   │   │   │   ├── outputs.tf
+│   │   │   │   └── variables.tf
+│   │   │   └── resolver
+│   │   │       ├── main.tf
+│   │   │       ├── outputs.tf
+│   │   │       └── variables.tf
+│   │   ├── networking
+│   │   │   ├── private-endpoint
+│   │   │   │   ├── main.tf
+│   │   │   │   ├── NotesAboutPrivateEndPoints.md
+│   │   │   │   ├── outputs.tf
+│   │   │   │   └── variables.tf
+│   │   │   ├── subnet
+│   │   │   │   ├── main.tf
+│   │   │   │   ├── outputs.tf
+│   │   │   │   ├── README.md
+│   │   │   │   └── variables.tf
+│   │   │   └── vnet
+│   │   │       ├── main.tf
+│   │   │       ├── outputs.tf
+│   │   │       ├── README.md
+│   │   │       └── variables.tf
+│   │   ├── security
+│   │   │   ├── firewall
+│   │   │   │   ├── main.tf
+│   │   │   │   ├── outputs.tf
+│   │   │   │   └── variables.tf
+│   │   │   └── nsg
+│   │   │       ├── main.tf
+│   │   │       ├── outputs.tf
+│   │   │       └── variables.tf
+│   │   └── storage
+│   │       ├── account
+│   │       │   ├── main.tf
+│   │       │   ├── outputs.tf
+│   │       │   └── variables.tf
+│   │       ├── blob
+│   │       │   ├── main.tf
+│   │       │   ├── outputs.tf
+│   │       │   └── variables.tf
+│   │       └── file-share
+│   │           ├── main.tf
+│   │           ├── outputs.tf
+│   │           └── variables.tf
+│   ├── README.md
+│   └── validation
+│       ├── .terraform
+│       │   └── providers
+│       │       └── registry.terraform.io
+│       │           ├── azure
+│       │           │   └── azapi
+│       │           │       └── 1.15.0
+│       │           │           └── darwin_arm64
+│       │           │               └── terraform-provider-azapi_v1.15.0
+│       │           └── hashicorp
+│       │               └── azurerm
+│       │                   └── 3.117.1
+│       │                       └── darwin_arm64
+│       │                           ├── LICENSE.txt
+│       │                           └── terraform-provider-azurerm_v3.117.1_x5
+│       ├── .terraform.lock.hcl
+│       ├── localhost
+│       │   ├── README.md
+│       │   ├── validate_authentication.sh
+│       │   └── validate_terraform.sh
+│       ├── main.tf
+│       ├── README.md
+│       ├── secrets.tfvars
+│       ├── secrets.tfvars.template
+│       ├── terraform.tfstate
+│       ├── terraform.tfvars
+│       ├── terraform.tfvars.bak
+│       ├── terraform.tfvars.template
+│       └── tfplan
+└── TreeStructure.txt
+
+56 directories, 110 files

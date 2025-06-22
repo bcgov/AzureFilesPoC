@@ -73,3 +73,26 @@ jobs:
         run: terraform destroy -auto-approve -var="environment=${{ inputs.environment }}"
         # Note: This step may fail if you don't have delete permissions,
         # but that's okay for validation purposes
+
+      # --- QUALITY GATES: Terraform Format Check ---
+      - name: Terraform Format Check (fmt)
+        working-directory: ./terraform/validation
+        run: terraform fmt -check -recursive
+
+      # --- QUALITY GATES: Terraform Lint (tflint) ---
+      - name: Setup tflint
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: v0.50.3
+      - name: Run tflint
+        working-directory: ./terraform/validation
+        run: tflint --init && tflint --recursive
+
+      # --- QUALITY GATES: Terraform Security Scan (tfsec) ---
+      - name: Setup tfsec
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          version: latest
+      - name: Run tfsec
+        working-directory: ./terraform/validation
+        run: tfsec .

@@ -67,9 +67,27 @@ jobs:
             -backend-config="key=${{ inputs.environment }}/terraform.tfstate"
         working-directory: terraform/environments/${{ inputs.environment }}
 
-      # Format check all Terraform files
-      - name: Terraform Format Check
+      # --- QUALITY GATES: Terraform Format Check ---
+      - name: Terraform Format Check (fmt)
         run: terraform fmt -check -recursive ../..
+        working-directory: terraform/environments/${{ inputs.environment }}
+
+      # --- QUALITY GATES: Terraform Lint (tflint) ---
+      - name: Setup tflint
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: v0.50.3
+      - name: Run tflint
+        run: tflint --init && tflint --recursive
+        working-directory: terraform/environments/${{ inputs.environment }}
+
+      # --- QUALITY GATES: Terraform Security Scan (tfsec) ---
+      - name: Setup tfsec
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          version: latest
+      - name: Run tfsec
+        run: tfsec ../..
         working-directory: terraform/environments/${{ inputs.environment }}
 
       # Validate all Terraform configurations
