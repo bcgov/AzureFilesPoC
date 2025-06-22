@@ -38,12 +38,12 @@ jobs:
       - name: Terraform Plan
         run: |
           cd terraform/validation
-          terraform plan -var-file=../terraform.tfvars
+          terraform plan -var-file=../terraform/terraform.tfvars
 
       - name: Terraform Apply
         run: |
           cd terraform/validation
-          terraform apply -auto-approve -var-file=../terraform.tfvars
+          terraform apply -auto-approve -var-file=../terraform/terraform.tfvars
         env:
           ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
