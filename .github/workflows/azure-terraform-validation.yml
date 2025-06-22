@@ -9,6 +9,9 @@ on:
 
 jobs:
   validate-terraform:
+    permissions:
+      id-token: write
+      contents: read
     runs-on: ubuntu-latest
     environment: dev
     steps:
