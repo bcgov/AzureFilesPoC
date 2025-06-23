@@ -138,9 +138,9 @@ update_credentials_file() {
     local json_content
     json_content=$(cat "$CREDS_FILE")
     
-    # Get current timestamp
+    # Get current timestamp (ISO 8601)
     local timestamp
-    timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    timestamp=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
     
     # Create new credential entry
     local new_credential
@@ -176,7 +176,9 @@ EOF
         # Add new credential
         .azure.ad.application.oidcConfiguration.federatedCredentials += [($cred | fromjson)] |
         # Update timestamp
-        .azure.ad.application.oidcConfiguration.configuredOn = $time
+        .azure.ad.application.oidcConfiguration.configuredOn = $time |
+        # Update lastUpdated metadata
+        .metadata.lastUpdated = $time
         ' > "${CREDS_FILE}.tmp" && mv "${CREDS_FILE}.tmp" "$CREDS_FILE"
     
     echo "Updated credentials file with federated credential: $credential_name"
@@ -229,6 +231,25 @@ EOM
         return 0
     fi
     return 1
+}
+
+# Function to sync federated credentials from Azure to the credentials file
+sync_federated_credentials_from_azure() {
+    local app_id=$1
+    local timestamp
+    timestamp=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
+    local creds_json
+    creds_json=$(az ad app federated-credential list --id "$app_id" 2>/dev/null)
+    if [ -n "$creds_json" ]; then
+        jq --argjson creds "$creds_json" --arg time "$timestamp" '
+            .azure.ad.application.oidcConfiguration.federatedCredentials = $creds |
+            .azure.ad.application.oidcConfiguration.configuredOn = $time |
+            .metadata.lastUpdated = $time
+        ' "$CREDS_FILE" > "${CREDS_FILE}.tmp" && mv "${CREDS_FILE}.tmp" "$CREDS_FILE"
+        echo "Synchronized federatedCredentials from Azure."
+    else
+        echo "Warning: No federated credentials found in Azure or failed to fetch."
+    fi
 }
 
 # Verify credentials file exists
@@ -317,6 +338,9 @@ for env in "${ENVIRONMENTS[@]}"; do
         "repo:${GITHUB_ORG}/${GITHUB_REPO}:environment:${env}" \
         "$APP_ID"
 done
+
+# After all federated credentials are created/updated, sync from Azure
+sync_federated_credentials_from_azure "$APP_ID"
 
 # Final verification
 echo -e "\nVerifying federated credentials..."

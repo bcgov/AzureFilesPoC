@@ -87,7 +87,7 @@ echo "$SUBSCRIPTION_ID"
 echo ""
 
 # Update secrets configuration in JSON file
-TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
+TIMESTAMP=$(date -u "+%Y-%m-%dT%H:%M:%SZ")
 TEMP_FILE=$(mktemp)
 
 jq --arg clientId "$CLIENT_ID" \
@@ -95,13 +95,18 @@ jq --arg clientId "$CLIENT_ID" \
    --arg subId "$SUBSCRIPTION_ID" \
    --arg timestamp "$TIMESTAMP" '
 .github.secrets = {
-  "configured": ["AZURE_CLIENT_ID", "AZURE_TENANT_ID", "AZURE_SUBSCRIPTION_ID"],
+  "configured": [
+    {"name": "AZURE_CLIENT_ID", "configuredOn": $timestamp},
+    {"name": "AZURE_TENANT_ID", "configuredOn": $timestamp},
+    {"name": "AZURE_SUBSCRIPTION_ID", "configuredOn": $timestamp}
+  ],
   "configuredOn": $timestamp,
   "available": ["AZURE_CLIENT_ID", "AZURE_TENANT_ID", "AZURE_SUBSCRIPTION_ID"]
 } |
 .github.clientId = $clientId |
 .github.tenantId = $tenantId |
-.github.subscriptionId = $subId
+.github.subscriptionId = $subId |
+.metadata.lastUpdated = $timestamp
 ' "$CREDS_FILE" > "$TEMP_FILE" && mv "$TEMP_FILE" "$CREDS_FILE"
 
 echo "3. Secrets configuration has been recorded in $CREDS_FILE"

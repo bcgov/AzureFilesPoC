@@ -71,10 +71,10 @@ if [ ! -f "$CREDS_FILE" ]; then
     exit 1
 fi
 
-# Read credentials using correct JSON paths
-CLIENT_ID=$(jq -r '.azure.ad.application.clientId // .github.clientId' "$CREDS_FILE")
-TENANT_ID=$(jq -r '.azure.ad.tenantId // .github.tenantId' "$CREDS_FILE")
-SUBSCRIPTION_ID=$(jq -r '.azure.subscription.id // .github.subscriptionId' "$CREDS_FILE")
+# Read credentials using new JSON structure only
+CLIENT_ID=$(jq -r '.azure.ad.application.clientId' "$CREDS_FILE")
+TENANT_ID=$(jq -r '.azure.ad.tenantId' "$CREDS_FILE")
+SUBSCRIPTION_ID=$(jq -r '.azure.subscription.id' "$CREDS_FILE")
 GITHUB_ORG=$(jq -r '.github.org' "$CREDS_FILE")
 GITHUB_REPO=$(jq -r '.github.repo' "$CREDS_FILE")
 
@@ -147,10 +147,11 @@ echo ""
 TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
 TEMP_FILE=$(mktemp)
 
+# Only update/merge the relevant fields in .github.secrets
 jq --arg timestamp "$TIMESTAMP" '
-.github.secrets.available = ["AZURE_CLIENT_ID", "AZURE_TENANT_ID", "AZURE_SUBSCRIPTION_ID"] |
-.github.secrets.secretsAddedCLI = true |
-.github.secrets.secretsAddedCLIOn = $timestamp
+  .github.secrets.available = (["AZURE_CLIENT_ID", "AZURE_TENANT_ID", "AZURE_SUBSCRIPTION_ID"]) |
+  .github.secrets.secretsAddedCLI = true |
+  .github.secrets.secretsAddedCLIOn = $timestamp
 ' "$CREDS_FILE" > "$TEMP_FILE" && mv "$TEMP_FILE" "$CREDS_FILE"
 
 echo "✅ Secret status updated in credentials file"

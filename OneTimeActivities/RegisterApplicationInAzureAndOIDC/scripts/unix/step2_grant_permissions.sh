@@ -127,53 +127,45 @@ cleanup_role_assignments() {
     echo "Cleaning up role assignments in credentials file..."
     local temp_file
     temp_file=$(mktemp)
-    
-    # Remove any incorrect roleAssignments and ensure proper structure
+    # Remove any incorrect roleAssignments at the wrong level and ensure proper structure
     jq '
-    # First remove any roleAssignments at azure root level
-    del(.azure.roleAssignments) |
-    # Ensure subscription and its roleAssignments array exists
-    if .azure.subscription then
-        .azure.subscription.roleAssignments = []
-    else
-        .azure.subscription = {
-            "id": .azure.subscription.id,
-            "roleAssignments": []
-        }
-    end
+    del(.azure.ad.application.roleAssignments) |
+    if .azure.subscription.roleAssignments == null then
+      .azure.subscription.roleAssignments = []
+    else . end |
+    if .azure.subscription.resourceGroups then
+      .azure.subscription.resourceGroups |= map(
+        if .roleAssignments == null then .roleAssignments = [] else . end
+      )
+    else . end
     ' "$CREDS_FILE" > "$temp_file" && mv "$temp_file" "$CREDS_FILE"
 }
 
-# Function to update role assignments in JSON
+# Function to update role assignments in JSON at the correct scope
 update_role_assignments() {
     local role_name=$1
     local role_id=$2
+    local role_definition_id=$3
+    local scope=$4
     local assigned_on
-    assigned_on=$(date '+%Y-%m-%d %H:%M:%S')
-    
-    # Create a temporary file
+    assigned_on=$(date '+%Y-%m-%dT%H:%M:%SZ')
     local temp_file
     temp_file=$(mktemp)
-    
     # Add the new role assignment under azure.subscription.roleAssignments
-    jq --arg name "$role_name" \
-       --arg id "$role_id" \
-       --arg date "$assigned_on" \
-       --arg scope "/subscriptions/$SUBSCRIPTION_ID" \
-       --arg principal_id "$PRINCIPAL_ID" \
+    jq --arg principal_id "$PRINCIPAL_ID" \
+       --arg role_definition_id "$role_definition_id" \
+       --arg scope "$scope" \
+       --arg assigned_on "$assigned_on" \
        '
        .azure.subscription.roleAssignments += [{
-           "roleName": $name,
-           "id": $id,
            "principalId": $principal_id,
+           "roleDefinitionId": $role_definition_id,
            "scope": $scope,
-           "assignedOn": $date
+           "assignedOn": $assigned_on
        }]
        ' "$CREDS_FILE" > "$temp_file"
-    
-    # Replace original file with updated content
     mv "$temp_file" "$CREDS_FILE"
-    echo "Added role $role_name to credentials file"
+    echo "Added role assignment to credentials file at scope $scope"
 }
 
 # Function to capture all existing role assignments in JSON

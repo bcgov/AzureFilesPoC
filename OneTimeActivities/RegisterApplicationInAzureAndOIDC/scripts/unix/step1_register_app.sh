@@ -1,5 +1,18 @@
 #!/bin/bash
 
+# Manual Azure Login Required
+# ------------------------------------------------------------
+# Before running this script, you must be logged in to Azure CLI
+# with Microsoft Graph permissions. Run the following command:
+#
+#   az login --scope https://graph.microsoft.com/.default
+#
+# This will open a browser window for you to authenticate.
+# If you have multiple subscriptions, set the correct one:
+#   az account set --subscription "<your-subscription-id>"
+#
+# ------------------------------------------------------------
+
 # Function to resolve script location and set correct paths
 resolve_script_path() {
     local script_path
@@ -88,20 +101,37 @@ verify_prerequisites() {
     fi
 }
 
-# Function to handle Azure CLI errors
-handle_azure_error() {
-    local error_msg=$1
-    if [[ $error_msg =~ "AADSTS70043" ]] || [[ $error_msg =~ "expired" ]]; then
-        echo "Token expired or permission issue detected. Attempting to refresh login..."
-        az account clear
-        az login --scope "https://graph.microsoft.com//.default"
-        return 0
-    elif [[ $error_msg =~ "authentication needed" ]]; then
-        echo "Authentication needed. Please login again..."
-        az login --scope "https://graph.microsoft.com//.default"
-        return 0
+# Function to check if already logged in
+check_login_status() {
+    az account show &> /dev/null
+}
+
+# Function to ensure logged in with correct permissions
+ensure_logged_in() {
+    if ! check_login_status; then
+        echo "Not logged in to Azure CLI. Launching browser for login..."
+        az login --scope "https://graph.microsoft.com/.default"
+        if [ $? -ne 0 ]; then
+            echo "Login failed. Please try again."
+            exit 1
+        fi
     fi
-    return 1
+    # Verify Graph API permissions
+    echo "Verifying Microsoft Graph API permissions..."
+    az account get-access-token --resource-type ms-graph &> /dev/null
+    if [ $? -ne 0 ]; then
+        echo "Refreshing login with Microsoft Graph permissions..."
+        az login --scope "https://graph.microsoft.com/.default"
+        if [ $? -ne 0 ]; then
+            echo "Failed to get required Microsoft Graph permissions. Please try again."
+            exit 1
+        fi
+    fi
+    # Display current context
+    echo "Current Azure context:"
+    az account show -o table
+    echo -e "\nPress Enter to continue with this context, or Ctrl+C to exit and run 'az login' with different credentials"
+    read -r
 }
 
 # Function to execute Azure CLI command with retry
@@ -110,14 +140,22 @@ execute_az_command() {
     local max_retries=3
     local retry=0
     local result
-    
     while [ $retry -lt $max_retries ]; do
         result=$(eval "$cmd 2>&1")
         if [ $? -eq 0 ]; then
             echo "$result"
             return 0
         else
-            if handle_azure_error "$result"; then
+            if [[ $result =~ "AADSTS70043" ]] || [[ $result =~ "expired" ]]; then
+                echo "Token expired or permission issue detected. Attempting to refresh login..."
+                az account clear
+                az login --scope "https://graph.microsoft.com/.default"
+                retry=$((retry + 1))
+                echo "Retrying command... (Attempt $retry of $max_retries)"
+                continue
+            elif [[ $result =~ "authentication needed" ]]; then
+                echo "Authentication needed. Please login again..."
+                az login --scope "https://graph.microsoft.com/.default"
                 retry=$((retry + 1))
                 echo "Retrying command... (Attempt $retry of $max_retries)"
                 continue
@@ -128,88 +166,8 @@ execute_az_command() {
             fi
         fi
     done
-    
     echo "Failed after $max_retries retries"
     return 1
-}
-
-# Function to check if already logged in
-check_login_status() {
-    echo "Checking Azure CLI login status..."
-    local login_check
-    login_check=$(az account show 2>&1)
-    if [ $? -eq 0 ]; then
-        echo "Already logged in to Azure CLI"
-        return 0
-    else
-        echo "Not logged in to Azure CLI"
-        return 1
-    fi
-}
-
-# Function to ensure logged in with correct permissions
-ensure_logged_in() {
-    if ! check_login_status; then
-        echo "Please complete the login process in your browser..."
-        az login --scope "https://graph.microsoft.com//.default"
-        if [ $? -ne 0 ]; then
-            echo "Login failed. Please try again."
-            exit 1
-        fi
-    fi
-
-    # Verify Graph API permissions
-    echo "Verifying Microsoft Graph API permissions..."
-    local token_check
-    token_check=$(az account get-access-token --resource-type ms-graph 2>&1)
-    if [ $? -ne 0 ]; then
-        echo "Refreshing login with Microsoft Graph permissions..."
-        az login --scope "https://graph.microsoft.com//.default"
-        if [ $? -ne 0 ]; then
-            echo "Failed to get required Microsoft Graph permissions. Please try again."
-            exit 1
-        fi
-    fi
-
-    # Display current context
-    echo "Current Azure context:"
-    az account show -o table
-    echo -e "\nPress Enter to continue with this context, or Ctrl+C to exit and run 'az login' with different credentials"
-    read -r
-}
-
-# Verify prerequisites
-verify_prerequisites
-
-# Function to initialize credentials file from template
-initialize_credentials_file() {
-    # Create .env directory if it doesn't exist
-    mkdir -p "$ENV_DIR"
-
-    # Check if template exists
-    if [ ! -f "$TEMPLATE_FILE" ]; then
-        echo "Error: Template file not found at $TEMPLATE_FILE"
-        exit 1
-    fi
-
-    # Copy template to credentials file if it doesn't exist
-    if [ ! -f "$CREDS_FILE" ]; then
-        echo "Initializing credentials file from template..."
-        cp "$TEMPLATE_FILE" "$CREDS_FILE"
-        
-        # Update GitHub values and ensure clean structure
-        jq --arg org "$GITHUB_ORG" --arg repo "$GITHUB_REPO" '
-           .github.org = $org | 
-           .github.repo = $repo | 
-           .azure.subscription.roleAssignments = []
-           ' "$CREDS_FILE" > "$CREDS_FILE.tmp" && mv "$CREDS_FILE.tmp" "$CREDS_FILE"
-    fi
-
-    # Verify the file is valid JSON
-    if ! jq '.' "$CREDS_FILE" > /dev/null 2>&1; then
-        echo "Error: Invalid JSON in credentials file"
-        exit 1
-    fi
 }
 
 # Function to update credentials file
@@ -217,19 +175,16 @@ update_credentials() {
     local field=$1
     local value=$2
     local jq_filter
-
-    # Create .env directory if it doesn't exist
     mkdir -p "$ENV_DIR"
-
-    # Initialize from template if file doesn't exist
     if [ ! -f "$CREDS_FILE" ]; then
         initialize_credentials_file
     fi
-
-    # Update the specified field based on the new structure
     case $field in
         "metadata.dateCreated")
             jq_filter=".metadata.dateCreated = \"$value\""
+            ;;
+        "metadata.lastUpdated")
+            jq_filter=".metadata.lastUpdated = \"$value\""
             ;;
         "azure.ad.tenantId")
             jq_filter=".azure.ad.tenantId = \"$value\""
@@ -243,17 +198,17 @@ update_credentials() {
         "azure.ad.application.clientId")
             jq_filter=".azure.ad.application.clientId = \"$value\""
             ;;
-        "azure.ad.application.servicePrincipalObjectId")
-            jq_filter=".azure.ad.application.servicePrincipalObjectId = \"$value\""
+        "azure.ad.application.objectId")
+            jq_filter=".azure.ad.application.objectId = \"$value\""
             ;;
     esac
-
-    # Update the file using jq
     local temp_file=$(mktemp)
     jq "$jq_filter" "$CREDS_FILE" > "$temp_file" && mv "$temp_file" "$CREDS_FILE"
-    
     echo "Updated $field in credentials file"
 }
+
+# Verify prerequisites
+verify_prerequisites
 
 # Ensure logged in with correct permissions before proceeding
 ensure_logged_in
@@ -317,7 +272,7 @@ update_credentials "azure.subscription.id" "$SUBSCRIPTION_ID"
 # Update application information
 update_credentials "azure.ad.application.name" "$APP_NAME"
 update_credentials "azure.ad.application.clientId" "$APP_ID"
-update_credentials "azure.ad.application.servicePrincipalObjectId" "$SP_ID"
+update_credentials "azure.ad.application.objectId" "$SP_ID"
 
 echo "Credentials file has been updated with all registration details"
 
