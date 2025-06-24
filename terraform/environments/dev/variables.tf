@@ -3,11 +3,6 @@
 # This file defines the "contract" or inputs required to deploy the 'dev' environment.
 # The variable names align with the project-wide convention.
 
-variable "dev_location" {
-  description = "The primary Azure region for the dev environment."
-  type        = string
-}
-
 variable "dev_resource_group" {
   description = "The name of the new resource group for PoC services."
   type        = string
