@@ -55,6 +55,7 @@ jobs:
           dev_storage_account_name = "${{ vars.DEV_STORAGE_ACCOUNT_NAME }}"
           dev_file_share_name = "${{ vars.DEV_FILE_SHARE_NAME }}"
           dev_file_share_quota_gb = ${{ vars.DEV_FILE_SHARE_QUOTA_GB }}
+          dev_dns_servers = ${{ vars.DEV_DNS_SERVERS }}
           # Add any other required variables for your modules here
           EOF
 
