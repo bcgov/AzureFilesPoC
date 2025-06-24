@@ -24,7 +24,7 @@ module "poc_storage_account" {
 
   storage_account_name = var.dev_storage_account_name
   resource_group_name  = var.dev_resource_group
-  location             = var.dev_location
+  location             = var.azure_location
   tags                 = var.common_tags
 }
 
