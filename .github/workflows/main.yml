@@ -9,8 +9,8 @@ name: Azure Files PoC Deploy Infrastructure
 # - azure-login-test.yml: Simple workflow for validating Azure authentication
 
 permissions:
-  id-token: write
-  contents: read
+  id-token: write # Required for OpenID Connect (OIDC) authentication with Azure
+  contents: read  # Required to checkout the repository content
 
 on:
   # Manual trigger with environment selection
@@ -30,14 +30,14 @@ on:
         required: true
         type: boolean
         default: true
-  
+
   # Pull request automation - run Terraform plan on PRs
   pull_request:
     branches: [ main ]
     paths:
       - 'terraform/**'
       - '.github/workflows/**'
-  
+
   # Main branch automation (disabled by default for safety)
   # push:
   #   branches: [ main ]
@@ -47,6 +47,8 @@ on:
 
 jobs:
   # Primary Terraform workflow that uses the common reusable workflow
+  # This job is configured to run when the workflow is manually dispatched.
+  # The 'environment' and 'plan_only' inputs will be passed to the reusable workflow.
   deploy-infrastructure:
     uses: ./.github/workflows/terraform-common.yml
     with:
@@ -57,8 +59,14 @@ jobs:
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+  # Standalone job for 'dev' environment Terraform operations.
+  # This job will run on pull requests (if paths match) and also when
+  # the workflow is dispatched, unless specifically excluded by conditionals.
+  # It's good for focused debugging or specific environment deployments.
   terraform-dev:
     runs-on: ubuntu-latest
+    # Define environment variables for Terraform AzureRM provider.
+    # It's good practice to set these, though OIDC via azure/login is primary.
     env:
       ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
@@ -70,7 +78,7 @@ jobs:
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.6.6
+          terraform_version: 1.6.6 # Ensure this version is compatible with your code
 
       - name: Azure Login (OIDC)
         uses: azure/login@v2
@@ -78,7 +86,33 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          # enable-AzPSSession is typically not needed for Terraform as it uses the Azure CLI context.
           enable-AzPSSession: false
+
+      - name: Verify GitHub Vars (Debug Step)
+        run: |
+          echo "Checking GitHub Variables for dev environment:"
+          echo "AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}"
+          echo "DEV_RESOURCE_GROUP: ${{ vars.DEV_RESOURCE_GROUP }}"
+          echo "DEV_STORAGE_ACCOUNT_NAME: ${{ vars.DEV_STORAGE_ACCOUNT_NAME }}"
+          echo "DEV_FILE_SHARE_NAME: ${{ vars.DEV_FILE_SHARE_NAME }}"
+          echo "DEV_FILE_SHARE_QUOTA_GB: ${{ vars.DEV_FILE_SHARE_QUOTA_GB }}"
+          echo "DEV_DNS_SERVERS: ${{ vars.DEV_DNS_SERVERS }}"
+          echo "DEV_NETWORK_SECURITY_GROUP: ${{ vars.DEV_NETWORK_SECURITY_GROUP }}"
+          echo "DEV_RESOURCE_ID: ${{ vars.DEV_RESOURCE_ID }}"
+          echo "DEV_SUBNET_ADDRESS_PREFIXES: ${{ vars.DEV_SUBNET_ADDRESS_PREFIXES }}"
+          echo "DEV_SUBNET_NAME: ${{ vars.DEV_SUBNET_NAME }}"
+          echo "DEV_VNET_ADDRESS_SPACE: ${{ vars.DEV_VNET_ADDRESS_SPACE }}"
+          echo "DEV_VNET_ID: ${{ vars.DEV_VNET_ID }}"
+          echo "DEV_VNET_NAME: ${{ vars.DEV_VNET_NAME }}"
+          echo "DEV_VNET_RESOURCE_GROUP: ${{ vars.DEV_VNET_RESOURCE_GROUP }}"
+          # Add more checks as needed.
+          # You might want to fail the workflow here if essential vars are missing:
+          # if [ -z "${{ vars.AZURE_LOCATION }}" ]; then echo "Error: AZURE_LOCATION var is not set!"; exit 1; fi
+
+      - name: Create terraform/environments/dev directory if it doesn't exist
+        # This helps if the directory is empty or not committed, though usually it should be.
+        run: mkdir -p terraform/environments/dev
 
       - name: Generate terraform.tfvars for dev
         run: |
@@ -88,18 +122,63 @@ jobs:
           dev_storage_account_name = "${{ vars.DEV_STORAGE_ACCOUNT_NAME }}"
           dev_file_share_name = "${{ vars.DEV_FILE_SHARE_NAME }}"
           dev_file_share_quota_gb = ${{ vars.DEV_FILE_SHARE_QUOTA_GB }}
+          dev_dns_servers = ${{ vars.DEV_DNS_SERVERS }}
+          dev_network_security_group = "${{ vars.DEV_NETWORK_SECURITY_GROUP }}"
+          dev_resource_id = "${{ vars.DEV_RESOURCE_ID }}"
+          dev_subnet_address_prefixes = ${{ vars.DEV_SUBNET_ADDRESS_PREFIXES }}
+          dev_subnet_name = "${{ vars.DEV_SUBNET_NAME }}"
+          dev_vnet_address_space = ${{ vars.DEV_VNET_ADDRESS_SPACE }}
+          dev_vnet_id = "${{ vars.DEV_VNET_ID }}"
+          dev_vnet_name = "${{ vars.DEV_VNET_NAME }}"
+          dev_vnet_resource_group = "${{ vars.DEV_VNET_RESOURCE_GROUP }}"
           # Add any other required variables for your modules here
           EOF
+        env:
+          # Ensure vars are accessible within the run block, though they usually are via ${{ vars.VAR_NAME }}
+          AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
+          DEV_RESOURCE_GROUP: ${{ vars.DEV_RESOURCE_GROUP }}
+          DEV_STORAGE_ACCOUNT_NAME: ${{ vars.DEV_STORAGE_ACCOUNT_NAME }}
+          DEV_FILE_SHARE_NAME: ${{ vars.DEV_FILE_SHARE_NAME }}
+          DEV_FILE_SHARE_QUOTA_GB: ${{ vars.DEV_FILE_SHARE_QUOTA_GB }}
+          DEV_DNS_SERVERS: ${{ vars.DEV_DNS_SERVERS }}
+          DEV_NETWORK_SECURITY_GROUP: ${{ vars.DEV_NETWORK_SECURITY_GROUP }}
+          DEV_RESOURCE_ID: ${{ vars.DEV_RESOURCE_ID }}
+          DEV_SUBNET_ADDRESS_PREFIXES: ${{ vars.DEV_SUBNET_ADDRESS_PREFIXES }}
+          DEV_SUBNET_NAME: ${{ vars.DEV_SUBNET_NAME }}
+          DEV_VNET_ADDRESS_SPACE: ${{ vars.DEV_VNET_ADDRESS_SPACE }}
+          DEV_VNET_ID: ${{ vars.DEV_VNET_ID }}
+          DEV_VNET_NAME: ${{ vars.DEV_VNET_NAME }}
+          DEV_VNET_RESOURCE_GROUP: ${{ vars.DEV_VNET_RESOURCE_GROUP }}
+
+      - name: Display Generated terraform.tfvars (Debug Step)
+        # This step is crucial for debugging. It will print the content of the
+        # generated .tfvars file to the workflow logs.
+        run: |
+          echo "Content of terraform/environments/dev/terraform.tfvars:"
+          cat terraform/environments/dev/terraform.tfvars || echo "File not found or empty."
 
       - name: Terraform Init
+        id: terraform_init # Assign an ID for easier reference in logs
         working-directory: terraform/environments/dev
-        run: terraform init
+        run: terraform init -backend-config="resource_group_name=${{ vars.TFSTATE_RG }}" -backend-config="storage_account_name=${{ vars.TFSTATE_SA }}" -backend-config="container_name=${{ vars.TFSTATE_CONTAINER }}" -backend-config="key=dev.terraform.tfstate"
+        # Adding backend config to init is a common requirement for Azure backend.
+        # Replace TFSTATE_RG, TFSTATE_SA, TFSTATE_CONTAINER with your actual vars/values.
+        # If you're not using a remote backend, you can remove these -backend-config lines.
+
+      - name: Terraform Validate
+        id: terraform_validate
+        working-directory: terraform/environments/dev
+        run: terraform validate # Always good to validate configuration before planning.
 
       - name: Terraform Plan
+        id: terraform_plan # Assign an ID for easier reference in logs
         working-directory: terraform/environments/dev
-        run: terraform plan -var-file=terraform.tfvars
+        run: terraform plan -var-file=terraform.tfvars -out=tfplan # Save plan to a file
 
       # Uncomment to enable apply
       # - name: Terraform Apply
+      #   id: terraform_apply
       #   working-directory: terraform/environments/dev
-      #   run: terraform apply -auto-approve -var-file=terraform.tfvars
+      #   # Use the -auto-approve flag for automated deployments.
+      #   # Consider adding a conditional check for 'plan_only' input if this job should respect it.
+      #   run: terraform apply -auto-approve tfplan # Apply the saved plan
