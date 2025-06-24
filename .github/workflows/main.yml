@@ -122,12 +122,12 @@ jobs:
           dev_storage_account_name = "${{ vars.DEV_STORAGE_ACCOUNT_NAME }}"
           dev_file_share_name = "${{ vars.DEV_FILE_SHARE_NAME }}"
           dev_file_share_quota_gb = ${{ vars.DEV_FILE_SHARE_QUOTA_GB }}
-          dev_dns_servers = ${{ vars.DEV_DNS_SERVERS }}
+          dev_dns_servers = '${{ vars.DEV_DNS_SERVERS }}'
           dev_network_security_group = "${{ vars.DEV_NETWORK_SECURITY_GROUP }}"
           dev_resource_id = "${{ vars.DEV_RESOURCE_ID }}"
-          dev_subnet_address_prefixes = ${{ vars.DEV_SUBNET_ADDRESS_PREFIXES }}
+          dev_subnet_address_prefixes = '${{ vars.DEV_SUBNET_ADDRESS_PREFIXES }}'
           dev_subnet_name = "${{ vars.DEV_SUBNET_NAME }}"
-          dev_vnet_address_space = ${{ vars.DEV_VNET_ADDRESS_SPACE }}
+          dev_vnet_address_space = '${{ vars.DEV_VNET_ADDRESS_SPACE }}'
           dev_vnet_id = "${{ vars.DEV_VNET_ID }}"
           dev_vnet_name = "${{ vars.DEV_VNET_NAME }}"
           dev_vnet_resource_group = "${{ vars.DEV_VNET_RESOURCE_GROUP }}"
