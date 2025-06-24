@@ -59,6 +59,9 @@ jobs:
           # Add any other required variables for your modules here
           EOF
 
+      - name: Print generated terraform.tfvars
+        run: cat terraform/environments/dev/terraform.tfvars
+
       - name: Terraform Init
         working-directory: terraform/environments/dev
         run: terraform init
