@@ -1,3 +1,23 @@
+variable "dev_subnet_name" {
+  description = "The name of the Subnet."
+  type        = string
+}
+
+variable "dev_vnet_name" {
+  description = "The name of the Virtual Network."
+  type        = string
+}
+
+variable "dev_vnet_resource_group" {
+  description = "The resource group for the VNet."
+  type        = string
+}
+
+variable "dev_subnet_address_prefixes" {
+  description = "The address prefixes for the Subnet."
+  type        = list(string)
+}
+
 variable "subnet_name" {
   description = "The name of the subnet to create."
   type        = string

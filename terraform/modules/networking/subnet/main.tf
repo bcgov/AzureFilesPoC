@@ -38,3 +38,12 @@ resource "azapi_resource" "subnet" {
   })
   response_export_values = ["id", "name"]
 }
+
+# Creates a Subnet within a Virtual Network.
+
+resource "azurerm_subnet" "main" {
+  name                 = var.dev_subnet_name
+  resource_group_name  = var.dev_vnet_resource_group
+  virtual_network_name = var.dev_vnet_name
+  address_prefixes     = var.dev_subnet_address_prefixes
+}

@@ -1,11 +1,11 @@
 output "id" {
-  description = "The ID of the created subnet."
-  value       = jsondecode(azapi_resource.subnet.output).id
+  description = "The ID of the created Subnet."
+  value       = azurerm_subnet.main.id
 }
 
 output "name" {
-  description = "The name of the created subnet."
-  value       = jsondecode(azapi_resource.subnet.output).name
+  description = "The name of the created Subnet."
+  value       = azurerm_subnet.main.name
 }
 
 output "nsg_id" {

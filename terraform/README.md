@@ -10,8 +10,14 @@ This project follows a structured, validation-first workflow. Before developing 
 
 ### Step 1: Complete One-Time Onboarding & OIDC Setup
 This is the foundational step to connect GitHub and Azure securely.
-- Follow the step-by-step process in [`OneTimeActivities/RegisterApplicationInAzureAndOIDCInGithub.md`](../OneTimeActivities/RegisterApplicationInAzureAndOIDCInGithub.md).
-- This will configure the Azure AD application, the OIDC federated credential, and the necessary GitHub secrets.
+- **Follow the step-by-step process in [`OneTimeActivities/RegisterApplicationInAzureAndOIDCInGithub.md`](../OneTimeActivities/RegisterApplicationInAzureAndOIDCInGithub.md).**
+- This will configure the Azure AD application, the OIDC federated credential, and the necessary GitHub secrets for secure, passwordless authentication.
+- **You must manually create the required Azure resource group as a one-time onboarding activity,** using the provided onboarding script (`step6_create_resource_group.sh` or its Windows equivalent). This is required because BC Government policy restricts resource group creation via Terraform when using OIDC.
+- Reference the created resource group in your Terraform variables and module calls. Do not attempt to manage resource groups with Terraform in this project.
+- For more details and troubleshooting, see the onboarding README and the [Validation Process](../OneTimeActivities/ValidationProcess.md).
+
+> **Policy Note:**
+> BC Government IaC/CI/CD policy requires that resource groups be created outside of Terraform when using OIDC. This ensures proper separation of duties and aligns with security best practices. See the onboarding documentation for rationale and links to official guidance.
 
 ### Step 2: Validate Your Setup Locally
 Before testing the automated pipeline, verify your setup from your local machine.
@@ -36,23 +42,58 @@ Once the validation pipeline succeeds, you are ready to build the actual infrast
 
 ## Directory Structure
 
+This project uses a modular, service-oriented structure. Only key directories and files are shown below for clarity:
+
 ```
 terraform/
-├── environments/           # Environment-specific configurations (e.g., dev, test, prod)
-│   ├── dev/              # Main workspace for the Development environment.
-│   │   ├── main.tf       # Composes modules to build the 'dev' environment.
-│   │   └── ...
+├── environments/           # Environment-specific configurations (dev, prod, test)
+│   └── dev/                # Example: main.tf, outputs.tf, variables.tf, terraform.tfvars
+│   └── test/
+│   └── prod/
+├── modules/                    # Reusable infrastructure modules (dns, networking, security, storage, etc.)
+│   ├── automation/             # Automation helpers (e.g., AzCopy)
+│   │   └── azcopy/             # AzCopy automation module
+│   ├── dns/                    # DNS zones and resolvers
+│   │   ├── private-dns/        # Private DNS zone module
+│   │   └── resolver/           # DNS resolver module
+│   ├── identity/               # Azure AD and managed identities
+│   │   ├── aad/                # Azure Active Directory app registration
+│   │   └── managed-identity/   # Managed Identity module
+│   ├── keyvault/               # Azure Key Vault module
+│   ├── monitoring/             # Monitoring and logging
+│   │   └── log-analytics/      # Log Analytics workspace
+│   ├── networking/             # Virtual networks and related resources
+│   │   ├── private-endpoint/   # Private Endpoint module
+│   │   ├── subnet/             # Subnet module
+│   │   └── vnet/               # Virtual Network module
+│   ├── policies/               # Policy assignments and definitions
+│   ├── rbac/                   # Role-Based Access Control assignments
+│   ├── security/               # Network security modules
+│   │   ├── firewall/           # Azure Firewall module
+│   │   └── nsg/                # Network Security Group module
+│   ├── storage/                # Storage account and related modules
+│   │   ├── account/            # Storage Account module
+│   │   ├── blob/               # Blob Storage module
+│   │   ├── file-share/         # File Share module (see files below)
+│   │   │   ├── main.tf
+│   │   │   ├── outputs.tf
+│   │   │   └── variables.tf
+│   │   ├── lifecycle/          # Storage lifecycle management
+│   │   ├── object-replication/ # Object Replication module
+│   │   └── private-link-service/# Private Link Service module
+│   ├── tags/                   # Tagging strategy module
+│   └── vm/                     # Virtual Machine module
+├── validation/             # Validation environment for onboarding and pipeline tests
+│   ├── localhost/          # Local validation scripts and README
+│   ├── main.tf             # Validation Terraform config
+│   ├── secrets.tfvars*     # Secrets for validation (never commit real secrets)
+│   ├── terraform.tfvars*   # Variable values for validation
 │   └── ...
-├── modules/              # Reusable, standardized building blocks for Azure resources.
-│   ├── networking/       # Modules for VNet, Subnet, Private Endpoint, etc.
-│   ├── storage/          # Modules for Storage Account, File Share, etc.
-│   └── ...
-├── validation/           # A self-contained module to smoke test the CI/CD pipeline and auth.
-│   ├── main.tf         # A simple, flat Terraform config for the test.
-│   ├── localhost/        # Helper scripts and a detailed guide for local debugging.
-│   └── README.md         # High-level documentation for the validation module.
-└── README.md             # This file: the main entry point for the Terraform configuration.
 ```
+
+> **Note:**
+> - The `core/resource-group` module has been removed. Resource groups must be created manually as part of onboarding, not managed by Terraform.
+> - See onboarding documentation for scripts and instructions to create resource groups and set up OIDC.
 
 ---
 
@@ -88,3 +129,12 @@ For local development, your Terraform commands will need a `terraform.tfvars` fi
   ```
 
 These scripts read your environment's discovered state and credentials to automatically generate the `terraform.tfvars` and `secrets.tfvars` files with the correct values. This is the recommended, robust approach.
+
+---
+
+> **Note:**
+> Resource groups are NOT managed by Terraform in this project due to policy requirements. You must create the required resource group(s) manually as part of onboarding, using the script:
+>
+> `OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/step6_create_resource_group.sh`
+>
+> Reference this resource group in your Terraform variables and module calls.
