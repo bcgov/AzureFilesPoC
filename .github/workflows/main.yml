@@ -48,11 +48,6 @@ jobs:
     with:
       environment: ${{ github.event.inputs.environment || 'dev' }}
       plan_only: ${{ github.event.inputs.plan_only || true }}
-      terraform_vars: |
-        {
-          "location": "canadacentral",
-          "project": "azure-files-poc"
-        }
     secrets:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
