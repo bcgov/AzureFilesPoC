@@ -1,9 +1,9 @@
 output "storage_account_name" {
-  value = module.azure_files.storage_account_name
+  value = module.poc_storage_account.name
 }
 
 output "file_share_name" {
-  value = module.azure_files.file_share_name
+  value = module.poc_file_share.name
 }
 
 output "file_share_url" {
