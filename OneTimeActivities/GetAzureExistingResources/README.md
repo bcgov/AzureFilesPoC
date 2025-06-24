@@ -72,21 +72,22 @@ OneTimeActivities/
 - If your landing zone changes or new resources are provisioned, simply re-run the script (on your platform) to update the JSON file.
 - Both Bash and PowerShell automation scripts are supported and maintained. Use the appropriate script for your OS.
 
-## After Running the Script: Update Your Terraform tfvars
+## After Running the Script: Update Your Terraform tfvars and Secrets Manually
 
-1. **Extract the discovered resource values** (such as resource group name, VNet name, etc.) from `.env/azure_full_inventory.json`.
-2. **Update your `terraform.tfvars` or environment variables** with these values so your Terraform code references the correct, pre-existing resources. Example:
-   ```hcl
-   resource_group_name    = "d5007d-dev-networking"
-   virtual_network_name   = "d5007d-dev-vwan-spoke"
-   # ...add other discovered values as needed
-   ```
-3. **Protect your tfvars file:**
-   - Ensure your `terraform.tfvars` (or any file containing sensitive resource IDs) is listed in your `.gitignore` to prevent accidental commits.
-   - Example `.gitignore` entry:
-     ```
-     terraform.tfvars
-     *.auto.tfvars
-     ```
+After generating `.env/azure_full_inventory.json`, you must manually update your Terraform variable and secrets files using the provided templates. Automated population of these files is no longer supported.
 
-> **Tip:** You can automate this step by running the provided Bash or PowerShell script (`PopulateTfvarsFromDiscoveredResources.sh` or `PopulateTfvarsFromDiscoveredResources.ps1`) to parse `.env/azure_full_inventory.json` and update your tfvars file or export environment variables for Terraform.
+1. **Manually update your Terraform variable files:**
+   - Edit `terraform/terraform.tfvars` and `terraform/secrets.tfvars` in the project root.
+   - Use the example and required variable names from `terraform/terraform.tfvars.template` and `terraform/secrets.tfvars.template`.
+   - Copy values (such as resource group name, VNet name, etc.) from `.env/azure_full_inventory.json` into the appropriate fields in your tfvars files.
+
+2. **Update environment-specific tfvars:**
+   - Edit `terraform/environments/dev/terraform.tfvars` (and any other environment-specific tfvars files) as needed, using the same approach and referencing the templates for required variables.
+
+3. **Update environment variables if used:**
+   - If your workflow uses environment variables for Terraform, ensure these are set to match the discovered values in `.env/azure_full_inventory.json`.
+
+4. **Protect your tfvars and secrets files:**
+   - Ensure all tfvars and secrets files are listed in your `.gitignore` to prevent accidental commits.
+
+> **Note:** The scripts `PopulateTfvarsFromDiscoveredResources.sh` and `PopulateTfvarsFromDiscoveredResources.ps1` have been deleted and are no longer supported. All tfvars and secrets population must be done manually using the templates and discovered inventory.

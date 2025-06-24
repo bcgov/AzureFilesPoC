@@ -8,24 +8,30 @@ This document provides step-by-step guidance for validating the end-to-end CI/CD
 
 Before following this validation guide, ensure you have completed:
 
-1. [Application Registration for Azure](RegisterApplicationInAzureAndOIDC/README.md) - The registration process must be completed up to Step 4
+1. [Application Registration for Azure](RegisterApplicationInAzureAndOIDC/README.md) - The registration process must be completed up to Step 6 (including resource group creation)
 2. [GitHub Secrets Configuration](RegisterApplicationInAzureAndOIDC/README.md#4-prepare-and-store-github-secrets) - All required secrets must be stored in GitHub: (step 5 was completed)
    - `AZURE_CLIENT_ID` - From the application registration
    - `AZURE_TENANT_ID` - Your Azure tenant ID
    - `AZURE_SUBSCRIPTION_ID` - Your Azure subscription ID
    
    You can verify these secrets are configured by checking your credentials file at `.env/azure-credentials.json` under the `github.secrets` section.
-3. **Run the Azure resource inventory automation:**
+3. **Resource Group Registration:**
+   - The permanent resource group for your project must be created using the onboarding script:
+     - Unix/macOS: `RegisterApplicationInAzureAndOIDC/scripts/unix/step6_create_resource_group.sh <resource-group-name> [location]`
+     - Windows: `RegisterApplicationInAzureAndOIDC/scripts/windows/step6_create_resource_group.ps1 -rgname <resource-group-name> [-location <location>]`
+   - **Note:** Resource group tags are set in Azure only and are not written to the credentials JSON.
+   - Update your GitHub secret `DEV_RESOURCE_GROUP_NAME` to match your permanent resource group name.
+4. **Run the Azure resource inventory automation:**
    - Use the provided inventory script for your platform to generate `.env/azure_full_inventory.json`:
      - Unix/macOS: `OneTimeActivities/GetAzureExistingResources/unix/azure_full_inventory.sh`
      - Windows: `OneTimeActivities/GetAzureExistingResources/windows/azure_full_inventory.ps1`
    - This file is required for onboarding, tfvars population, and validation automation.
-4. **Populate Terraform variable files using automation:**
+5. **Populate Terraform variable files using automation:**
    - Use the population script to generate/update `terraform.tfvars` and `secrets.tfvars` from `.env/azure_full_inventory.json`:
      - Unix/macOS: `OneTimeActivities/GetAzureExistingResources/unix/PopulateTfvarsFromDiscoveredResources.sh`
      - Windows: `OneTimeActivities/GetAzureExistingResources/windows/PopulateTfvarsFromDiscoveredResources.ps1`
    - This ensures all required variables (including new naming conventions) are set for validation.
-5. Basic familiarity with GitHub Actions and Terraform
+6. Basic familiarity with GitHub Actions and Terraform
 
 ## Overview of Validation Process
 

@@ -1,0 +1,50 @@
+# Copy this file to terraform.tfvars and fill in your real values
+# Do NOT include secrets or sensitive values here
+
+# Variables for Azure Files PoC Terraform Configuration
+# 
+# IMPORTANT CONTEXT:
+# This file only assigns values to variables defined in variables.tf
+# No Azure resources are created just by having this file
+# Resources are only created when you explicitly run 'terraform apply' (which we haven't done)
+#
+# ❗ CRITICAL RULE: make sure that you don't put real values in this file
+#                  use this template and copy as terraform.tfvars that is part of .gitignore
+#                  populate with values contained in .env/azure_full_inventory.json
+#                  that is populated by running OneTimeActivities/GetAzureExistingResources/unix/azure_full_inventory.sh
+
+
+# Names in this file now directly match variables.tf
+azure_location  = "canadacentral"
+
+# PREPROVISIONED by LANDING ZONE BC Government
+dev_vnet_name             = ""
+dev_vnet_resource_group   = """
+dev_vnet_addressSpace     = [""]
+dev_vnet_dnsServers       = [""]
+dev_vnet_id               = ""
+
+# CREATED BY USER IDENTITY in AZURE policy won't allow by terraform
+dev_resource_group       = "" 
+dev_resource_id          = "/subscriptions/d321bcbe-c5e8-4830-901c-dab5fab3a834/resourceGroups/rg-ag-pssg-azure-poc-dev"
+
+## CREATED BY TERRAFORM
+dev_storage_account_name = ""
+
+dev_file_share_name = ""
+dev_file_share_quota_gb = 10
+
+dev_network_security_group = ""
+
+dev_subnet_name             = ""
+dev_subnet_address_prefixes = [""]
+
+dev_dns_servers = [""]
+
+common_tags = {
+  project        = ""
+  owner          = ""
+  account_coding = ""
+  billing_group  = ""
+  ministry_name  = ""
+}

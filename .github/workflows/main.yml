@@ -1,4 +1,4 @@
-name: BC Gov Azure Files Infrastructure
+name: Azure Files PoC Deploy Infrastructure
 
 # This workflow is the main entry point for Terraform infrastructure deployments.
 # It uses the reusable terraform-common.yml workflow for the actual Terraform operations.
@@ -57,3 +57,50 @@ jobs:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+  terraform-dev:
+    runs-on: ubuntu-latest
+    env:
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          enable-AzPSSession: false
+
+      - name: Generate terraform.tfvars for dev
+        run: |
+          cat <<EOF > terraform/environments/dev/terraform.tfvars
+          azure_location = "${{ vars.AZURE_LOCATION }}"
+          dev_resource_group = "${{ vars.DEV_RESOURCE_GROUP }}"
+          dev_storage_account_name = "${{ vars.DEV_STORAGE_ACCOUNT_NAME }}"
+          dev_file_share_name = "${{ vars.DEV_FILE_SHARE_NAME }}"
+          dev_file_share_quota_gb = ${{ vars.DEV_FILE_SHARE_QUOTA_GB }}
+          # Add any other required variables for your modules here
+          EOF
+
+      - name: Terraform Init
+        working-directory: terraform/environments/dev
+        run: terraform init
+
+      - name: Terraform Plan
+        working-directory: terraform/environments/dev
+        run: terraform plan -var-file=terraform.tfvars
+
+      # Uncomment to enable apply
+      # - name: Terraform Apply
+      #   working-directory: terraform/environments/dev
+      #   run: terraform apply -auto-approve -var-file=terraform.tfvars

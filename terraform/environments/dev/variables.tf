@@ -43,3 +43,49 @@ variable "common_tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "azure_location" {
+  description = "The Azure region for the dev environment. (Matches tfvars)"
+  type        = string
+}
+
+variable "dev_vnet_addressSpace" {
+  description = "The address space for the dev VNet."
+  type        = list(string)
+}
+
+variable "dev_vnet_dnsServers" {
+  description = "The DNS servers for the dev VNet."
+  type        = list(string)
+}
+
+variable "dev_vnet_id" {
+  description = "The resource ID of the dev VNet."
+  type        = string
+}
+
+variable "dev_resource_id" {
+  description = "The resource ID of the dev resource group."
+  type        = string
+}
+
+variable "dev_file_share_name" {
+  description = "The name of the Azure File Share."
+  type        = string
+}
+
+variable "dev_file_share_quota_gb" {
+  description = "The maximum size of the file share in GB for the dev environment."
+  type        = number
+  default     = 100
+}
+
+variable "dev_network_security_group" {
+  description = "The name of the Network Security Group for the dev environment."
+  type        = string
+}
+
+variable "dev_dns_servers" {
+  description = "The DNS servers for the dev environment."
+  type        = list(string)
+}

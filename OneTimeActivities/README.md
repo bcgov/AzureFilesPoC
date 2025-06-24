@@ -10,7 +10,7 @@ This directory contains documentation and scripts for one-time onboarding activi
 
 ## Quick Start: Onboarding Steps
 
-The onboarding process is automated and modularized into 5 robust, idempotent scripts for both Unix/macOS (Bash) and Windows (PowerShell). Each script updates the shared `.env/azure-credentials.json` file incrementally and safely.
+The onboarding process is automated and modularized into 6 robust, idempotent scripts for both Unix/macOS (Bash) and Windows (PowerShell). Each script updates the shared `.env/azure-credentials.json` file incrementally and safely (except for resource group tags, which are set in Azure only).
 
 **Run each script in order, verifying each step before proceeding:**
 
@@ -21,6 +21,7 @@ The onboarding process is automated and modularized into 5 robust, idempotent sc
 ./RegisterApplicationInAzureAndOIDC/scripts/unix/step3_configure_oidc.sh
 ./RegisterApplicationInAzureAndOIDC/scripts/unix/step4_prepare_github_secrets.sh
 ./RegisterApplicationInAzureAndOIDC/scripts/unix/step5_add_github_secrets_cli.sh
+./RegisterApplicationInAzureAndOIDC/scripts/unix/step6_create_resource_group.sh <resource-group-name> [location]
 ```
 
 ### Windows (PowerShell)
@@ -30,12 +31,14 @@ The onboarding process is automated and modularized into 5 robust, idempotent sc
 .\RegisterApplicationInAzureAndOIDC\scripts\windows\step3_configure_oidc.ps1
 .\RegisterApplicationInAzureAndOIDC\scripts\windows\step4_prepare_github_secrets.ps1
 .\RegisterApplicationInAzureAndOIDC\scripts\windows\step5_add_github_secrets_cli.ps1
+.\RegisterApplicationInAzureAndOIDC\scripts\windows\step6_create_resource_group.ps1 -rgname <resource-group-name> [-location <location>]
 ```
 
 - Each script is safe to re-run and will not duplicate entries.
 - All scripts dynamically resolve the project root and credentials file location.
 - The onboarding process is fully documented in [RegisterApplicationInAzureAndOIDC/README.md](RegisterApplicationInAzureAndOIDC/README.md).
 - **All onboarding and automation scripts are maintained and supported for both platforms.**
+- **Resource group tags are set in Azure only and are not written to the credentials JSON.**
 
 ## Inventory and Terraform Automation (Cross-Platform)
 
@@ -52,7 +55,7 @@ These scripts generate and update `.env/azure_full_inventory.json`, `terraform.t
 
 ## Transition to Validation
 
-After completing all 5 onboarding scripts and confirming your GitHub secrets are set, proceed to the validation phase:
+After completing all 6 onboarding scripts and confirming your GitHub secrets are set, proceed to the validation phase:
 
 1. Follow the complete [Validation Process](ValidationProcess.md) for step-by-step instructions and troubleshooting.
 2. Use the [Azure Login Validation workflow](../../.github/workflows/azure-login-validation.yml) to verify OIDC authentication.
@@ -63,6 +66,7 @@ After completing all 5 onboarding scripts and confirming your GitHub secrets are
 - All onboarding scripts follow the principle of least privilege and update only the required sections of the credentials file.
 - No secrets are ever written to version control; `.env/azure-credentials.json` is git-ignored.
 - All steps are idempotent and safe to repeat.
+- Resource group tags are managed in Azure only. If you change tags later, update them directly in Azure using the CLI or Portal.
 
 ## Why the Step-by-Step Approach?
 

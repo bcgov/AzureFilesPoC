@@ -1,10 +1,10 @@
 variable "resource_group_name" {
-  description = "The name of the resource group for the object replication resource(s)."
+  description = "The name of the resource group for the Azure Files resource(s)."
   type        = string
 }
 
 variable "location" {
-  description = "The Azure region for the object replication resource(s)."
+  description = "The Azure region for the Azure Files resource(s)."
   type        = string
 }
 

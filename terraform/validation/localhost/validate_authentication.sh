@@ -40,9 +40,9 @@ if [[ ! -f "$CREDS_FILE" ]]; then
 fi
 
 # Extract values from JSON (use only the nested Azure keys)
-CLIENT_ID=$(jq -r '.azure.ad.application.clientId // empty' "$CREDS_FILE")
-TENANT_ID=$(jq -r '.azure.ad.tenantId // empty' "$CREDS_FILE")
-SUBSCRIPTION_ID=$(jq -r '.azure.subscription.id // empty' "$CREDS_FILE")
+CLIENT_ID=$(jq -r '.azure.ad.application.azure_clientId // empty' "$CREDS_FILE")
+TENANT_ID=$(jq -r '.azure.ad.azure_tenantId // empty' "$CREDS_FILE")
+SUBSCRIPTION_ID=$(jq -r '.azure.azure_subscription.id // empty' "$CREDS_FILE")
 
 # Validate that we have all required values
 if [[ -z "$CLIENT_ID" || -z "$TENANT_ID" || -z "$SUBSCRIPTION_ID" ]]; then

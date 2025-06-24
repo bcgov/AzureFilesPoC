@@ -6,4 +6,5 @@ resource "azurerm_storage_share" "main" {
   quota                = var.quota_gb
   enabled_protocol     = var.enabled_protocol
   metadata             = var.metadata
+  tags                 = var.tags
 }
