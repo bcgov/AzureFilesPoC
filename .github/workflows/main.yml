@@ -6,7 +6,7 @@ name: Azure Files PoC Deploy Infrastructure
 # Related workflows:
 # - terraform-common.yml: Reusable workflow with all Terraform steps (init, plan, apply)
 # - terraform-validation.yml: Separate workflow for validating the overall CI/CD process
-# - azure-login-test.yml: Simple workflow for validating Azure authentication
+# - azure-login-validation.yml: Simple workflow for validating Azure authentication
 
 permissions:
   id-token: write # Required for OpenID Connect (OIDC) authentication with Azure
@@ -66,11 +66,13 @@ jobs:
   terraform-dev:
     runs-on: ubuntu-latest
     # Define environment variables for Terraform AzureRM provider.
-    # It's good practice to set these, though OIDC via azure/login is primary.
+    # ARM_USE_OIDC is crucial for telling the Azurerm provider to use OIDC authentication.
     env:
       ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_USE_OIDC: true # <--- ADDED THIS LINE
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -106,6 +108,8 @@ jobs:
           echo "DEV_VNET_ID: ${{ vars.DEV_VNET_ID }}"
           echo "DEV_VNET_NAME: ${{ vars.DEV_VNET_NAME }}"
           echo "DEV_VNET_RESOURCE_GROUP: ${{ vars.DEV_VNET_RESOURCE_GROUP }}"
+          echo "DEV_VNET_DNS_SERVERS: ${{ vars.DEV_VNET_DNS_SERVERS }}"
+          echo "DEV_COMMON_TAGS: ${{ vars.DEV_COMMON_TAGS }}"
           # Backend configuration variables check
           echo "DEV_TFSTATE_RG: ${{ vars.DEV_TFSTATE_RG }}"
           echo "DEV_TFSTATE_SA: ${{ vars.DEV_TFSTATE_SA }}"
@@ -115,15 +119,13 @@ jobs:
           if [ -z "${{ vars.DEV_TFSTATE_RG }}" ]; then echo "Error: DEV_TFSTATE_RG variable is not set!"; exit 1; fi
           if [ -z "${{ vars.DEV_TFSTATE_SA }}" ]; then echo "Error: DEV_TFSTATE_SA variable is not set!"; exit 1; fi
           if [ -z "${{ vars.DEV_TFSTATE_CONTAINER }}" ]; then echo "Error: DEV_TFSTATE_CONTAINER variable is not set!"; exit 1; fi
+          if [ -z "${{ vars.DEV_VNET_DNS_SERVERS }}" ]; then echo "Error: DEV_VNET_DNS_SERVERS variable is not set!"; exit 1; fi
+          if [ -z "${{ vars.DEV_COMMON_TAGS }}" ]; then echo "Error: DEV_COMMON_TAGS variable is not set!"; exit 1; fi
 
       - name: Create terraform/environments/dev directory if it doesn't exist
-        # This helps if the directory is empty or not committed, though usually it should be.
         run: mkdir -p terraform/environments/dev
 
       - name: Generate terraform.tfvars for dev
-        # This step now uses 'echo' and 'printf %s' for robust variable expansion,
-        # preventing unintended shell quoting around JSON-like array values.
-        # Strings are explicitly double-quoted; numbers and arrays are not.
         run: |
           {
             echo "azure_location = \"$(printf %s "${{ vars.AZURE_LOCATION }}")\""
@@ -131,27 +133,33 @@ jobs:
             echo "dev_storage_account_name = \"$(printf %s "${{ vars.DEV_STORAGE_ACCOUNT_NAME }}")\""
             echo "dev_file_share_name = \"$(printf %s "${{ vars.DEV_FILE_SHARE_NAME }}")\""
             echo "dev_file_share_quota_gb = $(printf %s "${{ vars.DEV_FILE_SHARE_QUOTA_GB }}")"
-            echo "dev_dns_servers = $(printf %s "${{ vars.DEV_DNS_SERVERS }}")" # Array variable, no outer quotes
+            echo "dev_dns_servers = $(printf %s "${{ vars.DEV_DNS_SERVERS }}")"
             echo "dev_network_security_group = \"$(printf %s "${{ vars.DEV_NETWORK_SECURITY_GROUP }}")\""
             echo "dev_resource_id = \"$(printf %s "${{ vars.DEV_RESOURCE_ID }}")\""
-            echo "dev_subnet_address_prefixes = $(printf %s "${{ vars.DEV_SUBNET_ADDRESS_PREFIXES }}")" # Array variable, no outer quotes
+            echo "dev_subnet_address_prefixes = $(printf %s "${{ vars.DEV_SUBNET_ADDRESS_PREFIXES }}")"
             echo "dev_subnet_name = \"$(printf %s "${{ vars.DEV_SUBNET_NAME }}")\""
-            echo "dev_vnet_address_space = $(printf %s "${{ vars.DEV_VNET_ADDRESS_SPACE }}")" # Array variable, no outer quotes
+            echo "dev_vnet_address_space = $(printf %s "${{ vars.DEV_VNET_ADDRESS_SPACE }}")"
             echo "dev_vnet_id = \"$(printf %s "${{ vars.DEV_VNET_ID }}")\""
             echo "dev_vnet_name = \"$(printf %s "${{ vars.DEV_VNET_NAME }}")\""
             echo "dev_vnet_resource_group = \"$(printf %s "${{ vars.DEV_VNET_RESOURCE_GROUP }}")\""
-            # Add any other required variables for your modules here
+            echo "dev_vnet_dns_servers = $(printf %s "${{ vars.DEV_VNET_DNS_SERVERS }}")"
+            echo "common_tags = $(printf %s "${{ vars.DEV_COMMON_TAGS }}")"
           } > terraform/environments/dev/terraform.tfvars
 
       - name: Display Generated terraform.tfvars (Debug Step)
-        # This step is crucial for debugging. It will print the content of the
-        # generated .tfvars file to the workflow logs.
         run: |
           echo "Content of terraform/environments/dev/terraform.tfvars:"
           cat terraform/environments/dev/terraform.tfvars || echo "File not found or empty."
+          echo ""
+          echo "--- IMPORTANT ---"
+          echo "Verify that array values (like dev_dns_servers, dev_subnet_address_prefixes, dev_vnet_address_space, dev_vnet_dns_servers)"
+          echo "are correctly formatted with double quotes around each string element, e.g., [\"item1\", \"item2\"]."
+          echo "Also verify 'common_tags' is a valid HCL map."
+          echo "If not, you need to update the value of the corresponding GitHub variable directly!"
+          echo "--- END IMPORTANT ---"
 
       - name: Terraform Init
-        id: terraform_init # Assign an ID for easier reference in logs
+        id: terraform_init
         working-directory: terraform/environments/dev
         run: terraform init -backend-config="resource_group_name=${{ vars.DEV_TFSTATE_RG }}" -backend-config="storage_account_name=${{ vars.DEV_TFSTATE_SA }}" -backend-config="container_name=${{ vars.DEV_TFSTATE_CONTAINER }}" -backend-config="key=dev.terraform.tfstate"
         # IMPORTANT: For this -backend-config to be effective, you MUST have a
@@ -165,17 +173,15 @@ jobs:
       - name: Terraform Validate
         id: terraform_validate
         working-directory: terraform/environments/dev
-        run: terraform validate # Always good to validate configuration before planning.
+        run: terraform validate
 
       - name: Terraform Plan
-        id: terraform_plan # Assign an ID for easier reference in logs
+        id: terraform_plan
         working-directory: terraform/environments/dev
-        run: terraform plan -var-file=terraform.tfvars -out=tfplan # Save plan to a file
+        run: terraform plan -var-file=terraform.tfvars -out=tfplan
 
       # Uncomment to enable apply
       # - name: Terraform Apply
       #   id: terraform_apply
       #   working-directory: terraform/environments/dev
-      #   # Use the -auto-approve flag for automated deployments.
-      #   # Consider adding a conditional check for 'plan_only' input if this job should respect it.
-      #   run: terraform apply -auto-approve tfplan # Apply the saved plan
+      #   run: terraform apply -auto-approve tfplan
