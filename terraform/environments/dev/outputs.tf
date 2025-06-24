@@ -6,12 +6,12 @@ output "file_share_name" {
   value = module.poc_file_share.name
 }
 
-output "dev_vnet_addressSpace" {
-  value = var.dev_vnet_addressSpace
+output "dev_vnet_address_space" {
+  value = var.dev_vnet_address_space
 }
 
-output "dev_vnet_dnsServers" {
-  value = var.dev_vnet_dnsServers
+output "dev_vnet_dns_servers" {
+  value = var.dev_vnet_dns_servers
 }
 
 output "dev_vnet_id" {
