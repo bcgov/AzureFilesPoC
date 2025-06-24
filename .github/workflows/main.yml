@@ -8,6 +8,10 @@ name: Azure Files PoC Deploy Infrastructure
 # - terraform-validation.yml: Separate workflow for validating the overall CI/CD process
 # - azure-login-test.yml: Simple workflow for validating Azure authentication
 
+permissions:
+  id-token: write
+  contents: read
+
 on:
   # Manual trigger with environment selection
   workflow_dispatch:
