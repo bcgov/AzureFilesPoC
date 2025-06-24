@@ -44,12 +44,12 @@ variable "azure_location" {
   type        = string
 }
 
-variable "dev_vnet_addressSpace" {
+variable "dev_vnet_address_space" {
   description = "The address space for the dev VNet."
   type        = list(string)
 }
 
-variable "dev_vnet_dnsServers" {
+variable "dev_vnet_dns_servers" {
   description = "The DNS servers for the dev VNet."
   type        = list(string)
 }
