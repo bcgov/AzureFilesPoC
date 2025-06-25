@@ -69,4 +69,16 @@ if (Test-Path $script:CredsFile) {
     Write-Warning "Credentials file $($script:CredsFile) not found. Skipping JSON update."
 }
 
+# Update inventory JSON (add or update resource group entry)
+$inventoryFile = Join-Path $script:ProjectRoot ".env/azure_full_inventory.json"
+if (-not (Test-Path $inventoryFile)) {
+    $init = @{ resourceGroups = @(); storageAccounts = @(); blobContainers = @() } | ConvertTo-Json
+    $init | Set-Content $inventoryFile
+}
+$inventory = Get-Content $inventoryFile | ConvertFrom-Json
+$inventory.resourceGroups = @($inventory.resourceGroups | Where-Object { $_.name -ne $rgname })
+$inventory.resourceGroups += @{ name = $rgname; id = $rgJson.id; location = $rgJson.location }
+$inventory | ConvertTo-Json -Depth 10 | Set-Content $inventoryFile
+Write-Host "`u2714 Resource group '$rgname' recorded in azure_full_inventory.json."
+
 Write-Host "✅ Resource group '$rgname' created and script complete."

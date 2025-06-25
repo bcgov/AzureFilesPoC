@@ -32,8 +32,76 @@ This separation enforces the Principle of Least Privilege and aligns with BC Gov
    - `./scripts/windows/step6_create_resource_group.ps1 -rgname <resource-group-name> [-location <location>]`
    - **Note:** Resource group tags are set in Azure only. Tags are not written to the credentials JSON.
    - Update your GitHub secret `DEV_RESOURCE_GROUP_NAME` to match.
-7. **Run Validation Workflow**  
+7. **Create Terraform State Storage Account and Container**  
+   _User Identity_  
+   - `./scripts/unix/step7_create_tfstate_storage_account.sh --rgname <resource-group-name> --saname <storage-account-name> --containername <container-name> [--location <location>]`
+   - This step is required before running any Terraform CI/CD pipeline that uses a remote backend in Azure.
+   - The resource group, storage account, and blob container must all exist before `terraform init` can succeed with a remote backend.
+   - See script comments for required arguments and Azure Policy compliance (e.g., minimum TLS version).
+8. **Run Validation Workflow**  
    - See `ValidationProcess.md` for instructions.
+
+---
+
+## ⚠️ Important: Pre-create All Terraform Backend Resources
+
+Before running any Terraform pipeline, you must create these three resources and set the corresponding GitHub variables:
+
+1. **Resource Group**
+   - **Script:**
+     ```sh
+     ./scripts/unix/step6_create_resource_group.sh <resource-group-name> [location]
+     ```
+   - **Example:**
+     ```sh
+     ./scripts/unix/step6_create_resource_group.sh rg-ag-pssg-tfstate-dev canadacentral
+     ```
+   - **GitHub Variable:**
+     `DEV_TFSTATE_RG` (e.g., `rg-ag-pssg-tfstate-dev`)
+
+2. **Storage Account**
+   - **Script:**
+     ```sh
+     ./scripts/unix/step7_create_tfstate_storage_account.sh --rgname <resource-group-name> --saname <storage-account-name> [--location <location>]
+     ```
+   - **Example:**
+     ```sh
+     ./scripts/unix/step7_create_tfstate_storage_account.sh --rgname rg-ag-pssg-tfstate-dev --saname stagpssgtfstatedev01 --location canadacentral
+     ```
+   - **GitHub Variable:**
+     `DEV_TFSTATE_SA` (e.g., `stagpssgtfstatedev01`)
+
+3. **Blob Container**
+   - **Script:**
+     The step7 script attempts to create the container, but if it does not exist, create it manually:
+     ```sh
+     az storage container create \
+       --name <container-name> \
+       --account-name <storage-account-name> \
+       --auth-mode login
+     ```
+   - **Example:**
+     ```sh
+     az storage container create \
+       --name sc-ag-pssg-tfstate-dev \
+       --account-name stagpssgtfstatedev01 \
+       --auth-mode login
+     ```
+   - **GitHub Variable:**
+     `DEV_TFSTATE_CONTAINER` (e.g., `sc-ag-pssg-tfstate-dev`)
+
+   - **Verification Note:**
+     > Blob containers do not appear as top-level Azure resources in the Azure Portal. To verify creation, navigate to your resource group, open the storage account (e.g., `stagpssgtfstatedev01`), and select the **Containers** blade. Your container (e.g., `sc-ag-pssg-tfstate-dev`) should be listed there.
+
+**Summary Table:**
+
+| Resource         | Script/Command                                                                 | GitHub Variable         | Example Value                |
+|------------------|-------------------------------------------------------------------------------|-------------------------|------------------------------|
+| Resource Group   | `step6_create_resource_group.sh`                                              | `DEV_TFSTATE_RG`        | `rg-ag-pssg-tfstate-dev`     |
+| Storage Account  | `step7_create_tfstate_storage_account.sh`                                     | `DEV_TFSTATE_SA`        | `stagpssgtfstatedev01`       |
+| Blob Container   | `az storage container create ...` (if not created by script 7)                | `DEV_TFSTATE_CONTAINER` | `sc-ag-pssg-tfstate-dev`     |
+
+> **All three must exist and be referenced by the correct GitHub variables before `terraform init` or any pipeline run.**
 
 ---
 
@@ -310,7 +378,8 @@ Use this table to track your progress through the steps.
 | 4 | Prepare GitHub Secrets | Not Started | | |
 | 5 | Add GitHub Secrets (CLI or Manual) | Not Started | | |
 | **6** | **Create Permanent Resource Group (Manual)** | **Not Started** | | |
-| 7 | Go to ValidationProcess.md for validation | Not Started | | |
+| 7 | Create Terraform State Storage Account and Container | Not Started | | |
+| 8 | Go to ValidationProcess.md for validation | Not Started | | |
 
 ## Appendix
 
