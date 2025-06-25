@@ -71,7 +71,7 @@ jobs:
       ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      ARM_USE_OIDC: true # <--- ADDED THIS LINE
+      ARM_USE_OIDC: true
 
     steps:
       - name: Checkout repository
@@ -80,7 +80,7 @@ jobs:
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.6.6 # Ensure this version is compatible with your code
+          terraform_version: 1.6.6
 
       - name: Azure Login (OIDC)
         uses: azure/login@v2
@@ -88,7 +88,6 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          # enable-AzPSSession is typically not needed for Terraform as it uses the Azure CLI context.
           enable-AzPSSession: false
 
       - name: Verify GitHub Vars (Debug Step)
@@ -99,7 +98,6 @@ jobs:
           echo "DEV_STORAGE_ACCOUNT_NAME: ${{ vars.DEV_STORAGE_ACCOUNT_NAME }}"
           echo "DEV_FILE_SHARE_NAME: ${{ vars.DEV_FILE_SHARE_NAME }}"
           echo "DEV_FILE_SHARE_QUOTA_GB: ${{ vars.DEV_FILE_SHARE_QUOTA_GB }}"
-          echo "DEV_DNS_SERVERS: ${{ vars.DEV_DNS_SERVERS }}"
           echo "DEV_NETWORK_SECURITY_GROUP: ${{ vars.DEV_NETWORK_SECURITY_GROUP }}"
           echo "DEV_RESOURCE_ID: ${{ vars.DEV_RESOURCE_ID }}"
           echo "DEV_SUBNET_ADDRESS_PREFIXES: ${{ vars.DEV_SUBNET_ADDRESS_PREFIXES }}"
@@ -115,7 +113,7 @@ jobs:
           echo "DEV_TFSTATE_SA: ${{ vars.DEV_TFSTATE_SA }}"
           echo "DEV_TFSTATE_CONTAINER: ${{ vars.DEV_TFSTATE_CONTAINER }}"
 
-          # Fail if backend configuration variables are not set (assuming you're using a remote backend)
+          # Fail if backend configuration variables are not set
           if [ -z "${{ vars.DEV_TFSTATE_RG }}" ]; then echo "Error: DEV_TFSTATE_RG variable is not set!"; exit 1; fi
           if [ -z "${{ vars.DEV_TFSTATE_SA }}" ]; then echo "Error: DEV_TFSTATE_SA variable is not set!"; exit 1; fi
           if [ -z "${{ vars.DEV_TFSTATE_CONTAINER }}" ]; then echo "Error: DEV_TFSTATE_CONTAINER variable is not set!"; exit 1; fi
@@ -127,48 +125,39 @@ jobs:
 
       - name: Generate terraform.tfvars for dev
         run: |
-          {
-            echo "azure_location = \"${{ vars.AZURE_LOCATION }}\""
-            echo "dev_resource_group = \"${{ vars.DEV_RESOURCE_GROUP }}\""
-            echo "dev_storage_account_name = \"${{ vars.DEV_STORAGE_ACCOUNT_NAME }}\""
-            echo "dev_file_share_name = \"${{ vars.DEV_FILE_SHARE_NAME }}\""
-            echo "dev_file_share_quota_gb = ${{ vars.DEV_FILE_SHARE_QUOTA_GB }}"
-            echo "dev_dns_servers = [$(echo ${{ vars.DEV_DNS_SERVERS }} | sed 's/[][]//g' | sed 's/\([^, ][^, ]*\)/"\1"/g')]"
-            echo "dev_network_security_group = \"${{ vars.DEV_NETWORK_SECURITY_GROUP }}\""
-            echo "dev_resource_id = \"${{ vars.DEV_RESOURCE_ID }}\""
-            echo "dev_subnet_address_prefixes = [$(echo ${{ vars.DEV_SUBNET_ADDRESS_PREFIXES }} | sed 's/[][]//g' | sed 's/\([^, ][^, ]*\)/"\1"/g')]"
-            echo "dev_subnet_name = \"${{ vars.DEV_SUBNET_NAME }}\""
-            echo "dev_vnet_address_space = [$(echo ${{ vars.DEV_VNET_ADDRESS_SPACE }} | sed 's/[][]//g' | sed 's/\([^, ][^, ]*\)/"\1"/g')]"
-            echo "dev_vnet_id = \"${{ vars.DEV_VNET_ID }}\""
-            echo "dev_vnet_name = \"${{ vars.DEV_VNET_NAME }}\""
-            echo "dev_vnet_resource_group = \"${{ vars.DEV_VNET_RESOURCE_GROUP }}\""
-            echo "dev_vnet_dns_servers = [$(echo ${{ vars.DEV_VNET_DNS_SERVERS }} | sed 's/[][]//g' | sed 's/\([^, ][^, ]*\)/"\1"/g')]"
-            echo "common_tags = ${{ vars.DEV_COMMON_TAGS }}"
-          } > terraform/environments/dev/terraform.tfvars
+          # The toJson() function correctly formats GitHub variables (which must be valid JSON)
+          # into HCL-compatible lists and maps for Terraform.
+          cat <<EOF > terraform/environments/dev/terraform.tfvars
+          azure_location              = "${{ vars.AZURE_LOCATION }}"
+          dev_resource_group          = "${{ vars.DEV_RESOURCE_GROUP }}"
+          dev_storage_account_name    = "${{ vars.DEV_STORAGE_ACCOUNT_NAME }}"
+          dev_file_share_name         = "${{ vars.DEV_FILE_SHARE_NAME }}"
+          dev_file_share_quota_gb     = ${{ vars.DEV_FILE_SHARE_QUOTA_GB }}
+          dev_network_security_group  = "${{ vars.DEV_NETWORK_SECURITY_GROUP }}"
+          dev_resource_id             = "${{ vars.DEV_RESOURCE_ID }}"
+          dev_subnet_name             = "${{ vars.DEV_SUBNET_NAME }}"
+          dev_vnet_id                 = "${{ vars.DEV_VNET_ID }}"
+          dev_vnet_name               = "${{ vars.DEV_VNET_NAME }}"
+          dev_vnet_resource_group     = "${{ vars.DEV_VNET_RESOURCE_GROUP }}"
+          
+          # Use toJson() for lists and maps.
+          # The corresponding GitHub variables MUST be stored in valid JSON format.
+          # e.g., ["10.0.0.1"] or {"key": "value"}
+          dev_subnet_address_prefixes = ${{ toJson(vars.DEV_SUBNET_ADDRESS_PREFIXES) }}
+          dev_vnet_address_space      = ${{ toJson(vars.DEV_VNET_ADDRESS_SPACE) }}
+          dev_vnet_dns_servers        = ${{ toJson(vars.DEV_VNET_DNS_SERVERS) }}
+          common_tags                 = ${{ toJson(vars.DEV_COMMON_TAGS) }}
+          EOF
 
       - name: Display Generated terraform.tfvars (Debug Step)
         run: |
           echo "Content of terraform/environments/dev/terraform.tfvars:"
           cat terraform/environments/dev/terraform.tfvars || echo "File not found or empty."
-          echo ""
-          echo "--- IMPORTANT ---"
-          echo "Verify that array values (like dev_dns_servers, dev_subnet_address_prefixes, dev_vnet_address_space, dev_vnet_dns_servers)"
-          echo "are correctly formatted with double quotes around each string element, e.g., [\"item1\", \"item2\"]."
-          echo "Also verify 'common_tags' is a valid HCL map."
-          echo "If not, you need to update the value of the corresponding GitHub variable directly!"
-          echo "--- END IMPORTANT ---"
 
       - name: Terraform Init
         id: terraform_init
         working-directory: terraform/environments/dev
         run: terraform init -backend-config="resource_group_name=${{ vars.DEV_TFSTATE_RG }}" -backend-config="storage_account_name=${{ vars.DEV_TFSTATE_SA }}" -backend-config="container_name=${{ vars.DEV_TFSTATE_CONTAINER }}" -backend-config="key=dev.terraform.tfstate"
-        # IMPORTANT: For this -backend-config to be effective, you MUST have a
-        # 'backend "azurerm" { ... }' block defined in your Terraform configuration
-        # files (e.g., versions.tf or main.tf) within 'terraform/environments/dev'.
-        # If this block is missing, Terraform will default to a local backend,
-        # and these backend-config flags will be ignored, leading to warnings.
-        # Ensure that the values for DEV_TFSTATE_RG, DEV_TFSTATE_SA, and DEV_TFSTATE_CONTAINER
-        # are correctly set as variables in your GitHub repository settings.
 
       - name: Terraform Validate
         id: terraform_validate
@@ -178,10 +167,12 @@ jobs:
       - name: Terraform Plan
         id: terraform_plan
         working-directory: terraform/environments/dev
+        # NOTE: -var-file=terraform.tfvars is redundant as Terraform automatically loads this file.
+        # It is kept here for explicit clarity.
         run: terraform plan -var-file=terraform.tfvars -out=tfplan
 
-      # Uncomment to enable apply
       # - name: Terraform Apply
+      #   if: github.ref == 'refs/heads/main' && github.event_name == 'push' # Example condition
       #   id: terraform_apply
       #   working-directory: terraform/environments/dev
       #   run: terraform apply -auto-approve tfplan
