@@ -116,7 +116,7 @@ jobs:
         working-directory: terraform/environments/dev
         run: terraform plan -var-file=terraform.tfvars -out=tfplan
 
-      # - name: Terraform Apply
-      #   if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-      #   working-directory: terraform/environments/dev
-      #   run: terraform apply -auto-approve tfplan
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        working-directory: terraform/environments/dev
+        run: terraform apply -auto-approve tfplan
