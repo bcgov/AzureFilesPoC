@@ -82,6 +82,24 @@ else
   az group create --name "$RG_NAME" --location "$LOCATION"
 fi
 
+# --- FETCH RESOURCE GROUP DETAILS ---
+RG_JSON=$(az group show --name "$RG_NAME" -o json)
+RG_ID=$(echo "$RG_JSON" | jq -r '.id')
+RG_LOCATION=$(echo "$RG_JSON" | jq -r '.location')
+
+# --- UPDATE FULL INVENTORY JSON ---
+INVENTORY_FILE="$PROJECT_ROOT/.env/azure_full_inventory.json"
+mkdir -p "$PROJECT_ROOT/.env"
+if [ ! -f "$INVENTORY_FILE" ]; then
+  echo '{"resourceGroups":[],"storageAccounts":[],"blobContainers":[]}' > "$INVENTORY_FILE"
+fi
+# Add or update resource group entry
+TMP_FILE=$(mktemp)
+jq --arg name "$RG_NAME" --arg id "$RG_ID" --arg location "$RG_LOCATION" '
+  .resourceGroups |= map(select(.name != $name)) + [{"name":$name,"id":$id,"location":$location}]
+' "$INVENTORY_FILE" > "$TMP_FILE" && mv "$TMP_FILE" "$INVENTORY_FILE"
+echo "✅ Resource group '$RG_NAME' recorded in azure_full_inventory.json."
+
 # --- FETCH TAGS FROM AZURE ---
 TAGS_JSON=$(az group show --name "$RG_NAME" --query tags -o json)
 
