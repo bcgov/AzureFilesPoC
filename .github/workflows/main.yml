@@ -1,14 +1,10 @@
 name: Azure Files PoC Deploy Infrastructure
 
-# This workflow is the main entry point for Terraform infrastructure deployments.
-# It uses the reusable terraform-common.yml workflow for the actual Terraform operations.
-
 permissions:
-  id-token: write # Required for OpenID Connect (OIDC) authentication with Azure
-  contents: read  # Required to checkout the repository content
+  id-token: write
+  contents: read
 
 on:
-  # Manual trigger with environment selection
   workflow_dispatch:
     inputs:
       environment:
@@ -25,22 +21,17 @@ on:
         required: true
         type: boolean
         default: true
-
-  # Pull request automation - run Terraform plan on PRs
   pull_request:
     branches: [ main ]
     paths:
       - 'terraform/**'
       - '.github/workflows/**'
 
-# This concurrency block is critical. It prevents multiple runs from overlapping,
-# which is the correct way to avoid "state is already locked" errors.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  # This job definition is an example using a reusable workflow.
   deploy-infrastructure:
     uses: ./.github/workflows/terraform-common.yml
     with:
@@ -51,16 +42,10 @@ jobs:
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-  # This is the primary job we have been fixing.
   terraform-dev:
     runs-on: ubuntu-latest
     env:
       ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-      #================================================================================
-      # THIS IS THE FIX for the "Tenant ID must be configured" error.
-      # This line makes the Tenant ID available as an environment variable directly
-      # to the Terraform azurerm provider, which requires it for OIDC authentication.
-      #================================================================================
       ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       ARM_USE_OIDC: true
@@ -87,7 +72,6 @@ jobs:
           echo "Verifying the formats of the GitHub variables as strings:"
           echo "DEV_SUBNET_ADDRESS_PREFIXES: ${{ vars.DEV_SUBNET_ADDRESS_PREFIXES }}"
           echo "DEV_COMMON_TAGS:             ${{ vars.DEV_COMMON_TAGS }}"
-          # etc...
 
       - name: Create terraform/environments/dev directory if it doesn't exist
         run: mkdir -p terraform/environments/dev
@@ -107,12 +91,12 @@ jobs:
           dev_vnet_name               = "${{ vars.DEV_VNET_NAME }}"
           dev_vnet_resource_group     = "${{ vars.DEV_VNET_RESOURCE_GROUP }}"
           
-          # This section uses toJson() to correctly format lists and maps.
-          # For this to work, the source variables in GitHub MUST be valid JSON.
-          dev_subnet_address_prefixes = ${{ toJson(vars.DEV_SUBNET_ADDRESS_PREFIXES) }}
-          dev_vnet_address_space      = ${{ toJson(vars.DEV_VNET_ADDRESS_SPACE) }}
-          dev_vnet_dns_servers        = ${{ toJson(vars.DEV_VNET_DNS_SERVERS) }}
-          common_tags                 = ${{ toJson(vars.DEV_COMMON_TAGS) }}
+          # FINAL FIX: Because the GitHub variables are now perfect JSON strings,
+          # we no longer need the toJson() function. We print them directly.
+          dev_subnet_address_prefixes = ${{ vars.DEV_SUBNET_ADDRESS_PREFIXES }}
+          dev_vnet_address_space      = ${{ vars.DEV_VNET_ADDRESS_SPACE }}
+          dev_vnet_dns_servers        = ${{ vars.DEV_VNET_DNS_SERVERS }}
+          common_tags                 = ${{ vars.DEV_COMMON_TAGS }}
           EOF
 
       - name: Display Generated terraform.tfvars (Debug Step)
