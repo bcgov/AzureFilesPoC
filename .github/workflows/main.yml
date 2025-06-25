@@ -1,10 +1,11 @@
 name: Azure Files PoC Deploy Infrastructure
 
 permissions:
-  id-token: write
-  contents: read
+  id-token: write # Required for OpenID Connect (OIDC) authentication with Azure
+  contents: read  # Required to checkout the repository content
 
 on:
+  # Manual trigger with environment selection
   workflow_dispatch:
     inputs:
       environment:
@@ -21,17 +22,21 @@ on:
         required: true
         type: boolean
         default: true
+  # Pull request automation - run Terraform plan on PRs
   pull_request:
     branches: [ main ]
     paths:
       - 'terraform/**'
       - '.github/workflows/**'
 
+# This concurrency block is critical. It prevents multiple runs from overlapping,
+# which is the correct way to avoid "state is already locked" errors.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  # This job definition is an example using a reusable workflow.
   deploy-infrastructure:
     uses: ./.github/workflows/terraform-common.yml
     with:
@@ -42,6 +47,7 @@ jobs:
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+  # This is the primary job we have been fixing.
   terraform-dev:
     runs-on: ubuntu-latest
     env:
@@ -71,6 +77,7 @@ jobs:
         run: |
           echo "Verifying the formats of the GitHub variables as strings:"
           echo "DEV_SUBNET_ADDRESS_PREFIXES: ${{ vars.DEV_SUBNET_ADDRESS_PREFIXES }}"
+          echo "DEV_DNS_SERVERS: ${{ vars.DEV_DNS_SERVERS }}"
           echo "DEV_COMMON_TAGS:             ${{ vars.DEV_COMMON_TAGS }}"
 
       - name: Create terraform/environments/dev directory if it doesn't exist
@@ -91,11 +98,16 @@ jobs:
           dev_vnet_name               = "${{ vars.DEV_VNET_NAME }}"
           dev_vnet_resource_group     = "${{ vars.DEV_VNET_RESOURCE_GROUP }}"
           
-          # FINAL FIX: Because the GitHub variables are now perfect JSON strings,
-          # we no longer need the toJson() function. We print them directly.
+          # Printing the variables that are already in perfect JSON format.
           dev_subnet_address_prefixes = ${{ vars.DEV_SUBNET_ADDRESS_PREFIXES }}
           dev_vnet_address_space      = ${{ vars.DEV_VNET_ADDRESS_SPACE }}
           dev_vnet_dns_servers        = ${{ vars.DEV_VNET_DNS_SERVERS }}
+          
+          #================================================================================
+          # This line was the final fix for the "plan" step asking for input.
+          #================================================================================
+          dev_dns_servers             = ${{ vars.DEV_DNS_SERVERS }}
+          
           common_tags                 = ${{ vars.DEV_COMMON_TAGS }}
           EOF
 
@@ -117,6 +129,9 @@ jobs:
         run: terraform plan -var-file=terraform.tfvars -out=tfplan
 
       - name: Terraform Apply
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        # This condition allows apply to run in two scenarios:
+        # 1. On a direct push/merge to the 'main' branch.
+        # 2. When manually dispatched with the 'plan_only' input set to 'false'.
+        if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && github.event.inputs.plan_only == 'false')
         working-directory: terraform/environments/dev
         run: terraform apply -auto-approve tfplan

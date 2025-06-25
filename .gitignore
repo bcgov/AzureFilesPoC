@@ -79,3 +79,7 @@ llm_code_snapshot.txt
 node_modules/
 package.json
 package-lock.json
+
+# Ignore downloaded Terraform zip archives
+terraform_*.zip
+*.zip

@@ -4,6 +4,64 @@
 >
 > Always review configuration thoroughly and receive explicit approval before running `terraform apply` on production-related environments.
 
+---
+
+## Dependencies
+
+- **Terraform:** v1.6.6 or newer (recommended: v1.9.8)
+  - Homebrew users: Homebrew is locked to 1.5.7 due to license changes. To install the latest version manually:
+    ```sh
+    brew uninstall terraform
+    curl -LO https://releases.hashicorp.com/terraform/1.9.8/terraform_1.9.8_darwin_arm64.zip
+    unzip terraform_1.9.8_darwin_arm64.zip
+    sudo mv terraform /usr/local/bin/
+    terraform version
+    ```
+    *(For Intel Macs, use the `darwin_amd64.zip` build instead.)*
+- **Azure CLI:** Latest version from https://docs.microsoft.com/en-us/cli/azure/install-azure-cli
+- **jq:** For onboarding/automation scripts: `brew install jq`
+
+---
+
+## How to Remove Terraform State Locks in Azure
+
+If you see an error like `Error acquiring the state lock` or `state blob is already locked`, you must manually remove the lock blob from your Azure Storage Account.
+
+**Option 1: Azure CLI**
+1. Find your backend details (from your workflow or backend config):
+   - Storage account: e.g. `stagpssgtfstatedev01`
+   - Container: e.g. `sc-ag-pssg-tfstate-dev`
+   - Blob: e.g. `dev.terraform.tfstate.tflock`
+2. Run:
+   ```sh
+   az storage blob delete \
+     --account-name <storage_account> \
+     --container-name <container> \
+     --name <statefile>.tflock \
+     --auth-mode login
+   ```
+   Example:
+   ```sh
+   az storage blob delete \
+     --account-name stagpssgtfstatedev01 \
+     --container-name sc-ag-pssg-tfstate-dev \
+     --name dev.terraform.tfstate.tflock \
+     --auth-mode login
+   ```
+3. RUN: 
+  ```sh
+    terraform force-unlock b84dec8c-ecae-6065-46fb-5b87d232ac19
+  ```
+
+----
+
+**Option 2: Azure Portal**
+1. Go to your Storage Account in the Azure Portal.
+2. Open the container (e.g., `sc-ag-pssg-tfstate-dev`).
+3. Delete the blob ending with `.tflock` (e.g., `dev.terraform.tfstate.tflock`).
+
+---
+
 ## Getting Started: The Project Workflow
 
 This project follows a structured, validation-first workflow. Before developing any infrastructure, you must complete the onboarding and validation steps to ensure the entire system is configured correctly.
