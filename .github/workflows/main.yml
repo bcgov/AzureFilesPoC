@@ -83,12 +83,12 @@ jobs:
           # Ensure this script does not try to set 'allowed_ip_rules' if it was previously there.
           cat <<EOF > terraform/environments/dev/terraform.tfvars
           azure_location              = "${{ vars.AZURE_LOCATION }}"
-          dev_service_principal_id    = "${{ secrets.DEV_SERVICE_PRINCIPAL_ID }}"
+          dev_service_principal_id    = "${{ vars.DEV_SERVICE_PRINCIPAL_ID }}"
           dev_resource_group          = "${{ vars.DEV_RESOURCE_GROUP }}"
           dev_resource_group_b        = "${{ vars.DEV_RESOURCE_GROUP_B }}"
           dev_storage_account_name    = "${{ vars.DEV_STORAGE_ACCOUNT_NAME }}"
           dev_file_share_name         = "${{ vars.DEV_FILE_SHARE_NAME }}"
-          dev_file_share_quota_gb     = ${{ vars.DEV_FILE_SHARE_QUOTA_GB }}
+          dev_file_share_quota_gb     =  ${{ vars.DEV_FILE_SHARE_QUOTA_GB }}
           dev_network_security_group  = "${{ vars.DEV_NETWORK_SECURITY_GROUP }}"
           dev_resource_id             = "${{ vars.DEV_RESOURCE_ID }}"
           dev_subnet_name             = "${{ vars.DEV_SUBNET_NAME }}"
