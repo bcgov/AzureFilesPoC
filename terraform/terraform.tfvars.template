@@ -18,6 +18,7 @@
 azure_location  = "canadacentral"
 
 # PREPROVISIONED by LANDING ZONE BC Government
+dev_service_principal_object_id = ""
 dev_vnet_name             = ""
 dev_vnet_resource_group   = """
 dev_vnet_addressSpace     = [""]
