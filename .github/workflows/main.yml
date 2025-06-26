@@ -83,7 +83,7 @@ jobs:
           # Ensure this script does not try to set 'allowed_ip_rules' if it was previously there.
           cat <<EOF > terraform/environments/dev/terraform.tfvars
           azure_location              = "${{ vars.AZURE_LOCATION }}"
-          service_principal_id        = "${{ secrets.DEV_SERVICE_PRINCIPAL_ID }}"
+          dev_service_principal_id    = "${{ secrets.DEV_SERVICE_PRINCIPAL_ID }}"
           dev_resource_group          = "${{ vars.DEV_RESOURCE_GROUP }}"
           dev_resource_group_b        = "${{ vars.DEV_RESOURCE_GROUP_B }}"
           dev_storage_account_name    = "${{ vars.DEV_STORAGE_ACCOUNT_NAME }}"
@@ -101,6 +101,11 @@ jobs:
           dev_dns_servers             = ${{ vars.DEV_DNS_SERVERS }}
           common_tags                 = ${{ vars.DEV_COMMON_TAGS }}
           EOF
+
+      - name: "debug TF_VAR_service_principal_id"
+        run: |
+          echo "TF_VAR_service_principal_id: ${{ env.TF_VAR_service_principal_id }}"
+          echo "service_principal_id: ${{ secrets.DEV_SERVICE_PRINCIPAL_ID }}"
 
       - name: Display Generated terraform.tfvars (Debug Step)
         run: |
