@@ -18,3 +18,9 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "allowed_ip_rules" {
+  type        = list(string)
+  description = "A list of public IP CIDR ranges to allow through the firewall. For the GitHub runner."
+  default     = []
+}

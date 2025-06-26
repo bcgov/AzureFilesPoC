@@ -3,25 +3,22 @@
 # This file composes reusable modules using a consistent set of variables
 # to build the 'dev' environment.
 
-# IMPORTANT: This 'terraform' block with the 'backend "azurerm" {}' declaration
-# is CRUCIAL for Terraform to understand it needs to use an Azure backend
-# for state management. The specific configuration values (resource_group_name,
-# storage_account_name, container_name) are provided dynamically by the GitHub
-# Actions workflow using '-backend-config' flags during 'terraform init'.
-
 terraform {
-  required_version = ">= 1.6.6" # Set this to your exact Terraform version if known, or minimum required
+  required_version = ">= 1.6.6"
 
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 3.0" # Use a version compatible with your setup, e.g., "~> 4.0" if using v4.x
+      version = "~> 3.0"
+    }
+    # Add the time provider to manage delays for permission propagation.
+    time = {
+      source  = "hashicorp/time"
+      version = ">= 0.9.1"
     }
   }
 
   backend "azurerm" {
-    # These properties are typically left empty here when configured via -backend-config
-    # The 'key' should be unique for this environment's state file.
     key = "dev.terraform.tfstate"
   }
 }
@@ -31,29 +28,42 @@ provider "azurerm" {
 }
 
 #================================================================================
-# FIX FOR DATA PLANE PERMISSIONS:
-# This section fixes the "403 This request is not authorized" error.
-# 1. We get the identity (Service Principal) of the currently running GitHub Action.
-# 2. We assign the necessary data-plane role to that identity for the new storage account.
+# NEW VARIABLE FOR GITHUB RUNNER IP
+#================================================================================
+# This variable will be populated by the -var="allowed_ip_rules=[...]" argument
+# in the GitHub Actions workflow.
+variable "allowed_ip_rules" {
+  type        = list(string)
+  description = "A list of public IP CIDR ranges to allow through the storage account firewall, passed from the CI/CD pipeline."
+  default     = []
+}
+
+#================================================================================
+# IDENTITY AND PERMISSIONS
 #================================================================================
 data "azurerm_client_config" "current" {}
 
+# This role is for DATA PLANE access (reading/writing files). It's still good to have.
 resource "azurerm_role_assignment" "storage_data_contributor" {
   scope                = module.poc_storage_account.id
   role_definition_name = "Storage File Data SMB Share Contributor"
   principal_id         = data.azurerm_client_config.current.object_id
 }
 
-# =================
-# ASSUMPTIONS
-# =================
-# 1. Reference the dedicated Resource Group for the PoC services.
-# NOTE: Per BC Gov policy, the resource group must be created outside of Terraform using your own identity (not by automation).
-# The resource group name is provided via the DEV_RESOURCE_GROUP_NAME GitHub secret and in terraform.tfvars.
-# Do NOT attempt to create or manage the resource group with Terraform.
-# Example onboarding script: OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/step6_create_resource_group.sh
-#
-# Use the existing resource group name directly in module calls below.
+# This resource introduces a delay to allow Azure IAM permissions to propagate
+# before attempting to create the file share.
+resource "time_sleep" "wait_for_iam_propagation" {
+  create_duration = "30s"
+
+  # The trigger ensures the sleep only happens after the role assignment is complete.
+  triggers = {
+    role_assignment_id = azurerm_role_assignment.storage_data_contributor.id
+  }
+}
+
+#================================================================================
+# MODULES
+#================================================================================
 
 # 1. Create the secure storage account.
 module "poc_storage_account" {
@@ -63,6 +73,9 @@ module "poc_storage_account" {
   resource_group_name  = var.dev_resource_group
   location             = var.azure_location
   tags                 = var.common_tags
+
+  # Pass the runner's IP address to the module so it can create a firewall rule.
+  allowed_ip_rules = var.allowed_ip_rules
 }
 
 # 2. Create the file share in the storage account.
@@ -74,46 +87,22 @@ module "poc_file_share" {
   storage_account_name = module.poc_storage_account.name
   quota_gb             = var.dev_file_share_quota_gb
 
-  # --- Optional Arguments (will use defaults from the module if not set) ---
+  # --- Optional Arguments ---
   enabled_protocol = "SMB"
-  access_tier      = "TransactionOptimized" # Or "Hot", "Cool", etc.
+  access_tier      = "TransactionOptimized"
   metadata         = {}
-  # acls             = [] # You can define ACLs here if needed
 
-  # NOTE: The 'tags' argument is removed because azurerm_storage_share does not support it.
-  # Tags belong on the parent storage account.
-
-  # This dependency is correct and essential.
+  # The 'depends_on' block is critical. It forces Terraform to wait until
+  # the time_sleep resource (which waits for the role assignment) is complete.
   depends_on = [
-    azurerm_role_assignment.storage_data_contributor
+    time_sleep.wait_for_iam_propagation
   ]
 }
 
 # --- The following resources are commented out for initial setup ---
-
+# (No changes needed for the commented-out code)
 # # Use the subnet module to create the dedicated subnet in the existing VNet.
-# module "private_endpoint_subnet" {
-#    source = "../../modules/networking/subnet"
-#
-#    subnet_name              = var.dev_subnet_name
-#    resource_group_name      = var.dev_vnet_resource_group
-#    location                 = var.dev_location # This variable (dev_location) is not defined in your variables.tf. Ensure it's defined or use 'var.azure_location' if intended to be the same.
-#    vnet_name                = var.dev_vnet_name
-#    vnet_resource_group_name = var.dev_vnet_resource_group
-#    address_prefixes         = var.dev_subnet_address_prefixes
-#    tags                     = var.common_tags
-# }
+# module "private_endpoint_subnet" { ... }
 #
 # # Use the private endpoint module to connect the storage account to the subnet.
-# module "storage_private_endpoint" {
-#    source = "../../modules/networking/private-endpoint"
-#
-#    name                     = "pe-${module.poc_storage_account.name}"
-#    resource_group_name      = var.dev_resource_group
-#    location                 = var.dev_location # This variable (dev_location) is not defined in your variables.tf. Ensure it's defined or use 'var.azure_location' if intended to be the same.
-#    tags                     = var.common_tags
-#
-#    subnet_id                = module.private_endpoint_subnet.id
-#    private_connection_resource_id = module.poc_storage_account.id
-#    subresource_names        = ["file", "blob"]
-# }
+# module "storage_private_endpoint" { ... }
