@@ -32,7 +32,7 @@ resource "azurerm_role_assignment" "file_data_contributor" {
 resource "azurerm_role_assignment" "role_assignment_writer" {
   scope                = azurerm_resource_group.main.id
   role_definition_name = "ag-pssg-azure-files-poc-dev-role-assignment-writer"
-  principal_id         = var.dev_service_principal_id
+  principal_id         = var.service_principal_id
 }
 
 # Note: You must define the variables for the principal IDs in variables.tf and provide them when using this module.
