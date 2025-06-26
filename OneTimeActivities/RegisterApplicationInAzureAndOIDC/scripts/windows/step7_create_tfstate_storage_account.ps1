@@ -1,5 +1,12 @@
 # step7_create_tfstate_storage_account.ps1
-# PowerShell script to create a storage account and blob container, and update the inventory JSON
+#
+# BC Gov Policy: Resource groups must be created manually as part of onboarding and are NOT managed by Terraform or automation scripts.
+# This script assumes the resource group ($rgname) already exists.
+#
+# Purpose: Creates a storage account and blob container for the Terraform state backend, and updates the inventory JSON.
+#
+# Note: While it is technically possible to create a resource group via Terraform and GitHub Actions (if the principal has sufficient permissions),
+# this is NOT the approved or recommended approach for production or official environments. Always follow BC Gov policy and onboarding documentation.
 param(
     [Parameter(Mandatory=$true)]
     [string]$rgname,

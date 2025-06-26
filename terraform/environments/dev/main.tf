@@ -48,7 +48,7 @@ module "poc_resource_group" {
   resource_group_name        = var.dev_resource_group_b
   location                   = var.azure_location
   tags                       = var.common_tags
-  dev_service_principal_id   = var.dev_service_principal_id
+  service_principal_id       = var.dev_service_principal_id
 }
 
 #================================================================================

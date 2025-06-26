@@ -25,7 +25,9 @@
 
 ## How to Remove Terraform State Locks in Azure
 
-If you see an error like `Error acquiring the state lock` or `state blob is already locked`, you must manually remove the lock blob from your Azure Storage Account.
+If you see an error like `Error acquiring the state lock` or `state blob is already locked`, you must manually remove the lock blob or break the lease from your Azure Storage Account.
+
+NOTE: run in your environment folder like terraform/environments/dev
 
 **Option 1: Azure CLI**
 1. Find your backend details (from your workflow or backend config):
@@ -48,6 +50,22 @@ If you see an error like `Error acquiring the state lock` or `state blob is alre
      --name dev.terraform.tfstate.tflock \
      --auth-mode login
    ```
+   If the state file itself is marked as "Leased" (locked) and there is no `.tflock` blob, break the lease:
+   ```sh
+   az storage blob lease break \
+     --account-name <storage_account> \
+     --container-name <container> \
+     --blob-name <statefile> \
+     --auth-mode login
+   ```
+   Example:
+   ```sh
+   az storage blob lease break \
+     --account-name stagpssgtfstatedev01 \
+     --container-name sc-ag-pssg-tfstate-dev \
+     --blob-name dev.terraform.tfstate \
+     --auth-mode login
+   ```
 3. RUN: 
 Note: the ID to unlock is the ID in the error message for workflow run
 │   ID:        <lock_id_from_error_message>
@@ -57,10 +75,11 @@ Note: the ID to unlock is the ID in the error message for workflow run
 
 ----
 
-**Option 2: Azure Portal**
+**Option 2: Azure Portal (GUI)**
 1. Go to your Storage Account in the Azure Portal.
 2. Open the container (e.g., `sc-ag-pssg-tfstate-dev`).
-3. Delete the blob ending with `.tflock` (e.g., `dev.terraform.tfstate.tflock`).
+3. If you see a blob ending with `.tflock`, select it and click **Delete**.
+4. If the state file (e.g., `dev.terraform.tfstate`) shows a status of **Leased**, select it, click **Break lease**, and confirm. This will release the lock and allow Terraform to proceed.
 
 ---
 

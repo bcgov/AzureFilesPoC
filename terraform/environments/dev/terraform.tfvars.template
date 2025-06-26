@@ -7,11 +7,11 @@
 azure_location = "canadacentral"
 
 # PREPROVISIONED by LANDING ZONE BC Government
-dev_service_principal_object_id = ""
+dev_service_principal_id = ""
 dev_vnet_name             = ""
 dev_vnet_resource_group   = ""
-dev_vnet_addressSpace     = [""]
-dev_vnet_dnsServers       = [""]
+dev_vnet_address_space     = [""]
+dev_vnet_dns_servers       = [""]
 dev_vnet_id               = ""
 
 # CREATED BY USER IDENTITY in AZURE policy won't allow by terraform
