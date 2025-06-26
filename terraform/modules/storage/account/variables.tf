@@ -24,3 +24,8 @@ variable "allowed_ip_rules" {
   description = "A list of public IP CIDR ranges to allow through the firewall. For the GitHub runner."
   default     = []
 }
+
+variable "service_principal_id" {
+  description = "The object ID of the service principal for role assignments."
+  type        = string
+}
