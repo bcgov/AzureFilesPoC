@@ -22,9 +22,9 @@ resource "azurerm_storage_account" "main" {
   public_network_access_enabled = false
 
   #================================================================================
-  # THIS IS THE NEW LINE YOU ASKED FOR, with the correct syntax.
+  # THIS IS THE CORRECTED ARGUMENT for azurerm provider v3.0+
   # This provides a second layer of security, preventing anonymous access to blobs
   # even if a container is misconfigured. It is highly recommended.
   #================================================================================
-  allow_blob_public_access = false
+  allow_nested_items_to_be_public = false
 }
