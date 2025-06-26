@@ -14,7 +14,7 @@ variable "tags" {
   default     = {}
 }
 
-variable "dev_service_principal_id" {
+variable "service_principal_id" {
   description = "The object ID of the service principal to assign storage-related roles."
   type        = string
 }
