@@ -1,5 +1,7 @@
 # Summary: Troubleshooting 403 Errors When Creating Azure File Shares via GitHub Actions CI/CD with Terraform
 
+## TICKET:  https://citz-do.atlassian.net/servicedesk/customer/portal/3/PCS-813
+
 ## Initial Problem:
 Consistently receiving `403 This request is not authorized to perform this operation.` errors when attempting to create an `azurerm_storage_share` resource (a **data plane** operation) within an Azure Storage Account using a Terraform script deployed via a GitHub Actions CI/CD pipeline. This occurred despite the Service Principal (SPN) used by GitHub Actions appearing to have sufficient permissions for **control plane** operations (managing the storage account resource itself).
 
@@ -193,3 +195,11 @@ The current evidence strongly points towards these higher-level Azure AD or Azur
 > [Self-hosted runners on Azure are required to access data storage and database services from GitHub Actions. Public access to these services is not supported.](https://developer.gov.bc.ca/docs/default/component/public-cloud-techdocs/azure/best-practices/iac-and-ci-cd/)
 >
 > _Source: BC Gov Public Cloud Technical Documentation – IaC and CI/CD, May 2025_
+
+Challenges:
+1. Failing when I try to add role assignments to my resource group or storage account (403 errors). Role assignment errors. 
+   - Example error: `authorization.RoleAssignmentsClient#Create: Failure responding to request: StatusCode=403 -- Original Error: autorest/azure: Service returned an error. Status=403 Code="AuthorizationFailed" Message="The client 'e72f42f8-d9a1-4181-a0b9-5c8644a28aee' with object id 'e72f42f8-d9a1-4181-a0b9-5c8644a28aee' does not have authorization to perform action 'Microsoft.Authorization/roleAssignments/write' over scope '/subscriptions/***/resourceGroups/rg-ag-pssg-azure-poc-dev-b/providers/Microsoft.Authorization/roleAssignments/c49dfbe1-98b4-291f-e10a-d8454d10f5c3' or the scope is invalid. If access was recently granted, please refresh your credentials."`
+   - This occurs even when attempting to assign built-in roles (e.g., Storage Account Contributor) or custom roles to the resource group or storage account.
+   - I understand from documentation and Copilot that my service principal needs either the "User Access Administrator" or "Owner" role at the subscription level to automate these assignments, but I do not currently have these roles.
+2. Failing when I try to perform data plane operations, like creating a file share. I believe I need to assign roles such as “Storage File Data SMB Share Contributor” to my service principal (ag-pssg-azure-files-poc-ServicePrincipal). I tried adding this and similar roles at the subscription level, but my workflow still returns 403 errors.
+3. I have not been able to create file shares from the pipeline.
