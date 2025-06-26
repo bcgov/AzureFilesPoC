@@ -2,6 +2,7 @@
 #
 # This file composes reusable modules using a consistent set of variables
 # to build the 'dev' environment.
+# This version is structured to troubleshoot the 403 network/permission error.
 
 terraform {
   required_version = ">= 1.6.6"
@@ -11,7 +12,6 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "~> 3.0"
     }
-    # Add the time provider to manage delays for permission propagation.
     time = {
       source  = "hashicorp/time"
       version = ">= 0.9.1"
@@ -28,10 +28,11 @@ provider "azurerm" {
 }
 
 #================================================================================
-# NEW VARIABLE FOR GITHUB RUNNER IP
+# INPUT VARIABLES
 #================================================================================
+
 # This variable will be populated by the -var="allowed_ip_rules=[...]" argument
-# in the GitHub Actions workflow.
+# in the GitHub Actions workflow to allow the runner through the firewall.
 variable "allowed_ip_rules" {
   type        = list(string)
   description = "A list of public IP CIDR ranges to allow through the storage account firewall, passed from the CI/CD pipeline."
@@ -39,33 +40,11 @@ variable "allowed_ip_rules" {
 }
 
 #================================================================================
-# IDENTITY AND PERMISSIONS
+# STEP 1: CREATE/UPDATE THE STORAGE ACCOUNT
 #================================================================================
-data "azurerm_client_config" "current" {}
+# This runs first, ensuring the storage account exists with the correct
+# network configuration before any other resource tries to interact with it.
 
-# This role is for DATA PLANE access (reading/writing files). It's still good to have.
-resource "azurerm_role_assignment" "storage_data_contributor" {
-  scope                = module.poc_storage_account.id
-  role_definition_name = "Storage File Data SMB Share Contributor"
-  principal_id         = data.azurerm_client_config.current.object_id
-}
-
-# This resource introduces a delay to allow Azure IAM permissions to propagate
-# before attempting to create the file share.
-resource "time_sleep" "wait_for_iam_propagation" {
-  create_duration = "30s"
-
-  # The trigger ensures the sleep only happens after the role assignment is complete.
-  triggers = {
-    role_assignment_id = azurerm_role_assignment.storage_data_contributor.id
-  }
-}
-
-#================================================================================
-# MODULES
-#================================================================================
-
-# 1. Create the secure storage account.
 module "poc_storage_account" {
   source = "../../modules/storage/account"
 
@@ -78,7 +57,38 @@ module "poc_storage_account" {
   allowed_ip_rules = var.allowed_ip_rules
 }
 
-# 2. Create the file share in the storage account.
+#================================================================================
+# STEP 2: ASSIGN PERMISSIONS AND WAIT
+#================================================================================
+# These resources run after the storage account is ready.
+
+data "azurerm_client_config" "current" {}
+
+# This is the single most important role for CREATING the file share.
+# It grants control plane access to manage the storage account's contents.
+# Terraform implicitly knows this depends on the storage account because of the 'scope' attribute.
+resource "azurerm_role_assignment" "storage_control_plane_contributor" {
+  scope                = module.poc_storage_account.id
+  role_definition_name = "Storage Account Contributor"
+  principal_id         = data.azurerm_client_config.current.object_id
+}
+
+# This resource introduces a delay to allow the crucial Control Plane role
+# to propagate through Azure's systems.
+resource "time_sleep" "wait_for_iam_propagation" {
+  create_duration = "45s" # Increased to 45s to be extra safe
+
+  # This trigger ensures the sleep only happens after the role assignment is complete.
+  triggers = {
+    role_assignment_id = azurerm_role_assignment.storage_control_plane_contributor.id
+  }
+}
+
+#================================================================================
+# STEP 3: CREATE THE FILE SHARE (RUNS LAST)
+#================================================================================
+
+# Create the file share in the storage account.
 module "poc_file_share" {
   source = "../../modules/storage/file-share"
 
@@ -92,17 +102,40 @@ module "poc_file_share" {
   access_tier      = "TransactionOptimized"
   metadata         = {}
 
-  # The 'depends_on' block is critical. It forces Terraform to wait until
-  # the time_sleep resource (which waits for the role assignment) is complete.
+  # The 'depends_on' block now ensures this runs absolutely last, after the
+  # role has been assigned AND the wait time has passed.
   depends_on = [
     time_sleep.wait_for_iam_propagation
   ]
 }
 
-# --- The following resources are commented out for initial setup ---
-# (No changes needed for the commented-out code)
+#================================================================================
+# COMMENTED OUT RESOURCES FOR FUTURE USE
+#================================================================================
+
 # # Use the subnet module to create the dedicated subnet in the existing VNet.
-# module "private_endpoint_subnet" { ... }
+# module "private_endpoint_subnet" {
+#    source = "../../modules/networking/subnet"
+#
+#    subnet_name              = var.dev_subnet_name
+#    resource_group_name      = var.dev_vnet_resource_group
+#    location                 = var.azure_location
+#    vnet_name                = var.dev_vnet_name
+#    vnet_resource_group_name = var.dev_vnet_resource_group
+#    address_prefixes         = var.dev_subnet_address_prefixes
+#    tags                     = var.common_tags
+# }
 #
 # # Use the private endpoint module to connect the storage account to the subnet.
-# module "storage_private_endpoint" { ... }
+# module "storage_private_endpoint" {
+#    source = "../../modules/networking/private-endpoint"
+#
+#    name                     = "pe-${module.poc_storage_account.name}"
+#    resource_group_name      = var.dev_resource_group
+#    location                 = var.azure_location
+#    tags                     = var.common_tags
+#
+#    subnet_id                = module.private_endpoint_subnet.id
+#    private_connection_resource_id = module.poc_storage_account.id
+#    subresource_names        = ["file", "blob"]
+# }
