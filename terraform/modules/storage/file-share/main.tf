@@ -7,10 +7,6 @@ terraform {
   }
 }
 
-provider "azurerm" {
-  features {}
-}
-
 # Data source to get a reference to the existing resource group
 data "azurerm_resource_group" "main" {
   name = var.dev_resource_group
