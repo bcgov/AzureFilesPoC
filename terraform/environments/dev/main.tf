@@ -27,22 +27,8 @@ provider "azurerm" {
   features {}
 }
 
-#================================================================================
-# INPUT VARIABLES
-#================================================================================
-
-# This variable will be populated by the -var="allowed_ip_rules=[...]" argument
-# in the GitHub Actions workflow to allow the runner through the firewall.
-variable "allowed_ip_rules" {
-  type        = list(string)
-  description = "A list of public IP CIDR ranges to allow through the storage account firewall, passed from the CI/CD pipeline."
-  default     = []
-}
-
-#================================================================================
-# STEP 0: Create a resource group using the core/resource-group module
-##.  dev_resource_group_b
-#================================================================================
+#1.  TEST 1:  TRY to create the resource group only
+# This is a simple test to ensure the provider and backend are working.
 module "poc_resource_group" {
   source = "../../modules/core/resource-group"
 
@@ -58,69 +44,69 @@ module "poc_resource_group" {
 # This runs first, ensuring the storage account exists with the correct
 # network configuration before any other resource tries to interact with it.
 
-module "poc_storage_account" {
-  source = "../../modules/storage/account"
+#module "poc_storage_account" {
+#  source = "../../modules/storage/account"
 
-  storage_account_name = var.dev_storage_account_name
-  resource_group_name  = var.dev_resource_group
-  location             = var.azure_location
-  tags                 = var.common_tags
+#  storage_account_name = var.dev_storage_account_name
+#  resource_group_name  = var.dev_resource_group
+#  location             = var.azure_location
+#  tags                 = var.common_tags
 
   # Pass the runner's IP address to the module so it can create a firewall rule.
-  allowed_ip_rules = var.allowed_ip_rules
-}
+#  allowed_ip_rules = var.allowed_ip_rules
+#}
 
 #================================================================================
 # STEP 2: ASSIGN PERMISSIONS AND WAIT
 #================================================================================
 # These resources run after the storage account is ready.
 
-data "azurerm_client_config" "current" {}
+#data "azurerm_client_config" "current" {}
 
 # This is the single most important role for CREATING the file share.
 # It grants control plane access to manage the storage account's contents.
 # Terraform implicitly knows this depends on the storage account because of the 'scope' attribute.
-resource "azurerm_role_assignment" "storage_control_plane_contributor" {
-  scope                = module.poc_storage_account.id
-  role_definition_name = "Storage Account Contributor"
-  principal_id         = data.azurerm_client_config.current.object_id
-}
+#resource "azurerm_role_assignment" "storage_control_plane_contributor" {
+##  scope                = module.poc_storage_account.id
+##  role_definition_name = "Storage Account Contributor"
+#  principal_id         = data.azurerm_client_config.current.object_id
+#}
 
 # This resource introduces a delay to allow the crucial Control Plane role
 # to propagate through Azure's systems.
-resource "time_sleep" "wait_for_iam_propagation" {
-  create_duration = "45s" # Increased to 45s to be extra safe
+#resource "time_sleep" "wait_for_iam_propagation" {
+#  create_duration = "45s" # Increased to 45s to be extra safe
 
   # This trigger ensures the sleep only happens after the role assignment is complete.
-  triggers = {
-    role_assignment_id = azurerm_role_assignment.storage_control_plane_contributor.id
-  }
-}
+#  triggers = {
+#    role_assignment_id = azurerm_role_assignment.storage_control_plane_contributor.id
+#  }
+#}
 
 #================================================================================
 # STEP 3: CREATE THE FILE SHARE (RUNS LAST)
 #================================================================================
 
 # Create the file share in the storage account.
-module "poc_file_share" {
-  source = "../../modules/storage/file-share"
+#module "poc_file_share" {
+#  source = "../../modules/storage/file-share"
 
   # --- Required Arguments ---
-  file_share_name      = var.dev_file_share_name
-  storage_account_name = module.poc_storage_account.name
-  quota_gb             = var.dev_file_share_quota_gb
+#  file_share_name      = var.dev_file_share_name
+#  storage_account_name = module.poc_storage_account.name
+#  quota_gb             = var.dev_file_share_quota_gb
 
   # --- Optional Arguments ---
-  enabled_protocol = "SMB"
-  access_tier      = "TransactionOptimized"
-  metadata         = {}
+#  enabled_protocol = "SMB"
+#  access_tier      = "TransactionOptimized"
+#  metadata         = {}
 
   # The 'depends_on' block now ensures this runs absolutely last, after the
   # role has been assigned AND the wait time has passed.
-  depends_on = [
-    time_sleep.wait_for_iam_propagation
-  ]
-}
+#  depends_on = [
+#    time_sleep.wait_for_iam_propagation
+#  ]
+#}
 
 #================================================================================
 # COMMENTED OUT RESOURCES FOR FUTURE USE
