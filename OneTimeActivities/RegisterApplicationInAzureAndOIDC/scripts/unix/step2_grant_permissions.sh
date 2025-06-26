@@ -1,5 +1,6 @@
 #!/bin/bash
-
+# step2_grant_permissions.sh
+# This script grants necessary permissions to an Azure AD application for managing Azure resources.
 # Function to resolve script location and set correct paths
 resolve_script_path() {
     local script_path
@@ -32,19 +33,23 @@ REQUIRED_ROLES=(
     "Private DNS Zone Contributor"
     "Monitoring Contributor"
     
-    # Storage-specific roles
+    # Storage-specific rolesPrivate DNS Zone Contributor
     "Storage Account Backup Contributor"
     "Storage Blob Data Owner"
     "Storage File Data Privileged Contributor"
+    "Storage File Data SMB Share Contributor"
     "Storage File Data SMB Share Elevated Contributor"
+    "Storage Blob Data Contributor"
     "Storage Blob Delegator"
     "Storage File Delegator"
+    
     
     # Additional data plane roles
     "Storage Queue Data Contributor"
     "Storage Table Data Contributor"
     "DNS Resolver Contributor"
     "Azure Container Storage Contributor"
+
 )
 
 # Function to check if running on macOS

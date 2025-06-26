@@ -1,33 +1,28 @@
-variable "file_share_name" {
-  description = "The name of the Azure File Share."
+# -----------------------------------------------------------------------------
+# General & Environment Variables
+# -----------------------------------------------------------------------------
+
+variable "azure_location" {
   type        = string
+  description = "The Azure region where resources will be created. e.g., 'canadacentral'."
 }
 
-variable "storage_account_name" {
-  description = "The name of the Storage Account to contain the file share."
+variable "dev_resource_group" {
   type        = string
+  description = "The name of the Resource Group where the Storage Account will be created."
 }
 
-variable "quota_gb" {
-  description = "The maximum size of the file share in GB."
-  type        = number
-  default     = 100
-}
-
-variable "enabled_protocol" {
-  description = "The protocol to use for the file share (e.g., 'SMB')."
-  type        = string
-  default     = "SMB"
-}
-
-variable "metadata" {
-  description = "A map of metadata to assign to the file share."
+variable "common_tags" {
   type        = map(string)
+  description = "A map of common tags to apply to all created resources."
   default     = {}
 }
 
-variable "tags" {
-  description = "A map of tags to assign to the file share."
-  type        = map(string)
-  default     = {}
+# -----------------------------------------------------------------------------
+# Storage Account Specific Variables
+# -----------------------------------------------------------------------------
+
+variable "dev_storage_account_name" {
+  type        = string
+  description = "The unique name for the Storage Account."
 }

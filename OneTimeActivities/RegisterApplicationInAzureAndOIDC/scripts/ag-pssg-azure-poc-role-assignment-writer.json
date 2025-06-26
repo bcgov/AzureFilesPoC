@@ -1,0 +1,21 @@
+{
+    "id": "/subscriptions/d321bcbe-c5e8-4830-901c-dab5fab3a834/providers/Microsoft.Authorization/roleDefinitions/96c3e6f0-be13-484d-bb4b-eb113ff667a6",
+    "properties": {
+        "roleName": "ag-pssg-azure-poc-role-assignment-writer",
+        "description": "Allows writing and reading role assignments for automation.\n  ",
+        "assignableScopes": [
+            "/subscriptions/d321bcbe-c5e8-4830-901c-dab5fab3a834/resourceGroups/rg-ag-pssg-azure-poc-dev"
+        ],
+        "permissions": [
+            {
+                "actions": [
+                    "Microsoft.Authorization/roleAssignments/write",
+                    "Microsoft.Authorization/roleAssignments/read"
+                ],
+                "notActions": [],
+                "dataActions": [],
+                "notDataActions": []
+            }
+        ]
+    }
+}
