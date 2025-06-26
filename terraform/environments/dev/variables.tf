@@ -89,3 +89,8 @@ variable "dev_resource_group_b" {
   description = "The name of the second resource group to be created by Terraform."
   type        = string
 }
+
+variable "dev_service_principal_id" {
+  description = "The object ID of the service principal for dev environment role assignments."
+  type        = string
+}
