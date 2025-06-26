@@ -40,6 +40,17 @@ variable "allowed_ip_rules" {
 }
 
 #================================================================================
+# STEP 0: Create a resource group using the core/resource-group module
+#================================================================================
+module "poc_resource_group" {
+  source = "../../modules/core/resource-group"
+
+  resource_group_name = var.dev_resource_group_b
+  location            = var.azure_location
+  tags                = var.common_tags
+}
+
+#================================================================================
 # STEP 1: CREATE/UPDATE THE STORAGE ACCOUNT
 #================================================================================
 # This runs first, ensuring the storage account exists with the correct
