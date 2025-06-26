@@ -34,3 +34,36 @@ resource "azurerm_storage_account" "main" {
     virtual_network_subnet_ids = []
   }
 }
+
+#==================================================================================
+# Assign roles to the storage account for data operations
+#==================================================================================
+
+# Assign Storage Blob Data Contributor
+resource "azurerm_role_assignment" "blob_data_contributor" {
+  scope                = azurerm_storage_account.main.id
+  role_definition_name = "Storage Blob Data Contributor"
+  principal_id         = var.service_principal_id
+}
+
+# Assign Storage File Data SMB Share Contributor
+resource "azurerm_role_assignment" "file_data_smb_share_contributor" {
+  scope                = azurerm_storage_account.main.id
+  role_definition_name = "Storage File Data SMB Share Contributor"
+  principal_id         = var.service_principal_id
+}
+
+# Assign Storage File Data Privileged Contributor
+resource "azurerm_role_assignment" "file_data_privileged_contributor" {
+  scope                = azurerm_storage_account.main.id
+  role_definition_name = "Storage File Data Privileged Contributor"
+  principal_id         = var.service_principal_id
+}
+
+# Assign Storage Blob Data Owner
+resource "azurerm_role_assignment" "blob_data_owner" {
+  scope                = azurerm_storage_account.main.id
+  role_definition_name = "Storage Blob Data Owner"
+  principal_id         = var.service_principal_id
+}
+
