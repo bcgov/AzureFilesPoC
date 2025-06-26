@@ -54,7 +54,7 @@ module "poc_storage_account" {
 
   # Pass the runner's IP address to the module so it can create a firewall rule.
   allowed_ip_rules = var.allowed_ip_rules
-  service_principal_id = var.dev_service_principal_id
+  service_principal_id = var.service_principal_id
 }
 
 #================================================================================
