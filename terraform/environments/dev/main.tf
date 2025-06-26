@@ -45,9 +45,10 @@ variable "allowed_ip_rules" {
 module "poc_resource_group" {
   source = "../../modules/core/resource-group"
 
-  resource_group_name = var.dev_resource_group_b
-  location            = var.azure_location
-  tags                = var.common_tags
+  resource_group_name        = var.dev_resource_group_b
+  location                   = var.azure_location
+  tags                       = var.common_tags
+  dev_service_principal_id   = var.dev_service_principal_id
 }
 
 #================================================================================
