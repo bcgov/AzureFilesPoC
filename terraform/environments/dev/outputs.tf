@@ -45,3 +45,15 @@ output "dev_resource_group_location" {
 output "dev_resource_group_id" {
   value = module.poc_resource_group.resource_group_id
 }
+
+output "dev_storage_account_id" {
+  value = module.poc_storage_account.id
+}
+
+output "dev_storage_account_name" {
+  value = module.poc_storage_account.name
+}
+
+output "dev_storage_account_primary_blob_host" {
+  value = module.poc_storage_account.primary_blob_host
+}

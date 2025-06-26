@@ -29,14 +29,14 @@ provider "azurerm" {
 
 #1.  TEST 1:  TRY to create the resource group only
 # This is a simple test to ensure the provider and backend are working.
-module "poc_resource_group" {
-  source = "../../modules/core/resource-group"
-
-  resource_group_name       = var.dev_resource_group_b
-  location                 = var.azure_location
-  tags                     = var.common_tags
-  service_principal_id      = var.dev_service_principal_id
-}
+# module "poc_resource_group" {
+#   source = "../../modules/core/resource-group"
+#
+#   resource_group_name       = var.dev_resource_group_b
+#   location                 = var.azure_location
+#   tags                     = var.common_tags
+#   service_principal_id      = var.dev_service_principal_id
+# }
 
 #================================================================================
 # STEP 1: CREATE/UPDATE THE STORAGE ACCOUNT
@@ -44,17 +44,17 @@ module "poc_resource_group" {
 # This runs first, ensuring the storage account exists with the correct
 # network configuration before any other resource tries to interact with it.
 
-#module "poc_storage_account" {
-#  source = "../../modules/storage/account"
+module "poc_storage_account" {
+  source = "../../modules/storage/account"
 
-#  storage_account_name = var.dev_storage_account_name
-#  resource_group_name  = var.dev_resource_group
-#  location             = var.azure_location
-#  tags                 = var.common_tags
+  storage_account_name = var.dev_storage_account_name
+  resource_group_name  = var.dev_resource_group
+  location             = var.azure_location
+  tags                 = var.common_tags
 
   # Pass the runner's IP address to the module so it can create a firewall rule.
-#  allowed_ip_rules = var.allowed_ip_rules
-#}
+  allowed_ip_rules = var.allowed_ip_rules
+}
 
 #================================================================================
 # STEP 2: ASSIGN PERMISSIONS AND WAIT
