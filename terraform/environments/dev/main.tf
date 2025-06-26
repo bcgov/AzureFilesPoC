@@ -8,6 +8,7 @@
 # for state management. The specific configuration values (resource_group_name,
 # storage_account_name, container_name) are provided dynamically by the GitHub
 # Actions workflow using '-backend-config' flags during 'terraform init'.
+
 terraform {
   required_version = ">= 1.6.6" # Set this to your exact Terraform version if known, or minimum required
 
@@ -27,6 +28,20 @@ terraform {
 
 provider "azurerm" {
   features {}
+}
+
+#================================================================================
+# FIX FOR DATA PLANE PERMISSIONS:
+# This section fixes the "403 This request is not authorized" error.
+# 1. We get the identity (Service Principal) of the currently running GitHub Action.
+# 2. We assign the necessary data-plane role to that identity for the new storage account.
+#================================================================================
+data "azurerm_client_config" "current" {}
+
+resource "azurerm_role_assignment" "storage_data_contributor" {
+  scope                = module.poc_storage_account.id
+  role_definition_name = "Storage File Data SMB Share Contributor"
+  principal_id         = data.azurerm_client_config.current.object_id
 }
 
 # =================
@@ -60,6 +75,15 @@ module "poc_file_share" {
   enabled_protocol     = "SMB"
   metadata             = {}
   tags                 = var.common_tags
+
+  #================================================================================
+  # This `depends_on` block is a critical part of the fix. It forces Terraform
+  # to wait until the role assignment above is complete before it attempts
+  # to create the file share, ensuring permissions are in place.
+  #================================================================================
+  depends_on = [
+    azurerm_role_assignment.storage_data_contributor
+  ]
 }
 
 # --- The following resources are commented out for initial setup ---
