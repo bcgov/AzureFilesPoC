@@ -33,18 +33,22 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy-infrastructure:
-    uses: ./.github/workflows/terraform-common.yml
-    with:
-      environment: ${{ github.event.inputs.environment || 'dev' }}
-      plan_only: ${{ github.event.inputs.plan_only || true }}
-    secrets:
-      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  # This job seems to be for a different deployment strategy or environment.
+  # We are focusing on the 'terraform-dev' job for now.
+  # deploy-infrastructure:
+  #   uses: ./.github/workflows/terraform-common.yml
+  #   with:
+  #     environment: ${{ github.event.inputs.environment || 'dev' }}
+  #     plan_only: ${{ github.event.inputs.plan_only || true }}
+  #   secrets:
+  #     AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  #     AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  #     AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
   terraform-dev:
+    name: 'Terraform Deploy to Dev (Diagnostic Network Test)'
     runs-on: ubuntu-latest
+    environment: dev # Ensures correct GitHub Environment variables/secrets are used
     env:
       ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
@@ -66,16 +70,20 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          enable-AzPSSession: false
+          enable-AzPSSession: false # Usually not needed for Terraform ARM provider
 
-      # NEW DEBUG STEP to prove what code the runner is using.
+      # You can REMOVE or COMMENT OUT this step for this diagnostic test
+      # as the storage account is set to "Enabled from all networks" in the portal.
+      # - name: Get GitHub Runner Public IP
+      #   id: ip
+      #   uses: haythem/public-ip@v1.3
+
       - name: Display Module Content (Debug Step)
         run: |
           echo "--- Content of terraform/modules/storage/account/main.tf ---"
           cat terraform/modules/storage/account/main.tf
           echo "------------------------------------------------------------"
 
-      # ... (rest of the file is the same)
       - name: Generate terraform.tfvars for dev
         run: |
           cat <<EOF > terraform/environments/dev/terraform.tfvars
@@ -110,11 +118,14 @@ jobs:
         working-directory: terraform/environments/dev
         run: terraform validate
 
+      # MODIFIED for the diagnostic test: Removed -var="allowed_ip_rules=[...]"
       - name: Terraform Plan
+        id: plan # Added an ID to the plan step if you need to reference its output later
         working-directory: terraform/environments/dev
         run: terraform plan -var-file=terraform.tfvars -out=tfplan
 
       - name: Terraform Apply
+        # This condition ensures apply only runs on main branch pushes or manual dispatches where plan_only is false.
         if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && github.event.inputs.plan_only == 'false')
         working-directory: terraform/environments/dev
         run: terraform apply -auto-approve tfplan
