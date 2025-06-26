@@ -1,6 +1,12 @@
 # step6_create_resource_group.ps1
 # Only creates the resource group and updates .env/azure-credentials.json with its metadata (no tags update in JSON).
-
+# NOTE: As of June 2025, if you have created and assigned a custom role with 
+#       sufficient permissions (e.g., Contributor or a custom role allowing resource group 
+#       creation), this script is no longer required for BC Gov Azure onboarding. 
+#       Resource group creation via automation is permitted if your identity has 
+#       the necessary permissions. This script is retained for reference and manual 
+#       onboarding scenarios.
+#
 param(
     [string]$rgname,
     [string]$location = ""
