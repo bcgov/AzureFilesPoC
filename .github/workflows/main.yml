@@ -37,16 +37,10 @@ jobs:
   # We are focusing on the 'terraform-dev' job for now.
   # deploy-infrastructure:
   #   uses: ./.github/workflows/terraform-common.yml
-  #   with:
-  #     environment: ${{ github.event.inputs.environment || 'dev' }}
-  #     plan_only: ${{ github.event.inputs.plan_only || true }}
-  #   secrets:
-  #     AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-  #     AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-  #     AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  #   # ...
 
   terraform-dev:
-    name: 'Terraform Deploy to Dev (Diagnostic Network Test)'
+    name: 'Terraform Deploy to Dev (Trusted Services Test)'
     runs-on: ubuntu-latest
     environment: dev # Ensures correct GitHub Environment variables/secrets are used
     env:
@@ -70,22 +64,22 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          enable-AzPSSession: false # Usually not needed for Terraform ARM provider
+          enable-AzPSSession: false
 
-      # You can REMOVE or COMMENT OUT this step for this diagnostic test
-      # as the storage account is set to "Enabled from all networks" in the portal.
+      # The "Get GitHub Runner Public IP" step is NOT needed for this test.
       # - name: Get GitHub Runner Public IP
       #   id: ip
       #   uses: haythem/public-ip@v1.3
 
       - name: Display Module Content (Debug Step)
         run: |
-          echo "--- Content of terraform/modules/storage/account/main.tf ---"
+          echo "--- Content of terraform/modules/storage/account/main.tf (for Trusted Services Test) ---"
           cat terraform/modules/storage/account/main.tf
-          echo "------------------------------------------------------------"
+          echo "---------------------------------------------------------------------------------------"
 
       - name: Generate terraform.tfvars for dev
         run: |
+          # Ensure this script does not try to set 'allowed_ip_rules' if it was previously there.
           cat <<EOF > terraform/environments/dev/terraform.tfvars
           azure_location              = "${{ vars.AZURE_LOCATION }}"
           dev_resource_group          = "${{ vars.DEV_RESOURCE_GROUP }}"
@@ -118,14 +112,13 @@ jobs:
         working-directory: terraform/environments/dev
         run: terraform validate
 
-      # MODIFIED for the diagnostic test: Removed -var="allowed_ip_rules=[...]"
+      # MODIFIED for this test: The terraform plan command is simplified and does not pass '-var="allowed_ip_rules=[...]"'
       - name: Terraform Plan
-        id: plan # Added an ID to the plan step if you need to reference its output later
+        id: plan
         working-directory: terraform/environments/dev
         run: terraform plan -var-file=terraform.tfvars -out=tfplan
 
       - name: Terraform Apply
-        # This condition ensures apply only runs on main branch pushes or manual dispatches where plan_only is false.
         if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && github.event.inputs.plan_only == 'false')
         working-directory: terraform/environments/dev
         run: terraform apply -auto-approve tfplan

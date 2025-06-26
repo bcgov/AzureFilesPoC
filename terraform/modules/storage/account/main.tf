@@ -11,21 +11,26 @@ resource "azurerm_storage_account" "main" {
   large_file_share_enabled          = true
   access_tier                       = "Hot"
   min_tls_version                   = "TLS1_2"
-  allow_nested_items_to_be_public = false
+  allow_nested_items_to_be_public = false # This is for blob public access, good to keep false
 
-  # --- CHANGE THIS BLOCK ---
-  # Enable public access so we can configure the firewall.
-  public_network_access_enabled = true
+  # --- CONFIGURATION FOR THIS TEST ---
+  # Keep public network access disabled, as that's your desired end state.
+  public_network_access_enabled = false 
 
-  # Add this block to control access via a firewall.
   network_rules {
-    # This is the most important setting. It blocks everything by default.
-    default_action             = "Deny"
-    # This allows other Azure services to connect.
-    bypass                     = ["AzureServices"]
-    # This will be populated by a variable from our GitHub Action.
-    ip_rules                   = var.allowed_ip_rules
-    # We aren't using VNet rules yet, so this is empty.
+    # If publicNetworkAccess is false, default_action is implicitly Deny.
+    # Explicitly setting it doesn't hurt.
+    default_action = "Deny"
+    
+    # This is the key setting for this test.
+    # It allows Azure services on the trusted list to access this storage account.
+    # to allow github to be allowed to connect via CI/CD to azure for terraform
+    bypass         = ["AzureServices"]
+    
+    # We are not using specific IP rules for this test.
+    ip_rules       = [] 
+    
+    # We are not using VNet rules yet.
     virtual_network_subnet_ids = []
   }
 }
