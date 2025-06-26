@@ -39,11 +39,6 @@ variable "allowed_ip_rules" {
   default     = []
 }
 
-variable "dev_resource_group_b" {
-  description = "The name of the second resource group to be created by Terraform."
-  type        = string
-}
-
 #================================================================================
 # STEP 0: Create a resource group using the core/resource-group module
 #================================================================================
