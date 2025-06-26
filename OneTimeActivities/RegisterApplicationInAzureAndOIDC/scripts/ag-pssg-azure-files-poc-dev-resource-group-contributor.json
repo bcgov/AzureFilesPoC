@@ -1,0 +1,21 @@
+{
+    "properties": {
+        "roleName": "ag-pssg-azure-files-poc-dev-resource-group-contributor",
+        "description": "Allows writing and reading resource groups for automation",
+        "assignableScopes": [
+            "/subscriptions/d321bcbe-c5e8-4830-901c-dab5fab3a834"
+        ],
+        "permissions": [
+            {
+                "actions": [
+                    "Microsoft.Resources/subscriptions/resourceGroups/write",
+                    "Microsoft.Resources/subscriptions/resourceGroups/read",
+                    "Microsoft.Resources/subscriptions/resourceGroups/delete"
+                ],
+                "notActions": [],
+                "dataActions": [],
+                "notDataActions": []
+            }
+        ]
+    }
+}

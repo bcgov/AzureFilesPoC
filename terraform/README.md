@@ -49,8 +49,10 @@ If you see an error like `Error acquiring the state lock` or `state blob is alre
      --auth-mode login
    ```
 3. RUN: 
+Note: the ID to unlock is the ID in the error message for workflow run
+│   ID:        <lock_id_from_error_message>
   ```sh
-    terraform force-unlock b84dec8c-ecae-6065-46fb-5b87d232ac19
+    terraform force-unlock <lock_id_from_error_message>
   ```
 
 ----

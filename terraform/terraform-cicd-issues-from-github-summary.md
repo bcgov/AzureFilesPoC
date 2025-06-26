@@ -188,3 +188,8 @@ in logs for the Service Principal** (`ag-pssg-azure-files-poc-ServicePrincipal`)
 
 The current evidence strongly points towards these higher-level Azure AD or Azure Policy enforcement mechanisms as the root cause of the data plane ` API Permissions (Lower Likelihood for this specific SPN/RBAC scenario but a check):**
     *   Review403` error.
+
+> **BC Gov Policy Note:**
+> [Self-hosted runners on Azure are required to access data storage and database services from GitHub Actions. Public access to these services is not supported.](https://developer.gov.bc.ca/docs/default/component/public-cloud-techdocs/azure/best-practices/iac-and-ci-cd/)
+>
+> _Source: BC Gov Public Cloud Technical Documentation – IaC and CI/CD, May 2025_
