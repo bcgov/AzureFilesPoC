@@ -22,10 +22,6 @@ output "dev_resource_id" {
   value = var.dev_resource_id
 }
 
-output "dev_file_share_name" {
-  value = var.dev_file_share_name
-}
-
 output "dev_file_share_quota_gb" {
   value = var.dev_file_share_quota_gb
 }
