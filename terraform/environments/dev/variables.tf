@@ -84,3 +84,8 @@ variable "dev_dns_servers" {
   description = "The DNS servers for the dev environment."
   type        = list(string)
 }
+
+variable "dev_resource_group_b" {
+  description = "The name of the second resource group to be created by Terraform."
+  type        = string
+}

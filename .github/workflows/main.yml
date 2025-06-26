@@ -83,6 +83,7 @@ jobs:
           cat <<EOF > terraform/environments/dev/terraform.tfvars
           azure_location              = "${{ vars.AZURE_LOCATION }}"
           dev_resource_group          = "${{ vars.DEV_RESOURCE_GROUP }}"
+          dev_resource_group_b          = "${{ vars.DEV_RESOURCE_GROUP_B }}"
           dev_storage_account_name    = "${{ vars.DEV_STORAGE_ACCOUNT_NAME }}"
           dev_file_share_name         = "${{ vars.DEV_FILE_SHARE_NAME }}"
           dev_file_share_quota_gb     = ${{ vars.DEV_FILE_SHARE_QUOTA_GB }}

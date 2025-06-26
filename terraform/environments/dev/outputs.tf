@@ -37,3 +37,15 @@ output "dev_network_security_group" {
 output "dev_dns_servers" {
   value = var.dev_dns_servers
 }
+
+output "poc_resource_group_name" {
+  value = module.poc_resource_group.resource_group_name
+}
+
+output "poc_resource_group_location" {
+  value = module.poc_resource_group.resource_group_location
+}
+
+output "poc_resource_group_id" {
+  value = module.poc_resource_group.resource_group_id
+}
