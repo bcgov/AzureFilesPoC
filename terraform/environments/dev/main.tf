@@ -69,18 +69,21 @@ module "poc_storage_account" {
 module "poc_file_share" {
   source = "../../modules/storage/file-share"
 
+  # --- Required Arguments ---
   file_share_name      = var.dev_file_share_name
   storage_account_name = module.poc_storage_account.name
   quota_gb             = var.dev_file_share_quota_gb
-  enabled_protocol     = "SMB"
-  metadata             = {}
-  tags                 = var.common_tags
 
-  #================================================================================
-  # This `depends_on` block is a critical part of the fix. It forces Terraform
-  # to wait until the role assignment above is complete before it attempts
-  # to create the file share, ensuring permissions are in place.
-  #================================================================================
+  # --- Optional Arguments (will use defaults from the module if not set) ---
+  enabled_protocol = "SMB"
+  access_tier      = "TransactionOptimized" # Or "Hot", "Cool", etc.
+  metadata         = {}
+  # acls             = [] # You can define ACLs here if needed
+
+  # NOTE: The 'tags' argument is removed because azurerm_storage_share does not support it.
+  # Tags belong on the parent storage account.
+
+  # This dependency is correct and essential.
   depends_on = [
     azurerm_role_assignment.storage_data_contributor
   ]

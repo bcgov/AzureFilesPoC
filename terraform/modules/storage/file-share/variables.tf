@@ -1,28 +1,45 @@
-# -----------------------------------------------------------------------------
-# General & Environment Variables
-# -----------------------------------------------------------------------------
+# terraform/modules/storage/file-share/variables.tf
 
-variable "azure_location" {
+variable "file_share_name" {
   type        = string
-  description = "The Azure region where resources will be created. e.g., 'canadacentral'."
+  description = "The name of the file share to create."
 }
 
-variable "dev_resource_group" {
+variable "storage_account_name" {
   type        = string
-  description = "The name of the Resource Group where the Storage Account will be created."
+  description = "The name of the existing storage account where the share will be created."
 }
 
-variable "common_tags" {
+variable "quota_gb" {
+  type        = number
+  description = "The quota of the file share in GiB."
+}
+
+variable "enabled_protocol" {
+  type        = string
+  description = "The protocol to enable on the file share. e.g., 'SMB' or 'NFS'."
+  default     = "SMB"
+}
+
+variable "access_tier" {
+  type        = string
+  description = "The access tier of the file share. Can be 'Hot', 'Cool', 'TransactionOptimized', or 'Premium'."
+  default     = "TransactionOptimized" # A common default for standard storage
+}
+
+variable "metadata" {
   type        = map(string)
-  description = "A map of common tags to apply to all created resources."
+  description = "A map of metadata to assign to the share."
   default     = {}
 }
 
-# -----------------------------------------------------------------------------
-# Storage Account Specific Variables
-# -----------------------------------------------------------------------------
-
-variable "dev_storage_account_name" {
-  type        = string
-  description = "The unique name for the Storage Account."
+variable "acls" {
+  type = list(object({
+    id          = string
+    permissions = string
+    start       = optional(string)
+    expiry      = optional(string)
+  }))
+  description = "A list of Access Control Lists for the file share. See azurerm_storage_share documentation for details."
+  default     = [] # Default to no ACLs for simplicity
 }
