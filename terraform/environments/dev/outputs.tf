@@ -1,8 +1,8 @@
-output "storage_account_name" {
+output "dev_storage_account_name" {
   value = module.poc_storage_account.name
 }
 
-output "file_share_name" {
+output "dev_file_share_name" {
   value = module.poc_file_share.name
 }
 

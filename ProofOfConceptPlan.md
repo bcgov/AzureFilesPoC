@@ -3,13 +3,11 @@
 
 ## 🔍 Problem Statement
 
-The BC Government faces significant challenges with its current on-premises file storage infrastructure:
+Justice and Public Safety sector is spending over 9M per year in on-premise file storage, costs are escalating rapidly and these storage costs consume an increasing portion of the IT budget. Explore lower cost storage solutions to reduce these costs. Protected B would be a minimum requirement for storage solutions.
 
-- **Escalating Costs**: Operating expenditures for storage hardware continue to rise, while operational expenses for maintenance and administration consume an increasing portion of the IT budget
-- **Limited Optimization**: Current on-premises enterprise storage solution with additional tiering software leverage automated policies to move infrequently used data to cheaper cold storage, but those solutions have had challenges with cost per GB.  
-- **Administrative Burden**: Technical staff spend excessive time on storage management rather than on higher-value services to citizens. Current solutions for automated tiering to cheaper storage have significant administrative overhead and additional storage requirements.
-- **Capacity Constraints**: Meeting the growing demand for large media file storage requires frequent, costly expansions of on-premises systems
-- **Data Growth Crisis**: Media content (video/audio evidence, public service recordings, etc.) continues to grow exponentially with no effective archival strategy
+**Escalating Costs:** Operating expenditures for storage consume an increasing portion of the IT budget. Unsustainable cost increases.
+
+**Data Growth Crisis:** Media content (video/audio evidence, public service recordings, etc.) continues to grow exponentially with no effective archival strategy
 
 Recent improvements in Azure's Canadian service offerings have created new opportunities to leverage public cloud services while meeting rigorous security and compliance requirements. A cloud-first approach to file storage could deliver significant cost savings while improving service delivery and aligning with the BC Government's mandate for fiscal responsibility and efficient use of taxpayer resources
 
