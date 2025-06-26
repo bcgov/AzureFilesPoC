@@ -100,3 +100,8 @@ variable "service_principal_id" {
   description = "The object ID of the service principal for role assignments."
   type        = string
 }
+
+variable "dev_service_principal_id" {
+  description = "The object ID of the service principal for role assignments."
+  type        = string
+}

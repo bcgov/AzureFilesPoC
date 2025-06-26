@@ -61,3 +61,8 @@ output "dev_storage_account_primary_blob_host" {
 output "debug_service_principal_id" {
   value = var.service_principal_id
 }
+
+output "dev_service_principal_id" {
+  value       = var.dev_service_principal_id
+  description = "The object ID of the service principal used for role assignments."
+}
