@@ -90,13 +90,13 @@ variable "dev_resource_group_b" {
   type        = string
 }
 
-variable "dev_service_principal_id" {
-  description = "The object ID of the service principal for dev environment role assignments."
-  type        = string
-}
-
 variable "allowed_ip_rules" {
   description = "A list of public IP CIDR ranges to allow through the storage account firewall, passed from the CI/CD pipeline."
   type        = list(string)
   default     = []
+}
+
+variable "service_principal_id" {
+  description = "The object ID of the service principal for role assignments."
+  type        = string
 }

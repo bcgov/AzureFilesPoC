@@ -57,3 +57,7 @@ output "dev_storage_account_name" {
 output "dev_storage_account_primary_blob_host" {
   value = module.poc_storage_account.primary_blob_host
 }
+
+output "debug_service_principal_id" {
+  value = var.service_principal_id
+}
