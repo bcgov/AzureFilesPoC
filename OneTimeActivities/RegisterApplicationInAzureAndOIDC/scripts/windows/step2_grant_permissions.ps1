@@ -1,3 +1,15 @@
+# step2_grant_permissions.ps1
+# This script grants necessary permissions at the subscription level to an Azure AD application for managing Azure resources.
+#
+# LEAST PRIVILEGE PRINCIPLE:
+#   - Only assign roles at the subscription level that are truly required across the entire subscription.
+#   - Storage/data plane roles (e.g., Storage Blob Data Contributor, Storage File Data SMB Share Contributor, etc.)
+#     should NOT be assigned at the subscription level. Assign these at the storage account or resource group level for
+#     least privilege and better security.
+#   - See example commands at the end of this script for assigning storage/data plane roles at lower scopes.
+#
+# For more details, see the Unix version of this script and project documentation.
+
 # Script to grant required Azure roles to the application
 # Requires: Azure CLI, PowerShell 5.1 or higher
 
@@ -22,27 +34,17 @@ Resolve-ScriptPath
 $Script:AppName = "ag-pssg-azure-files-poc-ServicePrincipal"
 $Script:EnvPath = Join-Path $script:ProjectRoot ".env"
 $Script:CredsFile = Join-Path $Script:EnvPath "azure-credentials.json"
+$Script:InventoryFile = Join-Path $Script:EnvPath "azure_full_inventory.json"
 $Script:RequiredRoles = @(
-    # Base roles
+    # Base roles (assigned at the subscription level; keep to a minimum for least privilege)
+    # Only include roles here that are truly needed across the entire subscription.
+    # For storage/data plane roles (e.g., Storage Blob Data Contributor, Storage File Data SMB Share Contributor),
+    # assign them at the storage account or resource group level for least privilege and better security.
     "Reader",
     "Storage Account Contributor",
     "[BCGOV-MANAGED-LZ-LIVE] Network-Subnet-Contributor",
     "Private DNS Zone Contributor",
-    "Monitoring Contributor",
-    
-    # Storage-specific roles
-    "Storage Account Backup Contributor",
-    "Storage Blob Data Owner",
-    "Storage File Data Privileged Contributor",
-    "Storage File Data SMB Share Elevated Contributor",
-    "Storage Blob Delegator",
-    "Storage File Delegator",
-    
-    # Additional data plane roles
-    "Storage Queue Data Contributor",
-    "Storage Table Data Contributor",
-    "DNS Resolver Contributor",
-    "Azure Container Storage Contributor"
+    "Monitoring Contributor"
 )
 
 # Function to verify prerequisites
@@ -169,6 +171,39 @@ function Clear-EmptyRoleAssignments {
     
     # Save updated content
     $credentials | ConvertTo-Json -Depth 6 | Set-Content $Script:CredsFile
+}
+
+function Update-InventoryRoleAssignments {
+    Write-Host "Updating .env/azure_full_inventory.json roleAssignments array..."
+    $roleDetailsJson = Execute-AzCommand "az role assignment list --assignee $appId --include-inherited --query '[].{id:id,roleName:roleDefinitionName,principalId:principalId,scope:scope}' -o json"
+    if (-not $roleDetailsJson -or $roleDetailsJson -eq "[]") {
+        $inventory = Get-Content $Script:InventoryFile | ConvertFrom-Json
+        $inventory.roleAssignments = @()
+        $inventory | ConvertTo-Json -Depth 8 | Set-Content $Script:InventoryFile
+        Write-Host "No role assignments found; inventory updated with empty array."
+        return
+    }
+    $roleDetails = $roleDetailsJson | ConvertFrom-Json
+    $inventory = Get-Content $Script:InventoryFile | ConvertFrom-Json
+    $resources = $inventory.resources
+    $assignments = @()
+    foreach ($ra in $roleDetails) {
+        $res = $resources | Where-Object { $_.id -eq $ra.scope } | Select-Object -First 1
+        $isSub = $ra.scope -match "/subscriptions/[^/]+$"
+        $assignments += [PSCustomObject]@{
+            roleName      = $ra.roleName
+            id            = $ra.id
+            principalId   = $ra.principalId
+            scope         = $ra.scope
+            assignedOn    = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
+            resourceName  = if ($res) { $res.name } else { $null }
+            resourceType  = if ($res) { $res.type } elseif ($isSub) { "Microsoft.Resources/subscriptions" } else { $null }
+            resourceId    = if ($res) { $res.id } elseif ($isSub) { $ra.scope } else { $null }
+        }
+    }
+    $inventory.roleAssignments = $assignments
+    $inventory | ConvertTo-Json -Depth 8 | Set-Content $Script:InventoryFile
+    Write-Host "Inventory file updated with current role assignments and resource info."
 }
 
 # Verify prerequisites
@@ -358,3 +393,20 @@ if ($rolesToAssign.Count -eq 0) {
         Write-Host "Skipping role assignments"
     }
 }
+
+# After any role assignment changes or removals, call:
+Update-InventoryRoleAssignments
+
+<#
+EXAMPLES: Assigning storage/data plane roles at the storage account or resource group level
+
+# Assign Storage File Data SMB Share Contributor at the storage account level
+az role assignment create --assignee <appId> --role "Storage File Data SMB Share Contributor" --scope "/subscriptions/<subscriptionId>/resourceGroups/<resourceGroupName>/providers/Microsoft.Storage/storageAccounts/<storageAccountName>"
+
+# Assign Storage Blob Data Contributor at the resource group level
+az role assignment create --assignee <appId> --role "Storage Blob Data Contributor" --scope "/subscriptions/<subscriptionId>/resourceGroups/<resourceGroupName>"
+
+# In PowerShell, you can use:
+$storageAccountId = az storage account show --name <storageAccountName> --resource-group <resourceGroupName> --query id -o tsv
+az role assignment create --assignee <appId> --role "Storage File Data SMB Share Contributor" --scope $storageAccountId
+#>

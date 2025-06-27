@@ -19,6 +19,11 @@ The custom role definition is stored at `scripts/ag-pssg-azure-poc-role-assignme
 - **Your User Identity (High Privilege):** Used for one-time setup (registering app, creating resource group). Has Contributor/Owner rights.
 - **Pipeline Service Principal (Low Privilege):** Used by GitHub Actions. Can only create resources inside existing resource groups. Cannot create resource groups.
 
+**Principle of Least Privilege:**
+- Only assign roles at the subscription level that are truly required across the entire subscription (see Step 2 below).
+- Storage/data plane roles (e.g., Storage Blob Data Contributor, Storage File Data SMB Share Contributor) should NOT be assigned at the subscription level. Assign these at the storage account or resource group level for least privilege and better security.
+- See onboarding scripts for examples and comments.
+
 This separation enforces the Principle of Least Privilege and aligns with BC Gov security standards.
 
 ---
@@ -31,6 +36,7 @@ This separation enforces the Principle of Least Privilege and aligns with BC Gov
 2. **Grant Required Permissions**  
    _User Identity_  
    - `./scripts/unix/step2_grant_permissions.sh` or `./scripts/windows/step2_grant_permissions.ps1`
+   - **Note:** Only essential roles are assigned at the subscription level (see script comments for exact list). Storage/data plane roles must be assigned at the storage account or resource group level for least privilege. The onboarding scripts have been updated to enforce this best practice.
 3. **Configure OIDC Federated Credentials**  
    _User Identity_  
    - `./scripts/unix/step3_configure_oidc.sh` or `./scripts/windows/step3_configure_oidc.ps1`
@@ -42,10 +48,9 @@ This separation enforces the Principle of Least Privilege and aligns with BC Gov
    - `./scripts/unix/step5_add_github_secrets_cli.sh` or `./scripts/windows/step5_add_github_secrets_cli.ps1`
 6. **Create Permanent Resource Group**  
    _User Identity_  
-   - `./scripts/unix/step6_create_resource_group.sh <resource-group-name> [location]`
-   - `./scripts/windows/step6_create_resource_group.ps1 -rgname <resource-group-name> [-location <location>]`
-   - **Note:** Resource group tags are set in Azure only. Tags are not written to the credentials JSON.
-   - Update your GitHub secret `DEV_RESOURCE_GROUP_NAME` to match.
+   - **As of June 2025, resource group creation is now managed by Terraform.**
+   - The previous scripts (`step6_create_resource_group.sh` and `step6_create_resource_group.ps1`) have been deleted and replaced with a notice. Resource group creation should be defined in your Terraform code and applied by a user with sufficient permissions.
+   - Update your GitHub secret `DEV_RESOURCE_GROUP_NAME` to match the resource group defined in Terraform.
 7. **Create Terraform State Storage Account and Container**  
    _User Identity_  
    - `./scripts/unix/step7_create_tfstate_storage_account.sh --rgname <resource-group-name> --saname <storage-account-name> --containername <container-name> [--location <location>]`
@@ -58,21 +63,14 @@ This separation enforces the Principle of Least Privilege and aligns with BC Gov
 ---
 
 > **Note (June 2025):**
-> If you have created and assigned a custom role with sufficient permissions (such as Contributor or a custom role allowing resource group creation), manual resource group creation is no longer strictly required. You may automate resource group creation with Terraform or scripts if your identity has the necessary permissions. This script and manual process are retained for onboarding scenarios where permissions are limited or for teams following a least-privilege model.
+> Resource group creation is now managed by Terraform. The previous step 6 scripts have been deleted. If you have created and assigned a custom role with sufficient permissions (such as Contributor or a custom role allowing resource group creation), you may automate resource group creation with Terraform. This is the recommended approach for least privilege and full infrastructure-as-code management.
 
 ## ⚠️ Important: Pre-create All Terraform Backend Resources
 
 Before running any Terraform pipeline, you must create these three resources and set the corresponding GitHub variables:
 
 1. **Resource Group**
-   - **Script:**
-     ```sh
-     ./scripts/unix/step6_create_resource_group.sh <resource-group-name> [location]
-     ```
-   - **Example:**
-     ```sh
-     ./scripts/unix/step6_create_resource_group.sh rg-ag-pssg-tfstate-dev canadacentral
-     ```
+   - **Terraform:** Define your resource group in your Terraform configuration. Do not use the deleted step6 scripts.
    - **GitHub Variable:**
      `DEV_TFSTATE_RG` (e.g., `rg-ag-pssg-tfstate-dev`)
 
@@ -124,9 +122,10 @@ Before running any Terraform pipeline, you must create these three resources and
 
 ## Key Changes & Automation Notes
 
-- **Resource group tags** are set in Azure at creation time (via CLI/PowerShell), but are no longer written to `.env/azure-credentials.json`.
+- **Resource group creation is now managed by Terraform.** The onboarding scripts for manual resource group creation (step6) have been deleted.
+- **Only essential roles are assigned at the subscription level.** Storage/data plane roles must be assigned at the storage account or resource group level for least privilege. See onboarding scripts for examples and comments.
+- **Resource group tags** are set in Azure at creation time (via CLI/PowerShell or Terraform), but are no longer written to `.env/azure-credentials.json`.
 - **All onboarding scripts** (Unix and Windows) have been updated for robust, idempotent automation and to align with the new security and RBAC model.
-- **Windows step 6 script** (`step6_create_resource_group.ps1`) is now available and matches the Unix version in logic and output.
 - **Credentials JSON** is only used for identity and role assignment tracking, not for resource group tags.
 - **Manual edits** to the credentials JSON are supported, but tags are not required or tracked there.
 - **Variable and secret handling** is secure and consistent for both local and CI/CD runs.
@@ -146,14 +145,14 @@ RegisterApplicationInAzureAndOIDC/
     │   ├── step3_configure_oidc.sh
     │   ├── step4_prepare_github_secrets.sh
     │   ├── step5_add_github_secrets_cli.sh
-    │   └── step6_create_resource_group.sh
+    │   └── step6_create_resource_group.sh (deleted, see above)
     └── windows/
         ├── step1_register_app.ps1
         ├── step2_grant_permissions.ps1
         ├── step3_configure_oidc.ps1
         ├── step4_prepare_github_secrets.ps1
         ├── step5_add_github_secrets_cli.ps1
-        └── step6_create_resource_group.ps1
+        └── step6_create_resource_group.ps1 (deleted, see above)
 ```
 
 ---
@@ -453,27 +452,27 @@ sequenceDiagram
 
    The following roles are mapped to specific components from our PoC architecture as detailed in [ArchitectureOverview.md](../ArchitectureOverview.md):
 
-   | **Role** | **Applies To Architecture Components** | **Why It's Needed** |
-   |----------|----------------------------------|---------------------|
-   | **Reader** | All Azure resources | Base role for viewing resources and their configurations |
-   | **Storage Account Contributor** | - Azure Files (Premium/Standard)<br>- Azure Storage Account<br>- Azure Blob Storage | Core role for creating and managing storage accounts |
-   | **[BCGOV-MANAGED-LZ-LIVE] Network-Subnet-Contributor** | - Azure Virtual Network Subnets<br>- Subnet-level configurations | BC Gov landing zone custom role for managing Virtual Network subnets |
-   | **Private DNS Zone Contributor** | - Private DNS Zone | For configuring name resolution for private endpoints |
-   | **Monitoring Contributor** | - Azure Monitor<br>- Log Analytics | For setting up diagnostic settings, metrics, and alerts |
-   | **Storage Account Backup Contributor** | - Azure Storage Account<br>- Azure Backup | For performing backup and restore operations |
-   | **Storage Blob Data Owner** | - Blob containers<br>- Blob data | Full access to blob data including POSIX ACL management |
-   | **Storage File Data Privileged Contributor** | - File shares<br>- NTFS permissions | Advanced file share access with NTFS permission management |
-   | **Storage File Data SMB Share Elevated Contributor** | - SMB shares<br>- NTFS permissions | Enhanced SMB share operations with permission modifications |
-   | **Storage Blob Delegator** | - SAS tokens<br>- Blob access | For generating user delegation keys for blob access |
-   | **Storage File Delegator** | - SAS tokens<br>- File access | For generating user delegation keys for file access |
-   | **Storage Queue Data Contributor** | - Storage queues | For complete queue operations functionality |
-   | **Storage Table Data Contributor** | - Storage tables | For complete table operations functionality |
-   | **DNS Resolver Contributor** | - DNS resolution | For configuring DNS resolution in hybrid scenarios |
-   | **Azure Container Storage Contributor** | - Container operations | For potential container-based solutions |
+   | **Role** | **Applies To Architecture Components** | **Why It's Needed** | **Recommended Assignment Scope** |
+   |----------|----------------------------------|---------------------|-------------------------------|
+   | **Reader** | All Azure resources | Base role for viewing resources and their configurations | Subscription or Resource Group |
+   | **Storage Account Contributor** | - Azure Files (Premium/Standard)<br>- Azure Storage Account<br>- Azure Blob Storage | Core role for creating and managing storage accounts | Subscription (if needed broadly) or Resource Group |
+   | **[BCGOV-MANAGED-LZ-LIVE] Network-Subnet-Contributor** | - Azure Virtual Network Subnets<br>- Subnet-level configurations | BC Gov landing zone custom role for managing Virtual Network subnets | Subscription or Resource Group (as required by landing zone) |
+   | **Private DNS Zone Contributor** | - Private DNS Zone | For configuring name resolution for private endpoints | Resource Group or DNS Zone |
+   | **Monitoring Contributor** | - Azure Monitor<br>- Log Analytics | For setting up diagnostic settings, metrics, and alerts | Resource Group |
+   | **Storage Account Backup Contributor** | - Azure Storage Account<br>- Azure Backup | For performing backup and restore operations | Storage Account or Resource Group |
+   | **Storage Blob Data Owner** | - Blob containers<br>- Blob data | Full access to blob data including POSIX ACL management | Storage Account or Resource Group |
+   | **Storage File Data Privileged Contributor** | - File shares<br>- NTFS permissions | Advanced file share access with NTFS permission management | Storage Account or Resource Group |
+   | **Storage File Data SMB Share Elevated Contributor** | - SMB shares<br>- NTFS permissions | Enhanced SMB share operations with permission modifications | Storage Account or Resource Group |
+   | **Storage Blob Delegator** | - SAS tokens<br>- Blob access | For generating user delegation keys for blob access | Storage Account |
+   | **Storage File Delegator** | - SAS tokens<br>- File access | For generating user delegation keys for file access | Storage Account |
+   | **Storage Queue Data Contributor** | - Storage queues | For complete queue operations functionality | Storage Account or Resource Group |
+   | **Storage Table Data Contributor** | - Storage tables | For complete table operations functionality | Storage Account or Resource Group |
+   | **DNS Resolver Contributor** | - DNS resolution | For configuring DNS resolution in hybrid scenarios | Resource Group or DNS Zone |
+   | **Azure Container Storage Contributor** | - Container operations | For potential container-based solutions | Storage Account or Resource Group |
 
 #### Role Priority and Implementation
 
-   - Role assignments currently at subscription level
+   - **Only essential roles are assigned at the subscription level.** Storage/data plane roles must be assigned at the storage account or resource group level for least privilege. See onboarding scripts for examples and comments.
    - For production: Consider restricting roles to specific resource groups
    - Regular review of assigned permissions recommended
    - For minimal permissions implementations:

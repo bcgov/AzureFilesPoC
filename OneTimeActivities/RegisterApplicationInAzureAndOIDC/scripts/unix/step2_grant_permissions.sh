@@ -1,6 +1,7 @@
 #!/bin/bash
 # step2_grant_permissions.sh
-# This script grants necessary permissions to an Azure AD application for managing Azure resources.
+# This script grants necessary permissions at the subscription level
+# to an Azure AD application for managing Azure resources.
 # Function to resolve script location and set correct paths
 resolve_script_path() {
     local script_path
@@ -23,33 +24,19 @@ resolve_script_path
 # Initialize variables
 ENV_DIR="$PROJECT_ROOT/.env"
 CREDS_FILE="$ENV_DIR/azure-credentials.json"
+INVENTORY_FILE="$ENV_DIR/azure_full_inventory.json"
 
 # Required roles
 REQUIRED_ROLES=(
-    # Base roles
+    # Base roles (assigned at the subscription level; keep to a minimum for least privilege)
+    # Only include roles here that are truly needed across the entire subscription.
+    # For storage/data plane roles (e.g., Storage Blob Data Contributor, Storage File Data SMB Share Contributor),
+    # assign them at the storage account or resource group level for least privilege and better security.
     "Reader"
     "Storage Account Contributor"
     "[BCGOV-MANAGED-LZ-LIVE] Network-Subnet-Contributor"
     "Private DNS Zone Contributor"
     "Monitoring Contributor"
-    
-    # Storage-specific rolesPrivate DNS Zone Contributor
-    "Storage Account Backup Contributor"
-    "Storage Blob Data Owner"
-    "Storage File Data Privileged Contributor"
-    "Storage File Data SMB Share Contributor"
-    "Storage File Data SMB Share Elevated Contributor"
-    "Storage Blob Data Contributor"
-    "Storage Blob Delegator"
-    "Storage File Delegator"
-    
-    
-    # Additional data plane roles
-    "Storage Queue Data Contributor"
-    "Storage Table Data Contributor"
-    "DNS Resolver Contributor"
-    "Azure Container Storage Contributor"
-
 )
 
 # Function to check if running on macOS
@@ -229,6 +216,40 @@ capture_existing_role_assignments() {
     echo "All existing role assignments captured in credentials file"
 }
 
+# Function to update top-level roleAssignments in inventory file
+update_inventory_role_assignments() {
+    echo "Updating .env/azure_full_inventory.json roleAssignments array..."
+    local ROLE_DETAILS
+    ROLE_DETAILS=$(execute_az_command "az role assignment list --assignee \"$APP_ID\" --include-inherited --query '[].{id:id,roleName:roleDefinitionName,principalId:principalId,scope:scope}' -o json")
+    if [ -z "$ROLE_DETAILS" ] || [ "$ROLE_DETAILS" == "[]" ]; then
+        jq '.roleAssignments = []' "$INVENTORY_FILE" > "$INVENTORY_FILE.tmp" && mv "$INVENTORY_FILE.tmp" "$INVENTORY_FILE"
+        echo "No role assignments found; inventory updated with empty array."
+        return
+    fi
+    # Load resources array for lookup
+    local RESOURCES_JSON
+    RESOURCES_JSON=$(jq '.resources' "$INVENTORY_FILE")
+    # Use a here-document for the jq filter for reliability
+    echo "$ROLE_DETAILS" | jq --argjson resources "$RESOURCES_JSON" '
+      map(
+        . as $ra |
+        ($resources | map(select(.id == $ra.scope)) | first) as $res |
+        {
+          roleName: $ra.roleName,
+          id: $ra.id,
+          principalId: $ra.principalId,
+          scope: $ra.scope,
+          assignedOn: (now | strftime("%Y-%m-%dT%H:%M:%SZ")),
+          resourceName: ($res.name // null),
+          resourceType: ($res.type // (if ($ra.scope | test("/subscriptions/[^/]+$")) then "Microsoft.Resources/subscriptions" else null end)),
+          resourceId: ($res.id // (if ($ra.scope | test("/subscriptions/[^/]+$")) then $ra.scope else null end))
+        }
+      )' > "$INVENTORY_FILE.roleAssignments.tmp"
+    jq --slurpfile ras "$INVENTORY_FILE.roleAssignments.tmp" '.roleAssignments = $ras[0] // []' "$INVENTORY_FILE" > "$INVENTORY_FILE.tmp" && mv "$INVENTORY_FILE.tmp" "$INVENTORY_FILE"
+    rm -f "$INVENTORY_FILE.roleAssignments.tmp"
+    echo "Inventory file updated with current role assignments and resource info."
+}
+
 # Verify prerequisites
 verify_prerequisites
 
@@ -342,6 +363,31 @@ if [ -n "$FINAL_ROLES" ]; then
 else
     echo "No role assignments found"
 fi
+
+# Get all current role assignments for the principal at the subscription scope
+ALL_CURRENT_ROLES=$(execute_az_command "az role assignment list --assignee \"$APP_ID\" --subscription \"$SUBSCRIPTION_ID\" --query '[].{name:roleDefinitionName, id:id, scope:scope}' -o json")
+
+# Remove any roles not in REQUIRED_ROLES
+if [ -n "$ALL_CURRENT_ROLES" ] && [ "$ALL_CURRENT_ROLES" != "[]" ]; then
+    echo -e "\nChecking for extra roles to remove..."
+    echo "$ALL_CURRENT_ROLES" | jq -c '.[]' | while read -r role_json; do
+        role_name=$(echo "$role_json" | jq -r '.name')
+        role_id=$(echo "$role_json" | jq -r '.id')
+        role_scope=$(echo "$role_json" | jq -r '.scope')
+        # Only remove if not in REQUIRED_ROLES and at subscription scope
+        if ! printf '%s\n' "${REQUIRED_ROLES[@]}" | grep -Fxq "$role_name"; then
+            echo "Removing extra role: $role_name (scope: $role_scope)"
+            execute_az_command "az role assignment delete --ids $role_id"
+        fi
+    done
+    # Always update inventory after any changes
+    update_inventory_role_assignments
+else
+    echo "No existing role assignments found to remove."
+    update_inventory_role_assignments
+fi
+
+# (Continue with missing role assignment logic as before)
 
 echo -e "\nNext Steps:"
 echo "1. Verify all required roles are assigned correctly"
