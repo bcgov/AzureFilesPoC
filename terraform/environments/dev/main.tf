@@ -27,24 +27,27 @@ provider "azurerm" {
   features {}
 }
 
-#1.  TEST 1:  TRY to create the resource group only
-# This is a simple test to ensure the provider and backend are working.
+#================================================================================
+# STEP: CREATE RESOURCE GROUP
+# RESOURCE TYPE:  azurerm_resource_group
+# SCRIPT:  terraform/modules/core/resource-group/main.tf
+# STATUS:  Working successful workflow creating storage account with role assignments
+#================================================================================
 # module "poc_resource_group" {
 #   source = "../../modules/core/resource-group"
 #
-#   resource_group_name       = var.dev_resource_group_b
+#   resource_group_name       = var.dev_resource_group
 #   location                 = var.azure_location
 #   tags                     = var.common_tags
 #   service_principal_id      = var.dev_service_principal_id
 # }
 
 #================================================================================
-# STEP 1: CREATE/UPDATE THE STORAGE ACCOUNT
+# STEP: CREATE/UPDATE THE STORAGE ACCOUNT
+# RESOURCE TYPE:  azurerm_storage_account
+# SCRIPT:  terraform/modules/storage/account/main.tf
+# STATUS:  Working successful workflow creating storage account with role assignments
 #================================================================================
-# This runs first, ensuring the storage account exists with the correct
-# network configuration before any other resource tries to interact with it.
-#STATUS:  Working successful workflow creating storage account with role assignments
-
 module "poc_storage_account" {
   source = "../../modules/storage/account"
 
@@ -60,7 +63,13 @@ module "poc_storage_account" {
 
 
 #================================================================================
-# STEP 2: CREATE THE FILE SHARE (RUNS LAST)
+# STEP: CREATE THE FILE SHARE 
+# RESOURCE TYPE:  azurerm_storage_file_share
+# SCRIPT:  terraform/modules/storage/file-share/main.tf
+# STATUS:  failing with 403 error
+#         Error: checking for existing File Share "fspoc-xxxx" (Account "Account \"stagxxxx\" 
+#        (IsEdgeZone false / ZoneName \"\" / Subdomain Type \"file\" / DomainSuffix \"core.windows.net\")"): 
+#        executing request: unexpected status 403 (403 This request is not authorized to perform this operation.) with AuthorizationFailure: This request is not authorized to perform this operation.
 #================================================================================
 # Create the file share in the storage account.
 module "poc_file_share" {

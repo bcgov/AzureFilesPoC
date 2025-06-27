@@ -23,34 +23,7 @@ resource "azurerm_resource_group" "main" {
 #==================================================================================
 
 #===================================================================================
-#2a. Assign Storage Account Contributor role to a service principal or group
-#===================================================================================
-resource "azurerm_role_assignment" "storage_account_contributor" {
-  scope                = azurerm_resource_group.main.id
-  role_definition_name = "Storage Account Contributor"
-  principal_id         = var.service_principal_id
-}
-
-#===================================================================================
-#2b.Assign Storage Blob Data Contributor for blob/container operations
-#===================================================================================
-resource "azurerm_role_assignment" "blob_data_contributor" {
-  scope                = azurerm_resource_group.main.id
-  role_definition_name = "Storage Blob Data Contributor"
-  principal_id         = var.service_principal_id
-}
-
-#===================================================================================
-#2c. Assign Storage File Data SMB Share Contributor for Azure Files operations
-#===================================================================================
-resource "azurerm_role_assignment" "file_data_contributor" {
-  scope                = azurerm_resource_group.main.id
-  role_definition_name = "Storage File Data SMB Share Contributor"
-  principal_id         = var.service_principal_id
-}
-
-#===================================================================================
-#2d. Assign custom role for role assignment management (data/control plane automation)
+#2a. Assign custom role for role assignment management (data/control plane automation)
 #===================================================================================
 resource "azurerm_role_assignment" "role_assignment_writer" {
   scope                = azurerm_resource_group.main.id
