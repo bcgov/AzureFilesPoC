@@ -33,14 +33,14 @@ provider "azurerm" {
 # SCRIPT:  terraform/modules/core/resource-group/main.tf
 # STATUS:  Working successful workflow creating storage account with role assignments
 #================================================================================
-# module "poc_resource_group" {
-#   source = "../../modules/core/resource-group"
-#
-#   resource_group_name       = var.dev_resource_group
-#   location                 = var.azure_location
-#   tags                     = var.common_tags
-#   service_principal_id      = var.dev_service_principal_id
-# }
+module "poc_resource_group" {
+   source = "../../modules/core/resource-group"
+
+   resource_group_name       = var.dev_resource_group
+   location                 = var.azure_location
+   tags                     = var.common_tags
+   service_principal_id      = var.dev_service_principal_id
+}
 
 #================================================================================
 # STEP: CREATE/UPDATE THE STORAGE ACCOUNT
