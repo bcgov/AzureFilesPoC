@@ -75,12 +75,6 @@ module "poc_file_share" {
   enabled_protocol = "SMB"
   access_tier      = "TransactionOptimized"
   metadata         = {}
-
-  # The 'depends_on' block now ensures this runs absolutely last, after the
-  # role has been assigned AND the wait time has passed.
-  depends_on = [
-    time_sleep.wait_for_iam_propagation
-  ]
 }
 
 #================================================================================
