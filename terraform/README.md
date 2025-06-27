@@ -359,3 +359,18 @@ sequenceDiagram
 - Generate tfvars files at runtime in CI/CD workflows.
 - Never commit real tfvars or secrets to git.
 - This approach is secure, compliant, and industry best practice.
+
+---
+
+## Important Note on File Share Creation and GitHub Actions Runners
+
+> **Azure File Share Creation and GitHub Actions Runners**
+>
+> When using OIDC and GitHub Actions to deploy Azure resources, the identity (service principal) used by the GitHub Actions runner must have the appropriate **data plane** roles (such as `Storage File Data SMB Share Contributor` or `Storage File Data Privileged Contributor`) on the storage account **before** attempting to create a file share. 
+>
+> **Key Points:**
+> - Role assignments can take several minutes to propagate in Azure. Even if the assignment appears in the portal, it may not be effective immediately for data plane operations.
+> - If you see a 403 error when creating a file share, it is likely because the GitHub Actions runner's identity does not have effective data plane permissions at the time of the operation.
+> - You may need to add a delay (using a `time_sleep` resource or a manual wait) after role assignment to ensure permissions are active before file share creation.
+> - The GitHub Actions runner must be able to authenticate to Azure and have the required permissions. If you are running into persistent 403 errors, consider testing with a self-hosted runner or running the apply step locally to isolate permission propagation issues.
+> - For most scenarios, **the same principal that creates the storage account and assigns roles should also create the file share**. If you use a different principal, ensure it has the correct data plane roles.
