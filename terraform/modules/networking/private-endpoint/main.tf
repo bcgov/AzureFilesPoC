@@ -18,3 +18,12 @@ resource "azurerm_private_endpoint" "main" {
     ignore_changes = [private_dns_zone_group]
   }
 }
+
+#==================================================================================
+# Assign least-privilege role to the private endpoint resource
+#==================================================================================
+resource "azurerm_role_assignment" "private_endpoint_reader" {
+  scope                = azurerm_private_endpoint.main.id
+  role_definition_name = "Reader" # Adjust if a more restrictive or custom role is appropriate
+  principal_id         = var.service_principal_id
+}

@@ -38,3 +38,8 @@ variable "common_tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "service_principal_id" {
+  description = "The object ID of the service principal or user to assign least-privilege access to the private endpoint."
+  type        = string
+}

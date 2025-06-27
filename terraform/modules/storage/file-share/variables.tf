@@ -43,3 +43,8 @@ variable "acls" {
   description = "A list of Access Control Lists for the file share. See azurerm_storage_share documentation for details."
   default     = [] # Default to no ACLs for simplicity
 }
+
+variable "service_principal_id" {
+  description = "The object ID of the service principal or user to assign least-privilege access to the file share."
+  type        = string
+}

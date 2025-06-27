@@ -105,3 +105,78 @@ variable "dev_service_principal_id" {
   description = "The object ID of the service principal for role assignments."
   type        = string
 }
+
+variable "dev_file_sync_service_name" {
+  description = "The name of the Azure File Sync Service."
+  type        = string
+}
+
+variable "dev_log_analytics_workspace_name" {
+  description = "The name of the Log Analytics Workspace."
+  type        = string
+}
+
+variable "dev_automation_account_name" {
+  description = "The name of the Automation Account."
+  type        = string
+}
+
+variable "dev_firewall_name" {
+  description = "The name of the Azure Firewall."
+  type        = string
+}
+
+variable "dev_route_table_name" {
+  description = "The name of the Route Table."
+  type        = string
+}
+
+variable "dev_vnet_gateway_name" {
+  description = "The name of the Virtual Network Gateway."
+  type        = string
+}
+
+variable "dev_gateway_type" {
+  description = "The type of the gateway (Vpn or ExpressRoute)."
+  type        = string
+}
+
+variable "dev_vpn_type" {
+  description = "The VPN type (RouteBased or PolicyBased)."
+  type        = string
+}
+
+variable "dev_vnet_gateway_sku" {
+  description = "The SKU of the Virtual Network Gateway."
+  type        = string
+}
+
+variable "dev_vnet_gateway_ip_configurations" {
+  description = "A list of IP configuration blocks for the Virtual Network Gateway."
+  type        = any
+}
+
+variable "dev_blob_container_name" {
+  description = "The name of the blob container."
+  type        = string
+}
+
+variable "dev_storage_management_policy" {
+  description = "The management policy JSON for the storage account."
+  type        = any
+}
+
+variable "dev_private_dns_zone_name" {
+  description = "The name of the Private DNS Zone."
+  type        = string
+}
+
+variable "dev_private_dns_vnet_link_name" {
+  description = "The name of the VNet link for the Private DNS Zone."
+  type        = string
+}
+
+variable "dev_virtual_network_id" {
+  description = "The ID of the virtual network to link to the Private DNS Zone."
+  type        = string
+}

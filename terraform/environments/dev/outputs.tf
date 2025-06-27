@@ -66,3 +66,55 @@ output "dev_service_principal_id" {
   value       = var.dev_service_principal_id
   description = "The object ID of the service principal used for role assignments."
 }
+
+# output "file_sync_service_id" {
+#   value = module.file_sync.id
+# }
+# output "file_sync_service_name" {
+#   value = module.file_sync.name
+# }
+# output "log_analytics_workspace_id" {
+#   value = module.monitoring.id
+# }
+# output "log_analytics_workspace_name" {
+#   value = module.monitoring.name
+# }
+# output "automation_account_id" {
+#   value = module.automation.id
+# }
+# output "automation_account_name" {
+#   value = module.automation.name
+# }
+# output "firewall_id" {
+#   value = module.firewall.id
+# }
+# output "firewall_name" {
+#   value = module.firewall.name
+# }
+# output "route_table_id" {
+#   value = module.route_table.id
+# }
+# output "route_table_name" {
+#   value = module.route_table.name
+# }
+# output "vnet_gateway_id" {
+#   value = module.vnet_gateway.id
+# }
+# output "vnet_gateway_name" {
+#   value = module.vnet_gateway.name
+# }
+# output "blob_container_id" {
+#   value = module.poc_blob_container.id
+# }
+# output "blob_container_name" {
+#   value = module.poc_blob_container.name
+# }
+# output "storage_management_policy_id" {
+#   value = module.poc_storage_management_policy.id
+# }
+# output "private_dns_zone_id" {
+#   value = module.private_dns_zone.id
+# }
+# output "private_dns_zone_name" {
+#   value = module.private_dns_zone.name
+# }

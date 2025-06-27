@@ -28,3 +28,12 @@ resource "azurerm_storage_share" "main" {
     }
   }
 }
+
+#==================================================================================
+# Assign least-privilege role to the file share resource
+#==================================================================================
+resource "azurerm_role_assignment" "file_share_contributor" {
+  scope                = azurerm_storage_share.main.id
+  role_definition_name = "Storage File Data SMB Share Contributor" # Adjust if a more restrictive or custom role is appropriate
+  principal_id         = var.service_principal_id
+}

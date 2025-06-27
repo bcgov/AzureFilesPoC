@@ -27,7 +27,7 @@ dev_vnet_id               = ""
 
 # CREATED BY USER IDENTITY in AZURE policy won't allow by terraform
 dev_resource_group       = "" 
-dev_resource_id          = "/subscriptions/d321bcbe-c5e8-4830-901c-dab5fab3a834/resourceGroups/rg-ag-pssg-azure-poc-dev"
+dev_resource_id          = ""
 
 ## CREATED BY TERRAFORM
 dev_storage_account_name = ""
