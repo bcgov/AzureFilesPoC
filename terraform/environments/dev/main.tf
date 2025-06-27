@@ -81,7 +81,6 @@ module "poc_file_share" {
   depends_on = [
     time_sleep.wait_for_iam_propagation
   ]
-  service_principal_id = var.dev_service_principal_id
 }
 
 #================================================================================
