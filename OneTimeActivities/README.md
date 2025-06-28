@@ -24,6 +24,16 @@ The onboarding process is automated and modularized into 6 robust, idempotent sc
 ./RegisterApplicationInAzureAndOIDC/scripts/unix/step6_create_resource_group.sh <resource-group-name> [location]
 ```
 
+**Before running the onboarding scripts on Windows, install the Azure PowerShell module:**
+
+```powershell
+Install-Module -Name Az -Scope CurrentUser -Repository PSGallery -Force
+```
+
+- Run PowerShell as Administrator for best results.
+- If prompted to trust the repository, answer 'Yes'.
+- After installation, you may need to restart your PowerShell session.
+
 ### Windows (PowerShell)
 ```powershell
 .\RegisterApplicationInAzureAndOIDC\scripts\windows\step1_register_app.ps1

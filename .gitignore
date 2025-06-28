@@ -83,3 +83,6 @@ package-lock.json
 # Ignore downloaded Terraform zip archives
 terraform_*.zip
 *.zip
+
+# Ignore Terraform environment licenses
+LICENSE.txt
