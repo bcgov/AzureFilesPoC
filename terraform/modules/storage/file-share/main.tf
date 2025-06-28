@@ -1,5 +1,19 @@
 # terraform/modules/storage/file-share/main.tf
 
+# --------------------------------------------------------------------------------
+# NOTE: Role, RBAC, and ACL Requirements for File Share
+#
+# - The service principal or user creating/managing the file share must have:
+#   * Azure RBAC: "Storage File Data SMB Share Contributor" (or higher) assigned at the STORAGE ACCOUNT LEVEL (recommended by Microsoft).
+#   * ACLs: If granular access is required, ensure NTFS ACLs are set on the file share after creation.
+# - RBAC controls management plane (create/delete/configure) and grants mount/access rights.
+# - ACLs (NTFS/Windows permissions) control data plane (read/write/list within the share).
+# - Both RBAC and ACLs are required for full access:
+#     - RBAC allows mounting and basic access to the share.
+#     - ACLs enforce per-file and per-folder permissions (preserved if migrated with tools like robocopy/AzCopy).
+# - To use ACLs, set enabledOnboardedWindowsACL = true on the file share and enable Azure AD authentication on the storage account.
+# - Assign RBAC roles to Entra (Azure AD) users/groups at the storage account level and set NTFS ACLs for granular access control.
+# --------------------------------------------------------------------------------
 resource "azurerm_storage_share" "main" {
   name                 = var.file_share_name
   storage_account_name = var.storage_account_name
@@ -14,6 +28,21 @@ resource "azurerm_storage_share" "main" {
 
   # Corresponds to the metadata property
   metadata = var.metadata
+
+  # Enable NTFS ACL support (if supported by provider)
+  enabled_onboarded_windows_acl = var.enabled_onboarded_windows_acl
+
+  # Root squash for NFS (if supported by provider)
+  root_squash = var.root_squash
+
+  # Enable Azure Backup (if supported by provider)
+  backup_enabled = var.backup_enabled
+
+  # Soft delete retention policy (if supported by provider)
+  delete_retention_policy {
+    enabled = var.delete_retention_policy.enabled
+    days    = var.delete_retention_policy.days
+  }
 
   # Defines file and folder-level permissions
   dynamic "acl" {

@@ -196,6 +196,7 @@ module "poc_resource_group" {
 # }
 
 # 2.9 Storage Account
+# NOTE: Assign RBAC roles (e.g., "Storage File Data SMB Share Contributor") at the STORAGE ACCOUNT LEVEL for all users/groups that need access to file shares. This is the Microsoft recommended best practice for Azure Files RBAC.
 module "poc_storage_account" {
   source = "../../modules/storage/account"
 
@@ -221,6 +222,20 @@ module "poc_storage_account" {
 # 3.3 (Optional) Storage Management Policy
 
 # 3.1 File Share
+# --------------------------------------------------------------------------------
+# NOTE: Role, RBAC, and ACL Requirements for File Share
+#
+# - The service principal or user creating/managing the file share must have:
+#   * Azure RBAC: "Storage File Data SMB Share Contributor" (or higher) assigned at the STORAGE ACCOUNT LEVEL (recommended by Microsoft).
+#   * ACLs: If granular access is required, ensure NTFS ACLs are set on the file share after creation.
+# - RBAC controls management plane (create/delete/configure) and grants mount/access rights.
+# - ACLs (NTFS/Windows permissions) control data plane (read/write/list within the share).
+# - Both RBAC and ACLs are required for full access:
+#     - RBAC allows mounting and basic access to the share.
+#     - ACLs enforce per-file and per-folder permissions (preserved if migrated with tools like robocopy/AzCopy).
+# - To use ACLs, set enabledOnboardedWindowsACL = true on the file share and enable Azure AD authentication on the storage account.
+# - Assign RBAC roles to Entra (Azure AD) users/groups at the storage account level and set NTFS ACLs for granular access control.
+# --------------------------------------------------------------------------------
 module "poc_file_share" {
   source = "../../modules/storage/file-share"
 
@@ -228,12 +243,23 @@ module "poc_file_share" {
   file_share_name      = var.dev_file_share_name
   storage_account_name = module.poc_storage_account.name
   quota_gb             = var.dev_file_share_quota_gb
+  service_principal_id = var.dev_service_principal_id
 
-  # --- Optional Arguments ---
+  # Optional
   enabled_protocol     = "SMB"
-  access_tier          = "TransactionOptimized"
-  metadata             = {}
+  access_tier          = "Hot"
+  enabled_onboarded_windows_acl = true
+  backup_enabled       = false
+  delete_retention_policy = {
+    enabled = false
+    days    = 7
+  }
+  metadata = {
+    env = "dev"
+  }
+  # acls = [...] # Only if you want to set custom ACLs
 }
+
 
 # 3.2 (Optional) Blob Container
 # module "poc_blob_container" {
