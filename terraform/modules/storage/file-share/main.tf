@@ -29,21 +29,6 @@ resource "azurerm_storage_share" "main" {
   # Corresponds to the metadata property
   metadata = var.metadata
 
-  # Enable NTFS ACL support (if supported by provider)
-  enabled_onboarded_windows_acl = var.enabled_onboarded_windows_acl
-
-  # Root squash for NFS (if supported by provider)
-  root_squash = var.root_squash
-
-  # Enable Azure Backup (if supported by provider)
-  backup_enabled = var.backup_enabled
-
-  # Soft delete retention policy (if supported by provider)
-  delete_retention_policy {
-    enabled = var.delete_retention_policy.enabled
-    days    = var.delete_retention_policy.days
-  }
-
   # Defines file and folder-level permissions
   dynamic "acl" {
     for_each = var.acls

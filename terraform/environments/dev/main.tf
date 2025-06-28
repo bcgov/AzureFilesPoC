@@ -239,23 +239,20 @@ module "poc_storage_account" {
 module "poc_file_share" {
   source = "../../modules/storage/file-share"
 
-  # --- Required Arguments ---
+  # Required
   file_share_name      = var.dev_file_share_name
   storage_account_name = module.poc_storage_account.name
-  quota_gb             = var.dev_file_share_quota_gb
+  quota_gb             = 10
   service_principal_id = var.dev_service_principal_id
 
-  # Optional
+  # Optional (file share–level only)
   enabled_protocol     = "SMB"
   access_tier          = "Hot"
-  enabled_onboarded_windows_acl = true
-  backup_enabled       = false
-  delete_retention_policy = {
-    enabled = false
-    days    = 7
-  }
   metadata = {
-    env = "dev"
+    env             = "dev"
+    project         = "ag-pssg-azure-files-poc"
+    owner           = "ag-pssg-teams"
+    ministry_name   = "AG"
   }
   # acls = [...] # Only if you want to set custom ACLs
 }
