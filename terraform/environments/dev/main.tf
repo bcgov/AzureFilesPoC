@@ -89,28 +89,29 @@ provider "azurerm" {
 # 1. create resource group in azure portal 
 # 2. create resource group using azure CLI using script
 #    e.g. OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/step6_create_resource_group.sh
+# role assignments for subscription and or resource group required
+# --------------------------------------------------------------------------------
+# REQUIRED ROLE ASSIGNMENTS FOR THIS SCRIPT TO WORK:
+#
+# Subscription Level (assigned by step2_grant_permissions.sh):
+#   - Reader
+#   - Storage Account Contributor
+#   - [BCGOV-MANAGED-LZ-LIVE] Network-Subnet-Contributor
+#   - Private DNS Zone Contributor
+#   - Monitoring Contributor
+#   (Assign only those truly needed at subscription scope for least privilege.)
+#
+# Resource Group Level (assigned by step6_create_resource_group.sh):
+#   - Storage Account Contributor
+#   - ag-pssg-azure-files-poc-dev-role-assignment-writer (custom role)
+#
+# These assignments are required for the service principal to deploy and manage
+# resources in this environment. See onboarding scripts for details.
+# --------------------------------------------------------------------------------
 #ASSUMPTION:  This terraform script assumes the resource group exists
 data "azurerm_resource_group" "main" {
   name = var.dev_resource_group
 }
-resource "azurerm_role_assignment" "storage_account_contributor" {
-  scope                = data.azurerm_resource_group.main.id
-  role_definition_name = "Storage Account Contributor"
-  principal_id         = var.dev_service_principal_id
-}
-resource "azurerm_role_assignment" "role_assignment_writer" {
-   scope                = data.azurerm_resource_group.main.id
-   role_definition_name = "ag-pssg-azure-files-poc-dev-role-assignment-writer"
-   principal_id         = var.dev_service_principal_id
-}
-# Add more role assignments as needed
-# resource "azurerm_role_assignment" "user_access_admin" {
-#   scope                = data.azurerm_resource_group.main.id
-#   role_definition_name = "User Access Administrator"
-#   principal_id         = var.dev_service_principal_id
-# }
-
-
 
 #================================================================================
 # SECTION 2: CORE INFRASTRUCTURE (NETWORKING & STORAGE)
