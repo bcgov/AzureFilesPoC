@@ -32,27 +32,28 @@ This configuration creates the runner VM and all its dependencies.
 ```mermaid
 graph TD
     subgraph "Your Laptop"
-        A[Developer] -- SSH Port 22<br/>(For initial setup only) --> D
+        A["Developer"] -- "SSH Port 22<br/>(For initial setup only)" --> D
     end
 
     subgraph "Azure Cloud"
         subgraph "Spoke VNet (e.g., d5007d-dev-vwan-spoke)"
-            D[Runner VM<br>(gh-runner-dev-01)]
-            PE[Private Endpoint for Storage]
+            D["Runner VM<br>(gh-runner-dev-01)"]
+            PE["Private Endpoint for Storage"]
 
             D -- Private Network Traffic --> PE
         end
 
-        SA[Storage Account<br>(Public Access Disabled)]
+        SA["Storage Account<br>(Public Access Disabled)"]
         PE --- SA
     end
 
     subgraph "GitHub.com"
-        G[GitHub Actions Service]
+        G["GitHub Actions Service"]
     end
 
-    G -- HTTPS Port 443<br/>(Orchestrates Jobs) --> D
+    G -- "HTTPS Port 443<br/>(Orchestrates Jobs)" --> D
 ```
+
 
 ---
 

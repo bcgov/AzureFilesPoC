@@ -17,7 +17,6 @@ resource "azurerm_resource_group" "main" {
   tags     = var.tags
 }
 
-
 #==================================================================================
 #2. assign roles to the resource group for storage account and data operations
 #==================================================================================
