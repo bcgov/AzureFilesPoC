@@ -160,6 +160,7 @@ variable "dev_vnet_gateway_ip_configurations" {
 variable "dev_blob_container_name" {
   description = "The name of the blob container."
   type        = string
+  default     = ""
 }
 
 variable "dev_storage_management_policy" {
