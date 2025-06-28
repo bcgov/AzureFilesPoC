@@ -357,33 +357,33 @@ resource "time_sleep" "wait_for_role_propagation" {
 # - To use ACLs, set enabledOnboardedWindowsACL = true on the file share and enable Azure AD authentication on the storage account.
 # - Assign RBAC roles to Entra (Azure AD) users/groups at the storage account level and set NTFS ACLs for granular access control.
 # --------------------------------------------------------------------------------
-module "poc_file_share" {
-  source = "../../modules/storage/file-share"
-
-  # This `depends_on` block is CRITICAL. It tells Terraform to not even start
-  # creating the file share until the `time_sleep` resource is finished.
-  # This solves the permissions race condition.
-  depends_on = [
-    time_sleep.wait_for_role_propagation
-  ]
-
-  # Required
-  file_share_name      = var.dev_file_share_name
-  storage_account_name = module.poc_storage_account.name
-  quota_gb             = 10
-  service_principal_id = var.dev_service_principal_id
-
-  # Optional (file share–level only)
-  enabled_protocol     = "SMB"
-  access_tier          = "Hot"
-  metadata = {
-    env             = "dev"
-    project         = "ag-pssg-azure-files-poc"
-    owner           = "ag-pssg-teams"
-    ministry_name   = "AG"
-  }
-  # acls = [...] # Only if you want to set custom ACLs
-}
+# module "poc_file_share" {
+#   source = "../../modules/storage/file-share"
+#
+#   # This `depends_on` block is CRITICAL. It tells Terraform to not even start
+#   # creating the file share until the `time_sleep` resource is finished.
+#   # This solves the permissions race condition.
+#   depends_on = [
+#     time_sleep.wait_for_role_propagation
+#   ]
+#
+#   # Required
+#   file_share_name      = var.dev_file_share_name
+#   storage_account_name = module.poc_storage_account.name
+#   quota_gb             = 10
+#   service_principal_id = var.dev_service_principal_id
+#
+#   # Optional (file share–level only)
+#   enabled_protocol     = "SMB"
+#   access_tier          = "Hot"
+#   metadata = {
+#     env             = "dev"
+#     project         = "ag-pssg-azure-files-poc"
+#     owner           = "ag-pssg-teams"
+#     ministry_name   = "AG"
+#   }
+#   # acls = [...] # Only if you want to set custom ACLs
+# }
 
 # --------------------------------------------------------------------------------
 # 3.2 (Optional) Blob Container
