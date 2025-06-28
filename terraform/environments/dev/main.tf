@@ -70,24 +70,25 @@ provider "azurerm" {
 # SECTION summarizes all terraform resources that are currently enabled
 #         and will run and be created when script executed in github
 # LIST:
-# 1. Resource Group
-# 2.9 Storage Account
-# 3.1 File Share
+# 1. Resource Group (enabled)
+# 2.9 Storage Account (commented out)
+# 3.1 File Share (commented out)
 #================================================================================
-
 
 #================================================================================
 # SECTION 1: CORE RESOURCE GROUP
 #================================================================================
-# This section creates the resource group for all resources in this environment.
-
+# Resource groups are pre-created by the BC Gov landing zone/central IT. 
+# Service principals and Terraform are NOT authorized to create resource groups.
+# Reference the pre-created resource group by name (var.dev_resource_group) in all modules.
+#
 module "poc_resource_group" {
-   source = "../../modules/core/resource-group"
+    source = "../../modules/core/resource-group"
 
-   resource_group_name       = var.dev_resource_group
-   location                 = var.azure_location
-   tags                     = var.common_tags
-   service_principal_id      = var.dev_service_principal_id
+    resource_group_name       = "rg-ag-pssg-azure-poc-dev-att2" #var.dev_resource_group
+    location                 = var.azure_location
+    tags                     = var.common_tags
+    service_principal_id      = var.dev_service_principal_id
 }
 
 #================================================================================
@@ -197,21 +198,21 @@ module "poc_resource_group" {
 
 # 2.9 Storage Account
 # NOTE: Assign RBAC roles (e.g., "Storage File Data SMB Share Contributor") at the STORAGE ACCOUNT LEVEL for all users/groups that need access to file shares. This is the Microsoft recommended best practice for Azure Files RBAC.
-module "poc_storage_account" {
-  source = "../../modules/storage/account"
-
-  storage_account_name = var.dev_storage_account_name
-  resource_group_name  = var.dev_resource_group
-  location             = var.azure_location
-  tags                 = var.common_tags
-  service_principal_id = var.dev_service_principal_id
+#module "poc_storage_account" {
+#  source = "../../modules/storage/account"
+#
+#  storage_account_name = var.dev_storage_account_name
+#  resource_group_name  = var.dev_resource_group
+#  location             = var.azure_location
+#  tags                 = var.common_tags
+#  service_principal_id = var.dev_service_principal_id
 
   # The original line 'allowed_ip_rules = var.allowed_ip_rules' has been removed.
   # This is now the ONLY definition for this argument. It keeps the firewall
   # open so the file share can be created in the next step.
   #temporary only to be allowed to create the file share
-  allowed_ip_rules     = [] 
-}
+#  allowed_ip_rules     = [] 
+#}
 
 
 #================================================================================
@@ -236,26 +237,26 @@ module "poc_storage_account" {
 # - To use ACLs, set enabledOnboardedWindowsACL = true on the file share and enable Azure AD authentication on the storage account.
 # - Assign RBAC roles to Entra (Azure AD) users/groups at the storage account level and set NTFS ACLs for granular access control.
 # --------------------------------------------------------------------------------
-module "poc_file_share" {
-  source = "../../modules/storage/file-share"
-
-  # Required
-  file_share_name      = var.dev_file_share_name
-  storage_account_name = module.poc_storage_account.name
-  quota_gb             = 10
-  service_principal_id = var.dev_service_principal_id
-
-  # Optional (file share–level only)
-  enabled_protocol     = "SMB"
-  access_tier          = "Hot"
-  metadata = {
-    env             = "dev"
-    project         = "ag-pssg-azure-files-poc"
-    owner           = "ag-pssg-teams"
-    ministry_name   = "AG"
-  }
-  # acls = [...] # Only if you want to set custom ACLs
-}
+# module "poc_file_share" {
+#   source = "../../modules/storage/file-share"
+#
+#   # Required
+#   file_share_name      = var.dev_file_share_name
+#   storage_account_name = module.poc_storage_account.name
+#   quota_gb             = 10
+#   service_principal_id = var.dev_service_principal_id
+#
+#   # Optional (file share–level only)
+#   enabled_protocol     = "SMB"
+#   access_tier          = "Hot"
+#   metadata = {
+#     env             = "dev"
+#     project         = "ag-pssg-azure-files-poc"
+#     owner           = "ag-pssg-teams"
+#     ministry_name   = "AG"
+#   }
+#   # acls = [...] # Only if you want to set custom ACLs
+# }
 
 
 # 3.2 (Optional) Blob Container
