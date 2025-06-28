@@ -25,6 +25,10 @@ By deploying a Virtual Machine (VM) **inside our private Azure Spoke VNet**, we 
 
 This configuration creates the runner VM and all its dependencies.
 
+> **Security Note:** After initial setup, consider removing the public IP from the VM or using Azure Bastion for secure access. Restrict SSH access as much as possible.
+
+> **Cost Warning:** Running a VM and associated resources in Azure will incur costs. Remember to destroy resources when not needed.
+
 ---
 
 ## 2. Architecture Diagram
@@ -127,3 +131,29 @@ This configuration should be run **once** from your local machine to bootstrap t
 
 3.  **Commit and Push:**
     Commit the changes to your workflow file. The next time the pipeline runs, it will execute on your new, secure, self-hosted runner.
+
+---
+
+## 7. Cleanup
+
+To remove all resources created by this configuration:
+```bash
+terraform destroy -var-file=terraform.tfvars
+```
+
+---
+
+## 8. Troubleshooting
+
+- **Runner not appearing in GitHub:** Ensure the registration script ran successfully and the VM has outbound internet access.
+- **SSH not working:** Double-check your NSG rules and that your public IP is correct in `terraform.tfvars`.
+- **Policy errors:** Confirm the VM is in the correct subnet and that public network access is disabled on the storage account.
+- **VM not starting:** Check Azure quotas and available resources in your region.
+
+---
+
+## 9. References
+
+- [GitHub Actions: Self-hosted runners](https://docs.github.com/en/actions/hosting-your-own-runners/about-self-hosted-runners)
+- [Azure Bastion](https://learn.microsoft.com/en-us/azure/bastion/bastion-overview)
+- [Terraform Azure Provider Docs](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs)
