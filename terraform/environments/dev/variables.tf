@@ -36,6 +36,7 @@ variable "dev_subnet_name" {
 variable "dev_subnet_address_prefixes" {
   description = "A list of CIDR address blocks for the new subnet."
   type        = list(string)
+  default     = []
 }
 
 variable "common_tags" {
@@ -53,11 +54,13 @@ variable "azure_location" {
 variable "dev_vnet_address_space" {
   description = "The address space for the dev VNet."
   type        = list(string)
+  default     = []
 }
 
 variable "dev_vnet_dns_servers" {
   description = "The DNS servers for the dev VNet."
   type        = list(string)
+  default     = []
 }
 
 variable "dev_vnet_id" {
@@ -93,6 +96,7 @@ variable "dev_network_security_group" {
 variable "dev_dns_servers" {
   description = "The DNS servers for the dev environment."
   type        = list(string)
+  default     = []
 }
 
 variable "dev_resource_group_b" {
@@ -176,6 +180,7 @@ variable "dev_vnet_gateway_sku" {
 variable "dev_vnet_gateway_ip_configurations" {
   description = "A list of IP configuration blocks for the Virtual Network Gateway."
   type        = any
+  default     = []
 }
 
 variable "dev_blob_container_name" {
@@ -187,6 +192,7 @@ variable "dev_blob_container_name" {
 variable "dev_storage_management_policy" {
   description = "The management policy JSON for the storage account."
   type        = any
+  default     = {}
 }
 
 variable "dev_private_dns_zone_name" {
