@@ -93,6 +93,23 @@ provider "azurerm" {
 data "azurerm_resource_group" "main" {
   name = var.dev_resource_group
 }
+resource "azurerm_role_assignment" "storage_account_contributor" {
+  scope                = data.azurerm_resource_group.main.id
+  role_definition_name = "Storage Account Contributor"
+  principal_id         = var.dev_service_principal_id
+}
+# Add more role assignments as needed
+# resource "azurerm_role_assignment" "user_access_admin" {
+#   scope                = data.azurerm_resource_group.main.id
+#   role_definition_name = "User Access Administrator"
+#   principal_id         = var.dev_service_principal_id
+# }
+# resource "azurerm_role_assignment" "role_assignment_writer" {
+#   scope                = azurerm_resource_group.main.id
+#   role_definition_name = "ag-pssg-azure-files-poc-dev-role-assignment-writer"
+#   principal_id         = var.service_principal_id
+# }
+
 
 #================================================================================
 # SECTION 2: CORE INFRASTRUCTURE (NETWORKING & STORAGE)
