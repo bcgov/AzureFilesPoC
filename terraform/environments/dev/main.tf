@@ -203,16 +203,15 @@ module "poc_storage_account" {
   resource_group_name  = var.dev_resource_group
   location             = var.azure_location
   tags                 = var.common_tags
-
-  # Pass the runner's IP address to the module so it can create a firewall rule.
-  allowed_ip_rules     = var.allowed_ip_rules
   service_principal_id = var.dev_service_principal_id
 
-  # TEMPORARILY set this to an empty list to keep the firewall open
-  # during creation of the file share.
+  # The original line 'allowed_ip_rules = var.allowed_ip_rules' has been removed.
+  # This is now the ONLY definition for this argument. It keeps the firewall
+  # open so the file share can be created in the next step.
+  #temporary only to be allowed to create the file share
   allowed_ip_rules     = [] 
-
 }
+
 
 #================================================================================
 # SECTION 3: DATA PLANE RESOURCES
