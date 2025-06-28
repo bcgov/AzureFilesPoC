@@ -6,26 +6,31 @@
 variable "dev_resource_group" {
   description = "The name of the new resource group for PoC services."
   type        = string
+  default     = ""
 }
 
 variable "dev_storage_account_name" {
   description = "The globally unique name for the PoC storage account."
   type        = string
+  default     = ""
 }
 
 variable "dev_vnet_name" {
   description = "The name of the existing VNet to connect to."
   type        = string
+  default     = ""
 }
 
 variable "dev_vnet_resource_group" {
   description = "The name of the resource group where the existing VNet is located."
   type        = string
+  default     = ""
 }
 
 variable "dev_subnet_name" {
   description = "The name of the new subnet for private endpoints."
   type        = string
+  default     = ""
 }
 
 variable "dev_subnet_address_prefixes" {
@@ -42,6 +47,7 @@ variable "common_tags" {
 variable "azure_location" {
   description = "The Azure region for the dev environment. (Matches tfvars)"
   type        = string
+  default     = ""
 }
 
 variable "dev_vnet_address_space" {
@@ -57,16 +63,19 @@ variable "dev_vnet_dns_servers" {
 variable "dev_vnet_id" {
   description = "The resource ID of the dev VNet."
   type        = string
+  default     = ""
 }
 
 variable "dev_resource_id" {
   description = "The resource ID of the dev resource group."
   type        = string
+  default     = ""
 }
 
 variable "dev_file_share_name" {
   description = "The name of the Azure File Share."
   type        = string
+  default     = ""
 }
 
 variable "dev_file_share_quota_gb" {
@@ -78,6 +87,7 @@ variable "dev_file_share_quota_gb" {
 variable "dev_network_security_group" {
   description = "The name of the Network Security Group for the dev environment."
   type        = string
+  default     = ""
 }
 
 variable "dev_dns_servers" {
@@ -88,6 +98,7 @@ variable "dev_dns_servers" {
 variable "dev_resource_group_b" {
   description = "The name of the second resource group to be created by Terraform."
   type        = string
+  default     = ""
 }
 
 variable "allowed_ip_rules" {
@@ -129,31 +140,37 @@ variable "dev_automation_account_name" {
 variable "dev_firewall_name" {
   description = "The name of the Azure Firewall."
   type        = string
+  default     = ""
 }
 
 variable "dev_route_table_name" {
   description = "The name of the Route Table."
   type        = string
+  default     = ""
 }
 
 variable "dev_vnet_gateway_name" {
   description = "The name of the Virtual Network Gateway."
   type        = string
+  default     = ""  
 }
 
 variable "dev_gateway_type" {
   description = "The type of the gateway (Vpn or ExpressRoute)."
   type        = string
+  default     = ""  
 }
 
 variable "dev_vpn_type" {
   description = "The VPN type (RouteBased or PolicyBased)."
   type        = string
+  default     = ""
 }
 
 variable "dev_vnet_gateway_sku" {
   description = "The SKU of the Virtual Network Gateway."
   type        = string
+  default     = ""
 }
 
 variable "dev_vnet_gateway_ip_configurations" {
@@ -175,14 +192,17 @@ variable "dev_storage_management_policy" {
 variable "dev_private_dns_zone_name" {
   description = "The name of the Private DNS Zone."
   type        = string
+  default     = ""
 }
 
 variable "dev_private_dns_vnet_link_name" {
   description = "The name of the VNet link for the Private DNS Zone."
   type        = string
+  default     = ""
 }
 
 variable "dev_virtual_network_id" {
   description = "The ID of the virtual network to link to the Private DNS Zone."
   type        = string
+  default     = ""
 }
