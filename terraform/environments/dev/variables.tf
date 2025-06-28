@@ -117,8 +117,9 @@ variable "dev_log_analytics_workspace_name" {
 }
 
 variable "dev_automation_account_name" {
-  description = "The name of the Automation Account."
   type        = string
+  description = "The name of the Automation Account"
+  default     = ""
 }
 
 variable "dev_firewall_name" {
