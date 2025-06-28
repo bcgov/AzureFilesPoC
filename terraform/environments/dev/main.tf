@@ -266,23 +266,54 @@ data "azurerm_resource_group" "main" {
 #     Storage File Data SMB Share Contributor
 #     Storage File Data Privileged Contributor
 #     Storage Blob Data Owner
-#
+# NOTE: This module call assumes that the underlying module definition in 
+# `modules/storage/account/main.tf` has been temporarily set to allow public
+# network access for this pipeline run to succeed.
 module "poc_storage_account" {
   source = "../../modules/storage/account"
 
   storage_account_name = var.dev_storage_account_name
-  resource_group_name  = var.dev_resource_group
-  location             = var.azure_location
+  resource_group_name  = data.azurerm_resource_group.main.name
+  location             = data.azurerm_resource_group.main.location
   tags                 = var.common_tags
   service_principal_id = var.dev_service_principal_id
 
-  # The original line 'allowed_ip_rules = var.allowed_ip_rules' has been removed.
-  # This is now the ONLY definition for this argument. It keeps the firewall
-  # open so the file share can be created in the next step.
-  #temporary only to be allowed to create the file share
-  allowed_ip_rules     = [] 
+  # NOTE: The storage account module should be configured to allow public access
+  # for this initial deployment step, otherwise the GitHub runner will be blocked
+  # by the firewall. This can be hardened in a subsequent step.
+}
+#================================================================================
+# SECTION 2.9.1: DATA PLANE ROLE ASSIGNMENT AND DELAY
+#================================================================================
+# This section assigns the necessary DATA PLANE role to the service principal
+# to allow it to create resources INSIDE the storage account (e.g., file shares).
+# A time_sleep resource is used to pause execution, ensuring the role assignment
+# has propagated through Azure's identity system before proceeding. This is the
+# solution to the "race condition" where Terraform tries to create the file share
+# before the required permissions are active.
+#--------------------------------------------------------------------------------
+
+resource "azurerm_role_assignment" "storage_data_contributor_for_files" {
+  # This role allows creating, deleting, and managing Azure file shares.
+  role_definition_name = "Storage File Data SMB Share Contributor"
+
+  # The scope is the specific storage account we just created.
+  scope = module.poc_storage_account.id
+
+  # The principal is the Service Principal running this pipeline.
+  principal_id = var.dev_service_principal_id
 }
 
+# This resource creates an explicit dependency and forces a pause.
+# It waits for the role assignment above to complete, then sleeps for 45s.
+resource "time_sleep" "wait_for_role_propagation" {
+  create_duration = "45s"
+
+  # This trigger ensures the sleep only starts after the role assignment is submitted.
+  triggers = {
+    role_assignment_id = azurerm_role_assignment.storage_data_contributor_for_files.id
+  }
+}
 
 #================================================================================
 # SECTION 3: DATA PLANE RESOURCES
@@ -328,6 +359,13 @@ module "poc_storage_account" {
 # --------------------------------------------------------------------------------
 module "poc_file_share" {
   source = "../../modules/storage/file-share"
+
+  # This `depends_on` block is CRITICAL. It tells Terraform to not even start
+  # creating the file share until the `time_sleep` resource is finished.
+  # This solves the permissions race condition.
+  depends_on = [
+    time_sleep.wait_for_role_propagation
+  ]
 
   # Required
   file_share_name      = var.dev_file_share_name
