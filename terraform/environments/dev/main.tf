@@ -70,8 +70,8 @@ provider "azurerm" {
 # SECTION summarizes all terraform resources that are currently enabled
 #         and will run and be created when script executed in github
 # LIST:
-# 1. Resource Group (enabled)
-# 2.9 Storage Account (commented out)
+# 1. Resource Group (created using user identity before running this script)
+# 2.9 Storage Account (enabled)
 # 3.1 File Share (commented out)
 #================================================================================
 
@@ -81,14 +81,17 @@ provider "azurerm" {
 # Resource groups are pre-created by the BC Gov landing zone/central IT. 
 # Service principals and Terraform are NOT authorized to create resource groups.
 # Reference the pre-created resource group by name (var.dev_resource_group) in all modules.
-#
-module "poc_resource_group" {
-    source = "../../modules/core/resource-group"
-
-    resource_group_name       = "rg-ag-pssg-azure-poc-dev-att2" #var.dev_resource_group
-    location                 = var.azure_location
-    tags                     = var.common_tags
-    service_principal_id      = var.dev_service_principal_id
+# Look up the pre-existing resource group using a data source.
+# This READS data instead of trying to CREATE (write) the resource.
+# Policy seems to prevent creating resource groups with terraform and
+# pipeline using an azure script using service principal IDENTITY
+# options: 
+# 1. create resource group in azure portal 
+# 2. create resource group using azure CLI using script
+#    e.g. OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/step6_create_resource_group.sh
+#ASSUMPTION:  This terraform script assumes the resource group exists
+data "azurerm_resource_group" "main" {
+  name = var.dev_resource_group
 }
 
 #================================================================================
@@ -198,21 +201,21 @@ module "poc_resource_group" {
 
 # 2.9 Storage Account
 # NOTE: Assign RBAC roles (e.g., "Storage File Data SMB Share Contributor") at the STORAGE ACCOUNT LEVEL for all users/groups that need access to file shares. This is the Microsoft recommended best practice for Azure Files RBAC.
-#module "poc_storage_account" {
-#  source = "../../modules/storage/account"
-#
-#  storage_account_name = var.dev_storage_account_name
-#  resource_group_name  = var.dev_resource_group
-#  location             = var.azure_location
-#  tags                 = var.common_tags
-#  service_principal_id = var.dev_service_principal_id
+module "poc_storage_account" {
+  source = "../../modules/storage/account"
+
+  storage_account_name = var.dev_storage_account_name
+  resource_group_name  = var.dev_resource_group
+  location             = var.azure_location
+  tags                 = var.common_tags
+  service_principal_id = var.dev_service_principal_id
 
   # The original line 'allowed_ip_rules = var.allowed_ip_rules' has been removed.
   # This is now the ONLY definition for this argument. It keeps the firewall
   # open so the file share can be created in the next step.
   #temporary only to be allowed to create the file share
-#  allowed_ip_rules     = [] 
-#}
+  allowed_ip_rules     = [] 
+}
 
 
 #================================================================================
