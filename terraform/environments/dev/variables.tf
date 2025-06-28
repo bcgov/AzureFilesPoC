@@ -99,21 +99,25 @@ variable "allowed_ip_rules" {
 variable "service_principal_id" {
   description = "The object ID of the service principal for role assignments."
   type        = string
+  default     = ""
 }
 
 variable "dev_service_principal_id" {
   description = "The object ID of the service principal for role assignments."
   type        = string
+  default     = ""
 }
 
 variable "dev_file_sync_service_name" {
   description = "The name of the Azure File Sync Service."
   type        = string
+  default     = ""
 }
 
 variable "dev_log_analytics_workspace_name" {
   description = "The name of the Log Analytics Workspace."
   type        = string
+  default     = ""
 }
 
 variable "dev_automation_account_name" {
