@@ -8,26 +8,33 @@
 # SETUP STEPS FOR CI/CD ENVIRONMENT (REQUIRED MANUAL AND AUTOMATED STEPS)
 # ------------------------------------------------------------------------------
 # Preconditions / Assumptions:
-#   1. Resource group for CI/CD (e.g., rg-ag-pssg-cicd-tools-dev) is pre-created.
-#   2. Network Security Group for runner subnet (e.g., nsg-github-runners) is pre-created.
+#   1. Resource group for CI/CD (e.g., rg-ag-pssg-cicd-tools-dev) is pre-created. (done)
+#      - Created using: OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/step6_create_resource_group.sh
+#   2. Network Security Group for runner subnet (e.g., nsg-github-runners) is pre-created. (done)
+#      - Created using: OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/step10_create_nsg.sh
 #   3. Subnet for runner (e.g., snet-github-runners) is pre-created and associated with the NSG.
-#   4. All names and address spaces are set in terraform.tfvars.
+#      - Created using: OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/step9_create_subnet.sh (with --nsg argument for association) (done)
+#   4. All names and address spaces are set in terraform.tfvars.(done)
+#   5. All names and address spaces are set in github variables (done)
 #
 # Step 1. (Manual, One-Time): Create the CI/CD Resource Group
 #   - Use your user identity and the onboarding script:
 #     bash OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/step6_create_resource_group.sh --rgname "<cicd-resource-group-name>" --location "<location>"
 #   - This is required due to policy: resource groups cannot be created by Terraform or service principals.
 #   - Reference the created resource group in your variables (var.dev_cicd_resource_group_name).
-#
+#   STATUS:  created
+# 
 # Step 2. (Manual, One-Time): Create the NSG for the runner subnet
 #   - Use onboarding script:
 #     bash OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/step10_create_nsg.sh --nsgname "<nsg-name>" --rg "<resource-group>" --location "<location>"
 #   - Reference the created NSG in your variables (var.dev_runner_network_security_group).
+#   STATUS:  created
 #
 # Step 3. (Manual, One-Time): Create the runner subnet and associate with NSG
 #   - Use onboarding script:
 #     bash OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/step9_create_subnet.sh --vnetname "<vnet-name>" --vnetrg "<vnet-resource-group>" --subnetname "<subnet-name>" --addressprefix "<address-prefix>" --nsg "<nsg-name>"
 #   - Reference the created subnet in your variables (var.dev_runner_subnet_name).
+#   STATUS:  created
 #
 # Step 4. (Automated): Run Terraform to Deploy the Self-Hosted Runner
 #   - Each substep can be validated incrementally with `terraform plan` and `terraform apply`.
@@ -98,6 +105,19 @@ data "azurerm_network_security_group" "runner_nsg" {
 # -------------------------------------------------------------------------------
 # 4.1 Associate the NSG with the runner's subnet
 # -------------------------------------------------------------------------------
+# This resource enforces and maintains the association between the specified
+# Network Security Group (NSG) and the runner subnet. Even if the NSG was
+# associated with the subnet during manual onboarding (via shell script),
+# Terraform will ensure the association is present and correct as part of the
+# infrastructure state. If the association is missing or different, Terraform
+# will create or update it to match this configuration. If removed from the
+# configuration, Terraform will remove the association in Azure.
+#
+# Purpose:
+# - Ensures the runner subnet is always protected by the intended NSG.
+# - Maintains idempotency and drift correction: if the association is changed
+#   outside of Terraform, it will be restored on the next apply.
+# - Allows for safe, repeatable infrastructure automation and compliance.
 resource "azurerm_subnet_network_security_group_association" "runner_nsg_assoc" {
   subnet_id                 = data.azurerm_subnet.runner_subnet.id
   network_security_group_id = data.azurerm_network_security_group.runner_nsg.id
@@ -128,23 +148,7 @@ module "self_hosted_runner_vm" {
 # ===============================================================================
 # SECTION 6: OUTPUTS (RECOMMENDED)
 # -------------------------------------------------------------------------------
-# Add outputs for easier reference and troubleshooting in CI/CD pipelines.
-# Example outputs (add to outputs.tf):
-# output "runner_vm_private_ip" {
-#   value = module.self_hosted_runner_vm.private_ip_address
-# }
-# output "runner_vm_public_ip" {
-#   value = module.self_hosted_runner_vm.public_ip_address
-# }
-# output "runner_resource_group" {
-#   value = data.azurerm_resource_group.main.name
-# }
-# output "runner_nsg_name" {
-#   value = azurerm_network_security_group.runner_nsg.name
-# }
-# output "runner_subnet_id" {
-#   value = data.azurerm_subnet.runner_subnet.id
-# }
-# -------------------------------------------------------------------------------
+# Outputs are defined in outputs.tf for easier reference and troubleshooting in CI/CD pipelines.
 # See outputs.tf for implementation.
+# -------------------------------------------------------------------------------
 # ===============================================================================

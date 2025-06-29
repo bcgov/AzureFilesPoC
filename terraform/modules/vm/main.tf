@@ -1,4 +1,28 @@
 # --- terraform/modules/vm/main.tf ---
+#
+# This module is designed and optimized for secure, reliable hosting of self-hosted GitHub Actions runners on Azure.
+# It follows best practices for BC Gov and GitHub runner deployments, including:
+#   - Secure SSH key authentication (no password login)
+#   - No public IP by default (private VNet/subnet only)
+#   - Customizable VM size, image, and tags
+#   - Cloud-init (custom_data) support for automated runner setup
+#
+# Resources created by this module:
+#
+# 1. azurerm_network_interface.main
+#    - Creates a network interface (NIC) for the VM, attaches it to the specified subnet.
+#    - Provides private IP connectivity for the runner VM.
+#
+# 2. azurerm_linux_virtual_machine.main
+#    - Provisions the Linux VM for the GitHub runner.
+#    - Attaches the NIC, sets OS image, VM size, and tags.
+#    - Configures SSH key authentication and disables password login for security.
+#    - Runs a cloud-init (custom_data) script to install and register the GitHub Actions runner agent on first boot.
+#    - No public IP is assigned by default (private runner).
+#
+# All variables (VM name, size, image, subnet, tags, etc.) are passed in for maximum flexibility and reusability.
+#
+# Usage: See the parent environment's main.tf for example module usage and required variables.
 
 # A VM requires a Network Interface (NIC) to connect to the VNet/subnet.
 resource "azurerm_network_interface" "main" {

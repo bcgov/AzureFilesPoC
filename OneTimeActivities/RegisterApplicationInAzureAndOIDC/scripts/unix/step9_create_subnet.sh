@@ -51,21 +51,33 @@ if [[ -z "$VNET_NAME" || -z "$VNET_RG" || -z "$SUBNET_NAME" || -z "$ADDRESS_PREF
   echo "Error: --vnetname, --vnetrg, --subnetname, and --addressprefix are required."; exit 1
 fi
 
-# --- CREATE SUBNET ---
-echo "Creating subnet '$SUBNET_NAME' in VNet '$VNET_NAME' (RG: $VNET_RG) with address prefix $ADDRESS_PREFIX..."
-CREATE_ARGS=(--name "$SUBNET_NAME" --vnet-name "$VNET_NAME" --resource-group "$VNET_RG" --address-prefixes "$ADDRESS_PREFIX")
-if [[ -n "$NSG_NAME" ]]; then
-  CREATE_ARGS+=(--network-security-group "$NSG_NAME")
+# --- CHECK IF SUBNET ALREADY EXISTS ---
+EXISTING_SUBNET=$(az network vnet subnet show --name "$SUBNET_NAME" --vnet-name "$VNET_NAME" --resource-group "$VNET_RG" -o json 2>/dev/null || true)
+if [[ -n "$EXISTING_SUBNET" && "$EXISTING_SUBNET" != "" ]]; then
+  EXISTING_PREFIX=$(echo "$EXISTING_SUBNET" | jq -r '.addressPrefix // .addressPrefixes[0]')
+  if [[ "$EXISTING_PREFIX" == "$ADDRESS_PREFIX" ]]; then
+    echo "Subnet '$SUBNET_NAME' already exists in VNet '$VNET_NAME' with the same address prefix ($ADDRESS_PREFIX). Skipping creation."
+  else
+    echo "Error: Subnet '$SUBNET_NAME' already exists but with a different address prefix ($EXISTING_PREFIX). Please review and delete or update as needed."
+    exit 1
+  fi
+else
+  # --- CREATE SUBNET ---
+  echo "Creating subnet '$SUBNET_NAME' in VNet '$VNET_NAME' (RG: $VNET_RG) with address prefix $ADDRESS_PREFIX..."
+  CREATE_ARGS=(--name "$SUBNET_NAME" --vnet-name "$VNET_NAME" --resource-group "$VNET_RG" --address-prefixes "$ADDRESS_PREFIX")
+  if [[ -n "$NSG_NAME" ]]; then
+    CREATE_ARGS+=(--network-security-group "$NSG_NAME")
+  fi
+  if [[ -n "$ROUTE_TABLE_NAME" ]]; then
+    CREATE_ARGS+=(--route-table "$ROUTE_TABLE_NAME")
+  fi
+  az network vnet subnet create "${CREATE_ARGS[@]}"
 fi
-if [[ -n "$ROUTE_TABLE_NAME" ]]; then
-  CREATE_ARGS+=(--route-table "$ROUTE_TABLE_NAME")
-fi
-az network vnet subnet create "${CREATE_ARGS[@]}"
 
 # --- FETCH SUBNET DETAILS ---
 SUBNET_JSON=$(az network vnet subnet show --name "$SUBNET_NAME" --vnet-name "$VNET_NAME" --resource-group "$VNET_RG" -o json)
 SUBNET_ID=$(echo "$SUBNET_JSON" | jq -r '.id')
-ADDRESS_PREFIXES=$(echo "$SUBNET_JSON" | jq -r '.addressPrefix // .addressPrefixes | @csv')
+ADDRESS_PREFIXES=$(echo "$SUBNET_JSON" | jq -r 'if .addressPrefixes then .addressPrefixes | @csv else .addressPrefix end')
 
 # --- UPDATE FULL INVENTORY JSON ---
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../../" && pwd)"

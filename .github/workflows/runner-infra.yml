@@ -1,0 +1,94 @@
+# /.github/workflows/runner-infra.yml
+name: Deploy CI/CD Self-Hosted Runner Infrastructure
+
+permissions:
+  id-token: write
+  contents: read
+
+on:
+  workflow_dispatch:
+    inputs:
+      plan_only:
+        description: 'Only run plan (no apply)'
+        required: true
+        type: boolean
+        default: true
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'terraform/environments/cicd/**'
+      - '.github/workflows/runner-infra.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  terraform-cicd:
+    name: 'Terraform Deploy CI/CD Runner Infrastructure'
+    runs-on: ubuntu-latest
+    environment: dev
+    env:
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_USE_OIDC: true
+      TF_VAR_service_principal_id: ${{ secrets.DEV_SERVICE_PRINCIPAL_ID }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          enable-AzPSSession: false
+
+      - name: Generate terraform.tfvars for cicd
+        run: |
+          cat <<EOF > terraform/environments/cicd/terraform.tfvars
+          azure_location              = "${{ vars.AZURE_LOCATION }}"
+          dev_service_principal_id    = "${{ vars.DEV_SERVICE_PRINCIPAL_ID }}"
+          dev_cicd_resource_group_name = "${{ vars.DEV_CICD_RESOURCE_GROUP_NAME }}"
+          dev_runner_subnet_name      = "${{ vars.DEV_RUNNER_SUBNET_NAME }}"
+          dev_runner_vnet_address_space = ${{ vars.DEV_RUNNER_VNET_ADDRESS_SPACE }}
+          dev_runner_network_security_group = "${{ vars.DEV_RUNNER_NETWORK_SECURITY_GROUP }}"
+          dev_my_home_ip_address      = "${{ vars.DEV_MY_HOME_IP_ADDRESS }}"
+          dev_vnet_name               = "${{ vars.DEV_VNET_NAME }}"
+          dev_vnet_resource_group     = "${{ vars.DEV_VNET_RESOURCE_GROUP }}"
+          dev_vnet_address_space      = ${{ vars.DEV_VNET_ADDRESS_SPACE }}
+          dev_vnet_dns_servers        = ${{ vars.DEV_VNET_DNS_SERVERS }}
+          dev_dns_servers             = ${{ vars.DEV_DNS_SERVERS }}
+          common_tags                 = ${{ vars.DEV_COMMON_TAGS }}
+          EOF
+
+      - name: Display Generated terraform.tfvars (Debug Step)
+        run: |
+          echo "Content of the generated terraform/environments/cicd/terraform.tfvars:"
+          cat terraform/environments/cicd/terraform.tfvars || echo "File not found or empty."
+
+      - name: Terraform Init
+        working-directory: terraform/environments/cicd
+        run: terraform init -backend-config="resource_group_name=${{ vars.DEV_TFSTATE_RG }}" -backend-config="storage_account_name=${{ vars.DEV_TFSTATE_SA }}" -backend-config="container_name=${{ vars.DEV_TFSTATE_CONTAINER }}" -backend-config="key=cicd.terraform.tfstate"
+
+      - name: Terraform Validate
+        working-directory: terraform/environments/cicd
+        run: terraform validate
+
+      - name: Terraform Plan
+        id: plan
+        working-directory: terraform/environments/cicd
+        run: terraform plan -var-file=terraform.tfvars -out=tfplan
+
+      - name: Terraform Apply
+        if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && github.event.inputs.plan_only == 'false')
+        working-directory: terraform/environments/cicd
+        run: terraform apply -auto-approve tfplan
