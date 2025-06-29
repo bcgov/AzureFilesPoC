@@ -1,36 +1,34 @@
-# Copy this file to terraform.tfvars and fill in your real values
-# Do NOT include secrets or sensitive values here
-
-# Variables for Azure Files PoC Terraform Configuration
-# 
-# IMPORTANT CONTEXT:
-# This file only assigns values to variables defined in variables.tf
-# No Azure resources are created just by having this file
-# Resources are only created when you explicitly run 'terraform apply' (which we haven't done)
+# --- terraform/environments/dev/terraform.tfvars ---
 #
-# ❗ CRITICAL RULE: make sure that you don't put real values in this file
-#                  use this template and copy as terraform.tfvars that is part of .gitignore
-#                  populate with values contained in .env/azure_full_inventory.json
-#                  that is populated by running OneTimeActivities/GetAzureExistingResources/unix/azure_full_inventory.sh
-
+# This file provides the configuration values for the 'dev' environment.
+# DO NOT COMMIT THIS FILE TO GIT.  
 
 # Names in this file now directly match variables.tf
-azure_location  = "canadacentral"
+azure_location = "canadacentral"
 
 # PREPROVISIONED by LANDING ZONE BC Government
 dev_service_principal_id = ""
 dev_vnet_name             = ""
-dev_vnet_resource_group   = """
+dev_vnet_resource_group   = ""
 dev_vnet_address_space     = [""]
 dev_vnet_dns_servers       = [""]
 dev_vnet_id               = ""
 
 # CREATED BY USER IDENTITY in AZURE policy won't allow by terraform
-dev_resource_group       = "" 
+dev_resource_group       = ""
 dev_resource_id          = ""
 
 ## CREATED BY TERRAFORM
 dev_storage_account_name = ""
+
+# --- Provide values for the CICD-specific resources ---
+dev_cicd_resource_group_name = ""
+dev_runner_subnet_name       = ""
+dev_runner_vnet_address_space = [""]
+dev_runner_vm_ip_address = ""
+dev_runner_network_security_group = ""
+dev_runner_vm_name = ""
+dev_my_home_ip_address = ""
 
 dev_file_share_name = ""
 dev_file_share_quota_gb = 10
@@ -39,8 +37,10 @@ dev_network_security_group = ""
 
 dev_subnet_name             = ""
 dev_subnet_address_prefixes = [""]
+
 dev_dns_servers = [""]
 
+dev_vnet_dns_servers = [""]
 
 common_tags = {
   project        = ""
