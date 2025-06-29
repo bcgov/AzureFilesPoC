@@ -142,8 +142,3 @@ variable "dev_storage_account_name" {
   description = "The name of the storage account for the dev environment."
   type        = string
 }
-
-variable "dev_resource_group_b" {
-  description = "An additional resource group for the dev environment (update description as needed)."
-  type        = string
-}

@@ -99,11 +99,6 @@ variable "dev_dns_servers" {
   default     = []
 }
 
-variable "dev_resource_group_b" {
-  description = "The name of the second resource group to be created by Terraform."
-  type        = string
-  default     = ""
-}
 
 variable "allowed_ip_rules" {
   description = "A list of public IP CIDR ranges to allow through the storage account firewall, passed from the CI/CD pipeline."

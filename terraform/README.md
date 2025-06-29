@@ -109,7 +109,7 @@ terraform init -reconfigure \
    ```sh
    az storage blob lease break \
      --account-name stagpssgtfstatedev01 \
-     --container-name sc-ag-pssg-tfstate-dev \
+     --container-name sc-ag-pssg-dev \
      --blob-name cicd.terraform.tfstate \
      --auth-mode login
    ```
@@ -119,6 +119,10 @@ Note: the ID to unlock is the ID in the error message for workflow run
   ```sh
     terraform force-unlock <lock_id_from_error_message>
   ```
+
+**If you have broken the lease and deleted any `.tflock` blob, but `terraform force-unlock` still fails with a 412 error:**
+- Try running a plain `terraform plan` or `terraform apply` in your environment directory. After the lease is broken, Terraform may clear the lock automatically on the next operation.
+- If you still get a lock error, check the state file in the Azure Portal for any lock metadata. As a last resort, you can download the state file, remove any lock-related metadata, and re-upload it (only if you are sure no one else is using the state).
 
 ----
 
