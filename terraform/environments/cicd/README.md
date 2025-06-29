@@ -61,6 +61,43 @@ graph TD
 
 ---
 
+## 2.1. How the Self-Hosted Runner Connects to GitHub
+
+The self-hosted runner VM communicates with GitHub Actions using a secure, outbound-only connection:
+
+1. The GitHub Actions runner agent, installed on the VM, initiates an outbound HTTPS (port 443) connection to GitHub's servers.
+2. The runner registers itself as available for jobs with GitHub.
+3. When a workflow is triggered, GitHub sends a job assignment over the existing outbound connection.
+4. The runner downloads the job instructions and executes them locally on the VM.
+5. All job orchestration and communication are handled over this outbound connection.
+6. **No inbound connections from GitHub to your VM are required.**
+7. The VM does **not** need a public IP address; it only needs outbound internet access (e.g., via NAT, Azure Firewall, or default subnet access).
+8. This design is secure and works in private subnets, as long as outbound HTTPS is allowed by your NSG/firewall.
+9. If outbound internet is restricted, you must allow access to GitHub's endpoints (see [GitHub's documentation](https://docs.github.com/en/actions/hosting-your-own-runners/about-self-hosted-runners) for required domains/IPs).
+
+> **Summary:** The runner VM connects out to GitHub, so you do not need to open any inbound firewall ports or assign a public IP for CI/CD jobs to work.
+
+---
+
+### Sequence Diagram: Outbound-Only GitHub Actions Runner Communication
+
+```mermaid
+sequenceDiagram
+    participant VM as Self-Hosted Runner VM (Private Subnet)
+    participant GH as GitHub Actions Service
+    participant Azure as Azure Resources
+
+    Note over VM: 1. Runner agent starts
+    VM->>GH: (1) Outbound HTTPS connection (port 443)
+    Note over GH: 2. Runner registers as available
+    GH-->>VM: (3) Job assignment sent over outbound connection
+    VM->>VM: (4) Runner downloads and executes job
+    VM->>Azure: (4a) Interacts with Azure resources (private network)
+    VM-->>GH: (5) Job status/results sent back over outbound connection
+    Note over VM,GH: All communication is outbound from VM to GitHub\nNo inbound connections or public IP required
+```
+
+---
 ## 3. Azure Resources Created
 
 This Terraform configuration will create the following objects in Azure:
@@ -187,6 +224,6 @@ terraform destroy -var-file=terraform.tfvars
 
 ## 9. References
 
-- [GitHub Actions: Self-hosted runners](https://docs.github.com/en/actions/hosting-your-own-runners/about-self-hosted-runners)
+- [GitHub Actions: Self-hosted runners](https://docs.github.com/en/actions/hosting-your-own-runners)
 - [Azure Bastion](https://learn.microsoft.com/en-us/azure/bastion/bastion-overview)
 - [Terraform Azure Provider Docs](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs)

@@ -81,6 +81,9 @@ jobs:
           dev_resource_group          = "${{ vars.DEV_RESOURCE_GROUP }}"
           dev_storage_account_name    = "${{ vars.DEV_STORAGE_ACCOUNT_NAME }}"
           common_tags                 = ${{ vars.DEV_COMMON_TAGS }}
+          bastion_name                = "${{ vars.DEV_BASTION_NAME }}"
+          bastion_public_ip_name      = "${{ vars.DEV_BASTION_PUBLIC_IP_NAME }}"
+          bastion_address_prefix      = "${{ vars.DEV_BASTION_ADDRESS_PREFIX }}"
           EOF
 
       - name: Display Generated terraform.tfvars (Debug Step)

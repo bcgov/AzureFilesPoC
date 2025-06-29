@@ -30,6 +30,11 @@ dev_runner_network_security_group = ""
 dev_runner_vm_name = ""
 dev_my_home_ip_address = ""
 
+#BASTION CICD resources
+dev_bastion_name           = ""
+dev_bastion_public_ip_name = ""
+dev_bastion_address_prefix = [""] # Or your chosen prefix
+
 dev_file_share_name = ""
 dev_file_share_quota_gb = 10
 

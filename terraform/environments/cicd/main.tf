@@ -128,6 +128,23 @@ resource "azurerm_subnet_network_security_group_association" "runner_nsg_assoc" 
 }
 
 # ===============================================================================
+# SECTION 5.1.1: AZURE BASTION HOST (OPTIONAL, RECOMMENDED FOR SECURE ACCESS)
+# -------------------------------------------------------------------------------
+# This module deploys Azure Bastion in the same VNet as the runner VM, providing
+# secure browser-based SSH/RDP access without a public IP on the VM.
+# -------------------------------------------------------------------------------
+module "bastion" {
+  source                = "../../modules/bastion"
+  resource_group_name   = data.azurerm_resource_group.main.name
+  location              = data.azurerm_resource_group.main.location
+  vnet_name             = data.azurerm_virtual_network.spoke_vnet.name
+  vnet_resource_group   = data.azurerm_virtual_network.spoke_vnet.resource_group_name
+  bastion_name          = var.dev_bastion_name
+  public_ip_name        = var.dev_bastion_public_ip_name
+  address_prefix        = var.dev_bastion_address_prefix[0]
+}
+
+# ===============================================================================
 # SECTION 5: SELF-HOSTED RUNNER VM
 # -------------------------------------------------------------------------------
 # 5.1 Deploy the Self-Hosted Runner VM using your existing module
