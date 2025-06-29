@@ -34,6 +34,7 @@ jobs:
       ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       ARM_USE_OIDC: true
       TF_VAR_service_principal_id: ${{ secrets.DEV_SERVICE_PRINCIPAL_ID }}
+      TF_VAR_admin_ssh_key_public: ${{ secrets.ADMIN_SSH_KEY_PUBLIC }}
 
     steps:
       - name: Checkout repository
