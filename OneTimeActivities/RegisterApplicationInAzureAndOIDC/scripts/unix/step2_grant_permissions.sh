@@ -1,7 +1,20 @@
 #!/bin/bash
 # step2_grant_permissions.sh
-# This script grants necessary permissions at the subscription level
-# to an Azure AD application for managing Azure resources.
+#
+# This script grants the following roles to the service principal at the **subscription level**:
+#   - Reader
+#   - Storage Account Contributor
+#   - [BCGOV-MANAGED-LZ-LIVE] Network-Subnet-Contributor
+#   - Private DNS Zone Contributor
+#   - Monitoring Contributor
+#
+# ⚠️ For least privilege, data-plane roles such as Storage Blob Data Contributor or Storage File Data SMB Share Contributor
+# should be assigned at the storage account or resource group level, NOT at the subscription level.
+#
+# This script does NOT assign resource-group-level or inherited roles. Those should be managed by their respective scripts.
+#
+# Update the REQUIRED_ROLES array below if you add or remove subscription-level roles.
+
 # Function to resolve script location and set correct paths
 resolve_script_path() {
     local script_path

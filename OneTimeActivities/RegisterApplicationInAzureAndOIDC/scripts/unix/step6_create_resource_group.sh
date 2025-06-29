@@ -8,7 +8,7 @@
 #this script will be used to create multiple resource groups for different environments.
 # 1. Main resource group for the Azure Files PoC (e.g., "rg-ag-pssg-azure-poc-dev")
 # 2. Terraform state resource group (e.g., "rg-ag-pssg-tfstate-dev")
-# 3. CICD resource group (e.g., "rg-ag-pssg-cicd-dev")
+# 3. CICD resource group (e.g., "rg-ag-pssg-cicd-tools-dev")
 
 # example usage:
 # bash step6_create_resource_group.sh --rgname "rg-ag-pssg-azure-poc-dev" --location "canadacentral"
