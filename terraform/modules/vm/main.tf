@@ -74,4 +74,9 @@ resource "azurerm_linux_virtual_machine" "main" {
   # This runs a setup script on the first boot.
   # It must be base64-encoded.
   custom_data = var.custom_data_script
+
+  # Assign a system-assigned managed identity to the VM for secure Azure resource access.
+  identity {
+    type = "SystemAssigned"
+  }
 }
