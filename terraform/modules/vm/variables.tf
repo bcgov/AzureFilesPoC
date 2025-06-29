@@ -65,3 +65,21 @@ variable "tags" {
   description = "A map of tags to apply to all created resources."
   default     = {}
 }
+
+variable "assign_public_ip" {
+  description = "Whether to assign a public IP address to the VM's NIC."
+  type        = bool
+  default     = false
+}
+
+variable "public_ip_sku" {
+  description = "The SKU for the public IP address (Basic or Standard)."
+  type        = string
+  default     = "Standard"
+}
+
+variable "public_ip_allocation_method" {
+  description = "The allocation method for the public IP address (Static or Dynamic)."
+  type        = string
+  default     = "Static"
+}

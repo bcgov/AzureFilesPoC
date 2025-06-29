@@ -85,6 +85,39 @@ Before running this configuration, you must have the following in place:
 
 ---
 
+## One-Time Onboarding & Prerequisites
+
+Before using this CI/CD environment, you must complete the following one-time onboarding and setup activities. These steps ensure your Azure and GitHub environments are secure, policy-compliant, and ready for automation:
+
+1. **Run the Onboarding Scripts (in order):**
+   - See `OneTimeActivities/README.md` for full details and context.
+   - Scripts are located in `OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/`.
+   - Steps include:
+     1. Register Azure AD application and service principal (`step1_register_app.sh`)
+     2. Assign least-privilege roles (`step2_grant_permissions.sh`)
+     3. Configure OIDC for GitHub Actions (`step3_configure_oidc.sh`)
+     4. Prepare and add GitHub secrets (`step4_prepare_github_secrets.sh`, `step5_add_github_secrets_cli.sh`)
+     5. Create the required resource group (`step6_create_resource_group.sh`)
+     6. Create the Terraform state storage account and container (`step7_create_tfstate_storage_account.sh`)
+     7. Assign storage roles (`step8_assign_storage_roles.sh`)
+     8. Validate OIDC login and backend (`step9_validate_oidc_login.sh`, `step10_validate_terraform_backend.sh`)
+     9. Generate and register SSH key for VM admin access (`step11_create_ssh_key.sh`)
+     10. **Import any pre-existing Azure resources into Terraform state** (`step12_import_existing_resources.sh`)
+
+2. **Populate `terraform.tfvars` and `secrets.tfvars`:**
+   - Use the inventory and automation scripts in `OneTimeActivities/GetAzureExistingResources/unix/` to generate these files with the correct values for your environment.
+
+3. **Set Required GitHub Secrets:**
+   - Copy the generated values (e.g., service principal ID, SSH public key) into your repository secrets as described in the onboarding documentation.
+
+4. **Validate Your Setup:**
+   - Complete the validation steps in `OneTimeActivities/ValidationProcess.md` and run the validation workflows to ensure OIDC and Terraform backend are working.
+
+> **Note:**
+> All onboarding scripts are idempotent and safe to re-run. The import script (`step12_import_existing_resources.sh`) should be run once per environment for any Azure resources that were created outside of Terraform but must now be managed by Terraform (such as subnet/NSG associations).
+
+---
+
 ## 5. How to Use
 
 This configuration should be run **once** from your local machine to bootstrap the runner.

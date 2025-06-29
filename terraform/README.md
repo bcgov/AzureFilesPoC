@@ -57,13 +57,30 @@
 
 If you see an error like `Error acquiring the state lock` or `state blob is already locked`, you must manually remove the lock blob or break the lease from your Azure Storage Account.
 
-NOTE: run in your environment folder like terraform/environments/dev
+NOTE: run in your environment folder like terraform/environments/dev or terraform/environments/cicd
+
+**If you see an error like:**
+```
+Error: Backend initialization required, please run "terraform init"
+```
+Or:
+```
+Error: Either an Access Key / SAS Token or the Resource Group for the Storage Account must be specified - or Azure AD Authentication must be enabled
+```
+You must re-initialize the backend with all required parameters:
+
+```sh
+terraform init -reconfigure \
+  -backend-config="container_name=sc-ag-pssg-tfstate-dev" \
+  -backend-config="storage_account_name=stagpssgtfstatedev01" \
+  -backend-config="resource_group_name=rg-ag-pssg-tfstate-dev"
+```
 
 **Option 1: Azure CLI**
 1. Find your backend details (from your workflow or backend config):
    - Storage account: e.g. `stagpssgtfstatedev01`
    - Container: e.g. `sc-ag-pssg-tfstate-dev`
-   - Blob: e.g. `dev.terraform.tfstate.tflock`
+   - Blob: e.g. `dev.terraform.tfstate.tflock` or `cicd.terraform.tfstate.tflock`
 2. Run:
    ```sh
    az storage blob delete \
@@ -77,7 +94,7 @@ NOTE: run in your environment folder like terraform/environments/dev
    az storage blob delete \
      --account-name stagpssgtfstatedev01 \
      --container-name sc-ag-pssg-tfstate-dev \
-     --name dev.terraform.tfstate.tflock \
+     --name cicd.terraform.tfstate.tflock \
      --auth-mode login
    ```
    If the state file itself is marked as "Leased" (locked) and there is no `.tflock` blob, break the lease:
@@ -93,7 +110,7 @@ NOTE: run in your environment folder like terraform/environments/dev
    az storage blob lease break \
      --account-name stagpssgtfstatedev01 \
      --container-name sc-ag-pssg-tfstate-dev \
-     --blob-name dev.terraform.tfstate \
+     --blob-name cicd.terraform.tfstate \
      --auth-mode login
    ```
 3. RUN: 

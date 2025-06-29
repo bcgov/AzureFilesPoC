@@ -14,8 +14,12 @@
 #      - Created using: OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/step10_create_nsg.sh
 #   3. Subnet for runner (e.g., snet-github-runners) is pre-created and associated with the NSG.
 #      - Created using: OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/step9_create_subnet.sh (with --nsg argument for association) (done)
-#   4. All names and address spaces are set in terraform.tfvars.(done)
-#   5. All names and address spaces are set in github variables (done)
+#   4. SSH key pair for VM admin access is generated and public key is registered as a GitHub secret.
+#      - Created using: OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/step11_create_ssh_key.sh
+#   5. Any pre-existing Azure resources (such as subnet/NSG associations) are imported into Terraform state.
+#      - Imported using: OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/step12_import_existing_resources.sh
+#   6. All names and address spaces are set in terraform.tfvars.(done)
+#   7. All names and address spaces are set in github variables (done)
 #
 # Step 1. (Manual, One-Time): Create the CI/CD Resource Group
 #   - Use your user identity and the onboarding script:

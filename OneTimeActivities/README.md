@@ -29,6 +29,7 @@ The onboarding process is automated and modularized into 11 robust, idempotent s
 | 9 | `step9_validate_oidc_login.sh` | Validates that OIDC authentication from GitHub Actions to Azure works as expected. |
 | 10 | `step10_validate_terraform_backend.sh` | Validates that the Terraform backend (remote state) is accessible and correctly configured. |
 | 11 | `step11_create_ssh_key.sh` | Generates an SSH key pair for VM admin access. Public key is added to GitHub secrets for secure runner/VM provisioning. |
+| 12 | `step12_import_existing_resources.sh` | Import pre-existing Azure resources (such as subnet/NSG associations) into Terraform state. Run after onboarding and before first terraform apply. |
 
 **Example usage:**
 ```bash
@@ -43,6 +44,7 @@ The onboarding process is automated and modularized into 11 robust, idempotent s
 ./RegisterApplicationInAzureAndOIDC/scripts/unix/step9_validate_oidc_login.sh
 ./RegisterApplicationInAzureAndOIDC/scripts/unix/step10_validate_terraform_backend.sh
 ./RegisterApplicationInAzureAndOIDC/scripts/unix/step11_create_ssh_key.sh
+./RegisterApplicationInAzureAndOIDC/scripts/unix/step12_import_existing_resources.sh
 ```
 
 - Each script is safe to re-run and will not duplicate entries.
@@ -110,3 +112,17 @@ Update the Progress Tracking table in [RegisterApplicationInAzureAndOIDC/README.
 ## Next Steps
 
 After onboarding, always validate your setup before proceeding with any infrastructure automation. The validation process is the authoritative pattern for all future onboarding and resource creation in this PoC.
+
+## One-Time Import of Existing Resources into Terraform State
+
+In addition to the onboarding steps, you may need to import existing Azure resources into Terraform state. This is necessary if you have resources that were created outside of Terraform but now need to be managed by Terraform (e.g., subnet/NSG associations).
+
+### 1. Import Pre-Existing Azure Resources into Terraform State
+- Run the provided script to import any Azure resources that were created outside of Terraform but must now be managed by Terraform (e.g., subnet/NSG associations):
+  ```sh
+  ./RegisterApplicationInAzureAndOIDC/scripts/unix/step12_import_existing_resources.sh
+  ```
+- Edit the script to specify the correct Terraform resource address and Azure resource ID for your environment.
+- This is a one-time operation per environment. After import, Terraform will manage the resource as normal.
+
+Ensure that you have completed all onboarding steps and your GitHub secrets are set before running the import script. After importing, proceed to the validation phase to verify your setup.

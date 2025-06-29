@@ -117,3 +117,33 @@ variable "dev_subnet_address_prefixes" {
   description = "Address prefixes for the storage peering subnet."
   default     = null
 }
+
+variable "dev_vnet_id" {
+  description = "The resource ID of the development virtual network."
+  type        = string
+}
+
+variable "dev_resource_id" {
+  description = "The resource ID for a specific dev resource (please update description as needed)."
+  type        = string
+}
+
+variable "dev_vnet_dnsServers" {
+  description = "DNS servers for the dev VNet (alternate spelling, see dev_vnet_dns_servers)."
+  type        = list(string)
+}
+
+variable "dev_resource_group" {
+  description = "The resource group for the dev environment (alternate to dev_vnet_resource_group)."
+  type        = string
+}
+
+variable "dev_storage_account_name" {
+  description = "The name of the storage account for the dev environment."
+  type        = string
+}
+
+variable "dev_resource_group_b" {
+  description = "An additional resource group for the dev environment (update description as needed)."
+  type        = string
+}
