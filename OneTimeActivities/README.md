@@ -10,11 +10,27 @@ This directory contains documentation and scripts for one-time onboarding activi
 
 ## Quick Start: Onboarding Steps
 
-The onboarding process is automated and modularized into 6 robust, idempotent scripts for both Unix/macOS (Bash) and Windows (PowerShell). Each script updates the shared `.env/azure-credentials.json` file incrementally and safely (except for resource group tags, which are set in Azure only).
+The onboarding process is automated and modularized into 11 robust, idempotent scripts for Unix/macOS (Bash) only. Each script updates the shared `.env/azure-credentials.json` file incrementally and safely (except for resource group tags, which are set in Azure only). These steps are designed to comply with BC Gov Azure landing zone policy constraints and best practices for least-privilege, auditability, and automation.
 
 **Run each script in order, verifying each step before proceeding:**
 
-### Unix/macOS (Bash)
+### Unix/macOS (Bash) Onboarding Scripts
+
+| Step | Script | Purpose & Description |
+|------|--------|----------------------|
+| 1 | `step1_register_app.sh` | Register the Azure AD application and create a service principal for CI/CD. Required for OIDC and automation identity. |
+| 2 | `step2_grant_permissions.sh` | Assign only the minimum required Azure roles to the service principal (e.g., Contributor at RG scope, custom roles for RBAC). Enforces least-privilege and BC Gov policy. |
+| 3 | `step3_configure_oidc.sh` | Configure OIDC federated credentials for GitHub Actions. Enables secure, passwordless authentication (no long-lived secrets). |
+| 4 | `step4_prepare_github_secrets.sh` | Extracts the required Azure identity values and prepares them for GitHub repository secrets. |
+| 5 | `step5_add_github_secrets_cli.sh` | Adds the required secrets to your GitHub repository using the CLI for automation and consistency. |
+| 6 | `step6_create_resource_group.sh` | Creates the permanent resource group for your project, with required tags and policy compliance. Must be run by a user with sufficient permissions. |
+| 7 | `step7_create_tfstate_storage_account.sh` | Creates the storage account and blob container for Terraform state, enforcing BC Gov security and policy requirements (e.g., TLS, naming). |
+| 8 | `step8_assign_storage_roles.sh` | Assigns the necessary data plane roles (e.g., Storage Blob Data Contributor) to the service principal for the state storage account. |
+| 9 | `step9_validate_oidc_login.sh` | Validates that OIDC authentication from GitHub Actions to Azure works as expected. |
+| 10 | `step10_validate_terraform_backend.sh` | Validates that the Terraform backend (remote state) is accessible and correctly configured. |
+| 11 | `step11_create_ssh_key.sh` | Generates an SSH key pair for VM admin access. Public key is added to GitHub secrets for secure runner/VM provisioning. |
+
+**Example usage:**
 ```bash
 ./RegisterApplicationInAzureAndOIDC/scripts/unix/step1_register_app.sh
 ./RegisterApplicationInAzureAndOIDC/scripts/unix/step2_grant_permissions.sh
@@ -22,50 +38,49 @@ The onboarding process is automated and modularized into 6 robust, idempotent sc
 ./RegisterApplicationInAzureAndOIDC/scripts/unix/step4_prepare_github_secrets.sh
 ./RegisterApplicationInAzureAndOIDC/scripts/unix/step5_add_github_secrets_cli.sh
 ./RegisterApplicationInAzureAndOIDC/scripts/unix/step6_create_resource_group.sh <resource-group-name> [location]
-```
-
-**Before running the onboarding scripts on Windows, install the Azure PowerShell module:**
-
-```powershell
-Install-Module -Name Az -Scope CurrentUser -Repository PSGallery -Force
-```
-
-- Run PowerShell as Administrator for best results.
-- If prompted to trust the repository, answer 'Yes'.
-- After installation, you may need to restart your PowerShell session.
-
-### Windows (PowerShell)
-```powershell
-.\RegisterApplicationInAzureAndOIDC\scripts\windows\step1_register_app.ps1
-.\RegisterApplicationInAzureAndOIDC\scripts\windows\step2_grant_permissions.ps1
-.\RegisterApplicationInAzureAndOIDC\scripts\windows\step3_configure_oidc.ps1
-.\RegisterApplicationInAzureAndOIDC\scripts\windows\step4_prepare_github_secrets.ps1
-.\RegisterApplicationInAzureAndOIDC\scripts\windows\step5_add_github_secrets_cli.ps1
-.\RegisterApplicationInAzureAndOIDC\scripts\windows\step6_create_resource_group.ps1 -rgname <resource-group-name> [-location <location>]
+./RegisterApplicationInAzureAndOIDC/scripts/unix/step7_create_tfstate_storage_account.sh --rgname <resource-group-name> --saname <storage-account-name> --containername <container-name> [--location <location>]
+./RegisterApplicationInAzureAndOIDC/scripts/unix/step8_assign_storage_roles.sh
+./RegisterApplicationInAzureAndOIDC/scripts/unix/step9_validate_oidc_login.sh
+./RegisterApplicationInAzureAndOIDC/scripts/unix/step10_validate_terraform_backend.sh
+./RegisterApplicationInAzureAndOIDC/scripts/unix/step11_create_ssh_key.sh
 ```
 
 - Each script is safe to re-run and will not duplicate entries.
 - All scripts dynamically resolve the project root and credentials file location.
 - The onboarding process is fully documented in [RegisterApplicationInAzureAndOIDC/README.md](RegisterApplicationInAzureAndOIDC/README.md).
-- **All onboarding and automation scripts are maintained and supported for both platforms.**
+- **All onboarding and automation scripts are maintained and supported for Unix/macOS (Bash) only.**
 - **Resource group tags are set in Azure only and are not written to the credentials JSON.**
 
-## Inventory and Terraform Automation (Cross-Platform)
+## Additional Required One-Time Steps (June 2025)
+
+### 1. Generate and Register SSH Key for VM Admin Access
+- Run the provided script to generate an SSH key pair for VM admin access:
+  ```sh
+  ./RegisterApplicationInAzureAndOIDC/scripts/unix/step11_create_ssh_key.sh
+  ```
+- Copy the entire contents of the generated public key (`id_rsa.pub`, including the `ssh-rsa` prefix) into your GitHub repository secret (e.g., `ADMIN_SSH_KEY_PUBLIC`).
+- This is only required in GitHub secrets for CI/CD workflows. You do not need to add it to `secrets.tfvars` unless you want to use it for local automation.
+
+### 2. Update Project Tree Structure
+- Use the following command to generate a clean directory tree (excluding build, library, and sensitive files):
+  ```sh
+  tree -I 'node_modules|.terraform|.vscode|.idea|.git|*.zip|*.tar|*.gz|*.swp|*.swo|*.DS_Store|Thumbs.db|*.tfstate*|*.auto.tfvars*|*.bak|*.lock.hcl|llm_code_snapshot.txt|package-lock.json|.azure|.env|*.plan|LICENSE.txt|*.log' -a -F > TreeStructure.txt
+  ```
+- This will help you keep your `TreeStructure.txt` up to date and clean.
+
+## Inventory and Terraform Automation
 
 After onboarding, you can use the provided inventory and tfvars population scripts to automate resource discovery and Terraform variable management:
 
 - **Unix/macOS (Bash):**
   - `OneTimeActivities/GetAzureExistingResources/unix/azure_full_inventory.sh`
   - `OneTimeActivities/GetAzureExistingResources/unix/PopulateTfvarsFromDiscoveredResources.sh`
-- **Windows (PowerShell):**
-  - `OneTimeActivities/GetAzureExistingResources/windows/azure_full_inventory.ps1`
-  - `OneTimeActivities/GetAzureExistingResources/windows/PopulateTfvarsFromDiscoveredResources.ps1`
 
-These scripts generate and update `.env/azure_full_inventory.json`, `terraform.tfvars`, and `secrets.tfvars` in a robust, cross-platform manner. See the respective script folders for usage instructions.
+These scripts generate and update `.env/azure_full_inventory.json`, `terraform.tfvars`, and `secrets.tfvars` in a robust, idempotent manner. See the respective script folders for usage instructions.
 
 ## Transition to Validation
 
-After completing all 6 onboarding scripts and confirming your GitHub secrets are set, proceed to the validation phase:
+After completing all onboarding scripts and confirming your GitHub secrets are set, proceed to the validation phase:
 
 1. Follow the complete [Validation Process](ValidationProcess.md) for step-by-step instructions and troubleshooting.
 2. Use the [Azure Login Validation workflow](../../.github/workflows/azure-login-validation.yml) to verify OIDC authentication.

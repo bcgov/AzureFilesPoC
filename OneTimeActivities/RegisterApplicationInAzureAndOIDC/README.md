@@ -165,11 +165,25 @@ RegisterApplicationInAzureAndOIDC/
 
 ---
 
-## Additional Notes
+## Additional Required One-Time Steps (June 2025)
 
-- **Resource group tags** are managed in Azure only. The onboarding scripts ensure tags are set at creation, but do not track or update them in local credential files.
-- **If you change tags later**, update them directly in Azure using the CLI or Portal.
-- **All other onboarding and validation steps remain unchanged.**
+### 1. Generate and Register SSH Key for VM Admin Access
+- Run the provided script to generate an SSH key pair for VM admin access:
+  ```sh
+  ./scripts/unix/step11_create_ssh_key.sh
+  ```
+- Copy the entire contents of the generated public key (`id_rsa.pub`, including the `ssh-rsa` prefix) into your GitHub repository secret (e.g., `ADMIN_SSH_KEY_PUBLIC`).
+- This is only required in GitHub secrets for CI/CD workflows. You do not need to add it to `secrets.tfvars` unless you want to use it for local automation.
+
+### 2. Remove Obsolete Windows Scripts
+- The `windows` folder and all PowerShell onboarding scripts have been deleted. Only the Unix onboarding scripts are maintained going forward.
+
+### 3. Update Project Tree Structure
+- Use the following command to generate a clean directory tree (excluding build, library, and sensitive files):
+  ```sh
+  tree -I 'node_modules|.terraform|.vscode|.idea|.git|*.zip|*.tar|*.gz|*.swp|*.swo|*.DS_Store|Thumbs.db|*.tfstate*|*.auto.tfvars*|*.bak|*.lock.hcl|llm_code_snapshot.txt|package-lock.json|.azure|.env|*.plan|LICENSE.txt|*.log' -a -F > TreeStructure.txt
+  ```
+- This will help you keep your `TreeStructure.txt` up to date and clean.
 
 ---
 
