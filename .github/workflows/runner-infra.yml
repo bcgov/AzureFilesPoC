@@ -59,6 +59,7 @@ jobs:
           azure_location              = "${{ vars.AZURE_LOCATION }}"
           dev_service_principal_id    = "${{ vars.DEV_SERVICE_PRINCIPAL_ID }}"
           dev_cicd_resource_group_name = "${{ vars.DEV_CICD_RESOURCE_GROUP_NAME }}"
+          dev_resource_group           = "${{ vars.DEV_RESOURCE_GROUP }}"
           dev_runner_subnet_name      = "${{ vars.DEV_RUNNER_SUBNET_NAME }}"
           dev_runner_vnet_address_space = ${{ vars.DEV_RUNNER_VNET_ADDRESS_SPACE }}
           dev_runner_network_security_group = "${{ vars.DEV_RUNNER_NETWORK_SECURITY_GROUP }}"
