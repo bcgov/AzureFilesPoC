@@ -207,3 +207,9 @@ variable "dev_virtual_network_id" {
   type        = string
   default     = ""
 }
+
+variable "dev_bastion_network_security_group" {
+  description = "The name of the Network Security Group to associate with the Bastion subnet."
+  type        = string
+  default     = ""
+}

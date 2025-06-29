@@ -34,6 +34,7 @@ dev_my_home_ip_address = ""
 dev_bastion_name           = ""
 dev_bastion_public_ip_name = ""
 dev_bastion_address_prefix = [""] # Or your chosen prefix
+dev_bastion_network_security_group = ""
 
 dev_file_share_name = ""
 dev_file_share_quota_gb = 10
