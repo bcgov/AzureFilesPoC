@@ -87,7 +87,7 @@ jobs:
           dev_resource_group          = "${{ vars.DEV_RESOURCE_GROUP }}"
           dev_storage_account_name    = "${{ vars.DEV_STORAGE_ACCOUNT_NAME }}"
           dev_file_share_name         = "${{ vars.DEV_FILE_SHARE_NAME }}"
-          dev_file_share_quota_gb     =  ${{ vars.DEV_FILE_SHARE_QUOTA_GB }}
+          dev_file_share_quota_gb     = ${{ vars.DEV_FILE_SHARE_QUOTA_GB }}
           dev_network_security_group  = "${{ vars.DEV_NETWORK_SECURITY_GROUP }}"
           dev_resource_id             = "${{ vars.DEV_RESOURCE_ID }}"
           dev_subnet_name             = "${{ vars.DEV_SUBNET_NAME }}"
@@ -99,6 +99,13 @@ jobs:
           dev_vnet_dns_servers        = ${{ vars.DEV_VNET_DNS_SERVERS }}
           dev_dns_servers             = ${{ vars.DEV_DNS_SERVERS }}
           common_tags                 = ${{ vars.DEV_COMMON_TAGS }}
+          allowed_ip_rules            = ${{ vars.ALLOWED_IP_RULES }}
+          service_principal_id        = "${{ vars.SERVICE_PRINCIPAL_ID }}"
+          dev_file_sync_service_name  = "${{ vars.DEV_FILE_SYNC_SERVICE_NAME }}"
+          dev_log_analytics_workspace_name = "${{ vars.DEV_LOG_ANALYTICS_WORKSPACE_NAME }}"
+          dev_automation_account_name = "${{ vars.DEV_AUTOMATION_ACCOUNT_NAME }}"
+          dev_firewall_name           = "${{ vars.DEV_FIREWALL_NAME }}"
+          dev_route_table_name        = "${{ vars.DEV_ROUTE_TABLE_NAME }}"
           EOF
 
       - name: "debug TF_VAR_service_principal_id"

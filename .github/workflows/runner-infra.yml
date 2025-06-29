@@ -58,17 +58,28 @@ jobs:
           cat <<EOF > terraform/environments/cicd/terraform.tfvars
           azure_location              = "${{ vars.AZURE_LOCATION }}"
           dev_service_principal_id    = "${{ vars.DEV_SERVICE_PRINCIPAL_ID }}"
-          dev_cicd_resource_group_name = "${{ vars.DEV_CICD_RESOURCE_GROUP_NAME }}"
-          dev_resource_group           = "${{ vars.DEV_RESOURCE_GROUP }}"
-          dev_runner_subnet_name      = "${{ vars.DEV_RUNNER_SUBNET_NAME }}"
-          dev_runner_vnet_address_space = ${{ vars.DEV_RUNNER_VNET_ADDRESS_SPACE }}
-          dev_runner_network_security_group = "${{ vars.DEV_RUNNER_NETWORK_SECURITY_GROUP }}"
-          dev_my_home_ip_address      = "${{ vars.DEV_MY_HOME_IP_ADDRESS }}"
           dev_vnet_name               = "${{ vars.DEV_VNET_NAME }}"
           dev_vnet_resource_group     = "${{ vars.DEV_VNET_RESOURCE_GROUP }}"
+          dev_cicd_resource_group_name = "${{ vars.DEV_CICD_RESOURCE_GROUP_NAME }}"
+          dev_runner_subnet_name      = "${{ vars.DEV_RUNNER_SUBNET_NAME }}"
+          dev_runner_vm_name          = "${{ vars.DEV_RUNNER_VM_NAME }}"
+          dev_my_home_ip_address      = "${{ vars.DEV_MY_HOME_IP_ADDRESS }}"
+          dev_runner_network_security_group = "${{ vars.DEV_RUNNER_NETWORK_SECURITY_GROUP }}"
           dev_vnet_address_space      = ${{ vars.DEV_VNET_ADDRESS_SPACE }}
           dev_vnet_dns_servers        = ${{ vars.DEV_VNET_DNS_SERVERS }}
           dev_dns_servers             = ${{ vars.DEV_DNS_SERVERS }}
+          dev_runner_vnet_address_space = ${{ vars.DEV_RUNNER_VNET_ADDRESS_SPACE }}
+          dev_runner_vm_ip_address    = "${{ vars.DEV_RUNNER_VM_IP_ADDRESS }}"
+          dev_file_share_name         = "${{ vars.DEV_FILE_SHARE_NAME }}"
+          dev_file_share_quota_gb     = ${{ vars.DEV_FILE_SHARE_QUOTA_GB }}
+          dev_network_security_group  = "${{ vars.DEV_NETWORK_SECURITY_GROUP }}"
+          dev_subnet_name             = "${{ vars.DEV_SUBNET_NAME }}"
+          dev_subnet_address_prefixes = ${{ vars.DEV_SUBNET_ADDRESS_PREFIXES }}
+          dev_vnet_id                 = "${{ vars.DEV_VNET_ID }}"
+          dev_resource_id             = "${{ vars.DEV_RESOURCE_ID }}"
+          dev_vnet_dnsServers         = ${{ vars.DEV_VNET_DNS_SERVERS }}
+          dev_resource_group          = "${{ vars.DEV_RESOURCE_GROUP }}"
+          dev_storage_account_name    = "${{ vars.DEV_STORAGE_ACCOUNT_NAME }}"
           common_tags                 = ${{ vars.DEV_COMMON_TAGS }}
           EOF
 
