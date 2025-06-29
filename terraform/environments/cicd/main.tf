@@ -159,11 +159,6 @@ module "self_hosted_runner_vm" {
   subnet_id             = data.azurerm_subnet.runner_subnet.id
   admin_ssh_key_public  = var.admin_ssh_key_public
   tags                  = var.common_tags
-  assign_public_ip            = true
-  public_ip_allocation_method = "Static"
-  public_ip_sku               = "Standard"
-  # ... and any other variables your vm module needs ...
-
   depends_on = [
     azurerm_subnet_network_security_group_association.runner_nsg_assoc
   ]

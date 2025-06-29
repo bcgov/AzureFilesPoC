@@ -25,15 +25,16 @@
 # Usage: See the parent environment's main.tf for example module usage and required variables.
 
 # A VM requires a Network Interface (NIC) to connect to the VNet/subnet.
-resource "azurerm_public_ip" "main" {
-  count               = var.assign_public_ip ? 1 : 0
-  name                = "${var.vm_name}-pip"
-  location            = var.location
-  resource_group_name = var.resource_group_name
-  allocation_method   = var.public_ip_allocation_method
-  sku                 = var.public_ip_sku
-  tags                = var.tags
-}
+# Public IP resource is not created, as public IPs are disallowed by policy.
+# resource "azurerm_public_ip" "main" {
+#   count               = var.assign_public_ip ? 1 : 0
+#   name                = "${var.vm_name}-pip"
+#   location            = var.location
+#   resource_group_name = var.resource_group_name
+#   allocation_method   = var.public_ip_allocation_method
+#   sku                 = var.public_ip_sku
+#   tags                = var.tags
+# }
 
 resource "azurerm_network_interface" "main" {
   name                = "${var.vm_name}-nic"
@@ -45,7 +46,7 @@ resource "azurerm_network_interface" "main" {
     name                          = "internal"
     subnet_id                     = var.subnet_id
     private_ip_address_allocation = "Dynamic"
-    public_ip_address_id          = var.assign_public_ip ? azurerm_public_ip.main[0].id : null
+    # public_ip_address_id          = var.assign_public_ip ? azurerm_public_ip.main[0].id : null
   }
 }
 
