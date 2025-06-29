@@ -142,3 +142,18 @@ variable "dev_storage_account_name" {
   description = "The name of the storage account for the dev environment."
   type        = string
 }
+
+variable "dev_bastion_name" {
+  description = "The name for the Bastion host."
+  type        = string
+}
+
+variable "dev_bastion_public_ip_name" {
+  description = "The name for the Bastion public IP resource."
+  type        = string
+}
+
+variable "dev_bastion_address_prefix" {
+  description = "The address prefix for the AzureBastionSubnet (must be a /27 or larger)."
+  type        = list(string)
+}
