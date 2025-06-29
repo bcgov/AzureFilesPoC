@@ -84,8 +84,8 @@ data "azurerm_virtual_network" "spoke_vnet" {
 
 data "azurerm_subnet" "runner_subnet" {
   name                 = var.dev_runner_subnet_name
-  virtual_network_name = data.azurerm_virtual_network.spoke_vnet.name
-  resource_group_name  = data.azurerm_virtual_network.spoke_vnet.resource_group_name
+  virtual_network_name = var.dev_vnet_name
+  resource_group_name  = var.dev_vnet_resource_group
 }
 
 data "azurerm_network_security_group" "runner_nsg" {
@@ -151,4 +151,3 @@ module "self_hosted_runner_vm" {
 # Outputs are defined in outputs.tf for easier reference and troubleshooting in CI/CD pipelines.
 # See outputs.tf for implementation.
 # -------------------------------------------------------------------------------
-# ===============================================================================
