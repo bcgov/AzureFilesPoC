@@ -14,3 +14,8 @@ output "vm_principal_id" {
   description = "The Principal ID of the System Assigned Managed Identity for the VM (if enabled)."
   value       = azurerm_linux_virtual_machine.main.identity[0].principal_id
 }
+
+output "admin_username" {
+  description = "The admin username for the VM."
+  value       = var.admin_username
+}
