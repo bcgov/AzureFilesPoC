@@ -46,14 +46,74 @@ variable "dev_runner_network_security_group" {
 }
 
 # --- Common Variables ---
-variable "admin_ssh_key_public_path" {
+variable "admin_ssh_key_public" {
   type        = string
-  description = "The local file path to the public SSH key for the VM admin user."
-  default     = "~/.ssh/id_rsa.pub"
+  description = "The public SSH key for VM admin access (from GitHub secret ADMIN_SSH_KEY_PUBLIC)."
 }
 
 variable "common_tags" {
   type        = map(string)
   description = "A map of common tags to apply to all resources."
   default     = {}
+}
+
+variable "dev_service_principal_id" {
+  type        = string
+  description = "Service principal ID for the dev environment."
+}
+
+variable "dev_vnet_address_space" {
+  type        = list(string)
+  description = "Address space for the dev VNet."
+}
+
+variable "dev_vnet_dns_servers" {
+  type        = list(string)
+  description = "DNS servers for the dev VNet."
+}
+
+variable "dev_dns_servers" {
+  type        = list(string)
+  description = "DNS servers for the dev environment."
+}
+
+variable "dev_runner_vnet_address_space" {
+  type        = list(string)
+  description = "Address space for the runner subnet."
+}
+
+variable "dev_runner_vm_ip_address" {
+  type        = string
+  description = "IP address for the runner VM."
+  default     = null
+}
+
+variable "dev_file_share_name" {
+  type        = string
+  description = "Name of the Azure File Share for the dev environment."
+  default     = null
+}
+
+variable "dev_file_share_quota_gb" {
+  type        = number
+  description = "Quota (in GB) for the dev file share."
+  default     = null
+}
+
+variable "dev_network_security_group" {
+  type        = string
+  description = "Name of the network security group for the dev environment."
+  default     = null
+}
+
+variable "dev_subnet_name" {
+  type        = string
+  description = "Name of the subnet for storage peering."
+  default     = null
+}
+
+variable "dev_subnet_address_prefixes" {
+  type        = list(string)
+  description = "Address prefixes for the storage peering subnet."
+  default     = null
 }

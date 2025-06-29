@@ -136,7 +136,7 @@ module "self_hosted_runner_vm" {
   resource_group_name   = data.azurerm_resource_group.main.name
   location              = data.azurerm_resource_group.main.location
   subnet_id             = data.azurerm_subnet.runner_subnet.id
-  admin_ssh_key_public  = file(var.admin_ssh_key_public_path)
+  admin_ssh_key_public  = var.admin_ssh_key_public
   tags                  = var.common_tags
   # ... and any other variables your vm module needs ...
 
