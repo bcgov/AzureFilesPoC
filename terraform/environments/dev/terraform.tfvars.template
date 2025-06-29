@@ -25,7 +25,9 @@ dev_storage_account_name = ""
 # --- Provide values for the CICD-specific resources ---
 dev_cicd_resource_group_name = ""
 dev_runner_subnet_name       = ""
-dev_runner_vm_ip_address     = ""
+dev_runner_vnet_address_space = ""
+dev_runner_network_security_group = ""
+dev_my_home_ip_address = ""
 
 dev_file_share_name = ""
 dev_file_share_quota_gb = 10

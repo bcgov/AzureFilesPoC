@@ -6,6 +6,36 @@
 
 ---
 
+## Why a Self-Hosted GitHub Actions Runner May Be Required
+
+> **Azure Policy and Network Restrictions:**
+> In BC Gov and similar Azure environments, security policy often blocks the creation of resources (such as Storage Accounts) with public network access enabled. Standard GitHub-hosted runners operate from the public internet and cannot access private Azure resources if public access is disabled. This results in 403 Forbidden errors when trying to create or manage resources like Azure File Shares.
+
+### Solution: Deploy a Self-Hosted Runner in Your Private VNet
+
+- **A self-hosted GitHub Actions runner VM, deployed inside your private Azure Spoke VNet, allows CI/CD jobs to run from a trusted, private IP address.**
+- This enables Terraform and other tools to communicate with Azure resources (e.g., storage accounts with private endpoints) over the private network, bypassing the public firewall and complying with Azure Policy.
+- The runner VM is managed as part of the `terraform/environments/cicd` environment. See the `cicd/README.md` for full details and setup instructions.
+
+#### Key Steps to Set Up a Self-Hosted Runner
+1. **Pre-create the CICD resource group** using your user identity and the onboarding script:
+   ```sh
+   bash OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/step6_create_resource_group.sh --rgname "<cicd-resource-group-name>" --location "<location>"
+   ```
+2. **Deploy the runner VM** using the Terraform configuration in `terraform/environments/cicd/`. This will:
+   - Look up the pre-existing resource group and subnet.
+   - Create a Network Security Group (NSG) to allow SSH from your home IP.
+   - Deploy the VM and associate it with the NSG and subnet.
+3. **Register the runner with your GitHub repository** (see `cicd/README.md` for automation options).
+4. **Update your GitHub Actions workflows** to use `runs-on: self-hosted` for jobs that require private network access.
+
+> **Note:**
+> - The resource group for the runner must be created manually (not by Terraform) due to policy. Use the onboarding script as described above.
+> - The runner VM incurs Azure costs while running. Remove or deallocate it when not needed.
+> - For troubleshooting persistent 403 errors, always verify the runner is operating from the correct private network and has the required RBAC/data plane permissions.
+
+---
+
 ## Dependencies
 
 - **Terraform:** v1.6.6 or newer (recommended: v1.9.8)
@@ -374,3 +404,21 @@ sequenceDiagram
 > - You may need to add a delay (using a `time_sleep` resource or a manual wait) after role assignment to ensure permissions are active before file share creation.
 > - The GitHub Actions runner must be able to authenticate to Azure and have the required permissions. If you are running into persistent 403 errors, consider testing with a self-hosted runner or running the apply step locally to isolate permission propagation issues.
 > - For most scenarios, **the same principal that creates the storage account and assigns roles should also create the file share**. If you use a different principal, ensure it has the correct data plane roles.
+>
+> **Troubleshooting Steps:**
+> 1. Verify the role assignment for the GitHub Actions runner's identity on the storage account.
+> 2. Check the effective permissions using Azure CLI or Portal.
+> 3. If necessary, reassign the role or add the required roles to the identity.
+> 4. Test the file share creation again after ensuring the correct permissions are in place.
+>
+> **Example Azure CLI Commands:**
+> - To check role assignments:
+>   ```sh
+>   az role assignment list --assignee <runner-identity> --scope /subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Storage/storageAccounts/<storage-account>
+>   ```
+> - To assign the required role:
+>   ```sh
+>   az role assignment create --assignee <runner-identity> --role "Storage File Data SMB Share Contributor" --scope /subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Storage/storageAccounts/<storage-account>
+>   ```
+> - Replace placeholders with actual values from your Azure environment.
+> - Ensure the GitHub Actions runner's identity is used in place of `<runner-identity>`.

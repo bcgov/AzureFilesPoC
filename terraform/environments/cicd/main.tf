@@ -1,72 +1,75 @@
 # --- terraform/environments/cicd/main.tf ---
-# This configuration bootstraps the dev environment's self-hosted runner.
+#
+# This file composes reusable modules using a consistent set of variables
+# to build the 'cicd' environment for the self-hosted runner.
+# This version is structured for step-by-step validation and troubleshooting.
+
+# ==============================================================================
+# SETUP STEPS FOR CI/CD ENVIRONMENT (REQUIRED MANUAL AND AUTOMATED STEPS)
+# ------------------------------------------------------------------------------
+# Preconditions / Assumptions:
+#   1. Resource group for CI/CD (e.g., rg-ag-pssg-cicd-tools-dev) is pre-created.
+#   2. Network Security Group for runner subnet (e.g., nsg-github-runners) is pre-created.
+#   3. Subnet for runner (e.g., snet-github-runners) is pre-created and associated with the NSG.
+#   4. All names and address spaces are set in terraform.tfvars.
+#
+# Step 1. (Manual, One-Time): Create the CI/CD Resource Group
+#   - Use your user identity and the onboarding script:
+#     bash OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/step6_create_resource_group.sh --rgname "<cicd-resource-group-name>" --location "<location>"
+#   - This is required due to policy: resource groups cannot be created by Terraform or service principals.
+#   - Reference the created resource group in your variables (var.dev_cicd_resource_group_name).
+#
+# Step 2. (Manual, One-Time): Create the NSG for the runner subnet
+#   - Use onboarding script:
+#     bash OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/step10_create_nsg.sh --nsgname "<nsg-name>" --rg "<resource-group>" --location "<location>"
+#   - Reference the created NSG in your variables (var.dev_runner_network_security_group).
+#
+# Step 3. (Manual, One-Time): Create the runner subnet and associate with NSG
+#   - Use onboarding script:
+#     bash OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/step9_create_subnet.sh --vnetname "<vnet-name>" --vnetrg "<vnet-resource-group>" --subnetname "<subnet-name>" --addressprefix "<address-prefix>" --nsg "<nsg-name>"
+#   - Reference the created subnet in your variables (var.dev_runner_subnet_name).
+#
+# Step 4. (Automated): Run Terraform to Deploy the Self-Hosted Runner
+#   - Each substep can be validated incrementally with `terraform plan` and `terraform apply`.
+#   - For full onboarding and troubleshooting, see README.md and cicd/README.md.
+# ==============================================================================
+
+terraform {
+  required_version = ">= 1.6.6"
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "~> 3.0"
+    }
+  }
+  backend "azurerm" {
+    key = "cicd.terraform.tfstate"
+  }
+}
+
+provider "azurerm" {
+  features {}
+}
 
 # ===============================================================================
-# NOTES: Dependencies, Pre-Requirements, and Outputs
+# SECTION 1: CORE RESOURCE GROUP (DATA SOURCE)
 # -------------------------------------------------------------------------------
-# IMPORTANT: Resource groups are pre-created by the BC Gov landing zone/central IT or by onboarding scripts.
+# Resource groups are pre-created by the BC Gov landing zone/central IT or onboarding scripts.
 # Service principals and Terraform are NOT authorized to create resource groups.
-# Reference the pre-created resource group by name (var.dev_cicd_resource_group_name) in all modules.
-# Look up the pre-existing resource group using a data source.
-# This READS data instead of trying to CREATE (write) the resource.
-#
-# To create the resource group, use the onboarding script:
-#   OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/step6_create_resource_group.sh
-#   (Run as your user identity, not as a service principal.)
-#
-# PRE-REQUIREMENTS:
-# - Resource group must already exist (see above)
-# - An existing Spoke VNet and subnet in Azure (referenced by var.dev_vnet_name, var.dev_vnet_resource_group, var.dev_runner_subnet_name)
-# - The subnet must not have an existing NSG association (or you must be prepared to overwrite it)
-# - Your public IP address (var.dev_my_home_ip_address) must be set for SSH access
-# - SSH key pair must exist and the public key path provided (var.admin_ssh_key_public_path)
-# - Sufficient Azure permissions to create NSGs and VMs in the target resource group
-# - The VM module (../../modules/vm) must exist and be properly configured
-# - Common tags (var.common_tags) and location (var.azure_location) must be set
-#
-# DEPENDENCIES:
-# - data.azurerm_resource_group.main: Looks up the pre-existing resource group
-# - data.azurerm_virtual_network.spoke_vnet: Looks up the existing VNet
-# - data.azurerm_subnet.runner_subnet: Looks up the existing subnet
-# - azurerm_network_security_group.runner_nsg: NSG for the runner VM
-# - azurerm_subnet_network_security_group_association.runner_nsg_assoc: Associates NSG with subnet
-# - module.self_hosted_runner_vm: Deploys the VM, depends on NSG association
-#
-# OUTPUTS:
-# - (Recommended) VM private IP, public IP (if created), resource group name, NSG name, subnet ID
-# - These can be added as Terraform outputs for easier reference in CI/CD and troubleshooting
-#
-# RESOURCE CREATION SEQUENCE (in order):
-# 1. data.azurerm_resource_group.main                # Looks up the pre-existing resource group
-# 2. data.azurerm_virtual_network.spoke_vnet         # Looks up the existing Spoke VNet (data source, not created)
-# 3. data.azurerm_subnet.runner_subnet               # Looks up the existing subnet (data source, not created)
-# 4. azurerm_network_security_group.runner_nsg       # Creates a Network Security Group for the runner VM
-# 5. azurerm_subnet_network_security_group_association.runner_nsg_assoc # Associates the NSG with the subnet
-# 6. module.self_hosted_runner_vm                    # Deploys the self-hosted runner VM (and its dependencies, e.g., NIC, disk, public IP if defined in the module)
-#
-# RESOURCE TYPES CREATED:
-# - azurerm_network_security_group
-# - azurerm_subnet_network_security_group_association
-# - (via module) azurerm_linux_virtual_machine, azurerm_network_interface, azurerm_public_ip (optional), and any other resources defined in the VM module
-#
-# Data sources (not created, but required):
-# - azurerm_resource_group
-# - azurerm_virtual_network
-# - azurerm_subnet
-#
+# Reference the pre-created resource group by name (var.dev_cicd_resource_group_name).
+# this script is created by step6_create_resource_group.sh
 # -------------------------------------------------------------------------------
-# Ensure all variables are set in variables.tf or via tfvars files.
-# Review README.md for full onboarding and security notes.
-# ===============================================================================
-
-# --- terraform and provider blocks ...
-
-# --- Look up the pre-existing Resource Group (must be created by onboarding script) ---
 data "azurerm_resource_group" "main" {
   name = var.dev_cicd_resource_group_name
 }
 
-# --- Look up the pre-existing Spoke VNet and its subnet ---
+# ===============================================================================
+# SECTION 2: CORE NETWORKING (DATA SOURCES)
+# -------------------------------------------------------------------------------
+# 2.1 Look up the pre-existing Spoke VNet
+# 2.2 Look up the pre-existing Subnet for the runner
+# 2.3 Look up the pre-existing NSG for the runner
+# -------------------------------------------------------------------------------
 data "azurerm_virtual_network" "spoke_vnet" {
   name                = var.dev_vnet_name
   resource_group_name = var.dev_vnet_resource_group
@@ -78,33 +81,34 @@ data "azurerm_subnet" "runner_subnet" {
   resource_group_name  = data.azurerm_virtual_network.spoke_vnet.resource_group_name
 }
 
-# --- Create a Network Security Group (NSG) for the runner ---
-resource "azurerm_network_security_group" "runner_nsg" {
-  name                = "nsg-${var.dev_runner_vm_name}"
-  location            = data.azurerm_resource_group.main.location
-  resource_group_name = data.azurerm_resource_group.main.name
-  tags                = var.common_tags
-  
-  security_rule {
-    name                       = "AllowSSHFromMyIP"
-    priority                   = 100
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "22"
-    source_address_prefix      = "${var.dev_my_home_ip_address}/32"
-    destination_address_prefix = "*"
-  }
+data "azurerm_network_security_group" "runner_nsg" {
+  name                = var.dev_runner_network_security_group
+  resource_group_name = var.dev_vnet_resource_group
 }
 
-# --- Associate the NSG with the runner's subnet ---
+# ===============================================================================
+# SECTION 3: NETWORK SECURITY GROUP (NSG)
+# -------------------------------------------------------------------------------
+# 3.1 (No-op) NSG is pre-created and referenced as a data source above
+# -------------------------------------------------------------------------------
+# (No resource block needed)
+
+# ===============================================================================
+# SECTION 4: NSG ASSOCIATION
+# -------------------------------------------------------------------------------
+# 4.1 Associate the NSG with the runner's subnet
+# -------------------------------------------------------------------------------
 resource "azurerm_subnet_network_security_group_association" "runner_nsg_assoc" {
   subnet_id                 = data.azurerm_subnet.runner_subnet.id
-  network_security_group_id = azurerm_network_security_group.runner_nsg.id
+  network_security_group_id = data.azurerm_network_security_group.runner_nsg.id
 }
 
-# --- Deploy the Self-Hosted Runner VM using your existing module ---
+# ===============================================================================
+# SECTION 5: SELF-HOSTED RUNNER VM
+# -------------------------------------------------------------------------------
+# 5.1 Deploy the Self-Hosted Runner VM using your existing module
+#    - Uncomment this section after confirming previous steps.
+# -------------------------------------------------------------------------------
 module "self_hosted_runner_vm" {
   source = "../../modules/vm"
 
@@ -115,8 +119,32 @@ module "self_hosted_runner_vm" {
   admin_ssh_key_public  = file(var.admin_ssh_key_public_path)
   tags                  = var.common_tags
   # ... and any other variables your vm module needs ...
-  
+
   depends_on = [
     azurerm_subnet_network_security_group_association.runner_nsg_assoc
   ]
 }
+
+# ===============================================================================
+# SECTION 6: OUTPUTS (RECOMMENDED)
+# -------------------------------------------------------------------------------
+# Add outputs for easier reference and troubleshooting in CI/CD pipelines.
+# Example outputs (add to outputs.tf):
+# output "runner_vm_private_ip" {
+#   value = module.self_hosted_runner_vm.private_ip_address
+# }
+# output "runner_vm_public_ip" {
+#   value = module.self_hosted_runner_vm.public_ip_address
+# }
+# output "runner_resource_group" {
+#   value = data.azurerm_resource_group.main.name
+# }
+# output "runner_nsg_name" {
+#   value = azurerm_network_security_group.runner_nsg.name
+# }
+# output "runner_subnet_id" {
+#   value = data.azurerm_subnet.runner_subnet.id
+# }
+# -------------------------------------------------------------------------------
+# See outputs.tf for implementation.
+# ===============================================================================

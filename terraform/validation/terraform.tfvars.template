@@ -7,19 +7,27 @@
 azure_location = "canadacentral"
 
 # PREPROVISIONED by LANDING ZONE BC Government
-dev_service_principal_object_id = ""
+dev_service_principal_id = ""
 dev_vnet_name             = ""
 dev_vnet_resource_group   = ""
-dev_vnet_addressSpace     = [""]
-dev_vnet_dnsServers       = [""]
+dev_vnet_address_space     = [""]
+dev_vnet_dns_servers       = [""]
 dev_vnet_id               = ""
 
 # CREATED BY USER IDENTITY in AZURE policy won't allow by terraform
 dev_resource_group       = ""
 dev_resource_id          = ""
+dev_resource_group_b       = "" 
 
 ## CREATED BY TERRAFORM
 dev_storage_account_name = ""
+
+# --- Provide values for the CICD-specific resources ---
+dev_cicd_resource_group_name = ""
+dev_runner_subnet_name       = ""
+dev_runner_vnet_address_space = ""
+dev_runner_network_security_group = ""
+dev_my_home_ip_address = ""
 
 dev_file_share_name = ""
 dev_file_share_quota_gb = 10
