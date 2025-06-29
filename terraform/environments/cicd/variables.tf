@@ -39,6 +39,11 @@ variable "dev_my_home_ip_address" {
   sensitive   = true
 }
 
+variable "dev_runner_network_security_group" {
+  type        = string
+  description = "The name of the Network Security Group for the runner subnet."
+}
+
 # --- Common Variables ---
 variable "admin_ssh_key_public_path" {
   type        = string
