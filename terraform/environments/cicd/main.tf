@@ -98,11 +98,24 @@ data "azurerm_network_security_group" "runner_nsg" {
 }
 
 # ===============================================================================
-# SECTION 3: NETWORK SECURITY GROUP (NSG)
+# SECTION 3: NETWORK SECURITY GROUPS (NSG)
 # -------------------------------------------------------------------------------
-# 3.1 (No-op) NSG is pre-created and referenced as a data source above
+# 3.1 Runner NSG: Pre-created and referenced as a data source above
+# 3.2 Bastion NSG: Created and managed by Terraform below
 # -------------------------------------------------------------------------------
-# (No resource block needed)
+# (No resource block needed for runner NSG)
+
+# 3.2 Bastion NSG (Automated)
+# This resource creates a dedicated NSG for the Bastion subnet if it does not exist.
+resource "azurerm_network_security_group" "bastion" {
+  name                = var.dev_bastion_network_security_group
+  location            = var.azure_location
+  resource_group_name = var.dev_vnet_resource_group
+  tags = {
+    environment = "bastion"
+    managed_by  = "terraform"
+  }
+}
 
 # ===============================================================================
 # SECTION 4: NSG ASSOCIATION
@@ -127,6 +140,7 @@ resource "azurerm_subnet_network_security_group_association" "runner_nsg_assoc" 
   network_security_group_id = data.azurerm_network_security_group.runner_nsg.id
 }
 
+
 # ===============================================================================
 # SECTION 5.1.1: AZURE BASTION HOST (OPTIONAL, RECOMMENDED FOR SECURE ACCESS)
 # -------------------------------------------------------------------------------
@@ -142,7 +156,7 @@ module "bastion" {
   bastion_name          = var.dev_bastion_name
   public_ip_name        = var.dev_bastion_public_ip_name
   address_prefix        = var.dev_bastion_address_prefix[0]
-  network_security_group = var.dev_bastion_network_security_group
+  network_security_group = azurerm_network_security_group.bastion.name
 }
 
 # ===============================================================================
@@ -156,7 +170,7 @@ module "self_hosted_runner_vm" {
 
   vm_name               = var.dev_runner_vm_name
   resource_group_name   = data.azurerm_resource_group.main.name
-  location              = data.azurerm_resource_group.main.location
+  location              = data.azurerm_rxesource_group.main.location
   subnet_id             = data.azurerm_subnet.runner_subnet.id
   admin_ssh_key_public  = var.admin_ssh_key_public
   tags                  = var.common_tags

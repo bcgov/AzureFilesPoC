@@ -37,14 +37,19 @@ resource "azurerm_bastion_host" "main" {
   }
 }
 
-resource "azurerm_subnet_network_security_group_association" "bastion" {
-  subnet_id                 = azurerm_subnet.bastion.id
-  network_security_group_id = data.azurerm_network_security_group.bastion.id
+resource "azurerm_network_security_group" "bastion" {
+  name                = var.network_security_group
+  location            = var.location
+  resource_group_name = var.vnet_resource_group
+  tags                = {
+    environment = "bastion"
+    managed_by  = "terraform"
+  }
 }
 
-data "azurerm_network_security_group" "bastion" {
-  name                = var.network_security_group
-  resource_group_name = var.vnet_resource_group
+resource "azurerm_subnet_network_security_group_association" "bastion" {
+  subnet_id                 = azurerm_subnet.bastion.id
+  network_security_group_id = azurerm_network_security_group.bastion.id
 }
 
 output "bastion_host_id" {
