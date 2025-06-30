@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # step6.1_assign_roles_to_resource_group.sh
-#
+# DONT DELETE COMMENTS PLEASE
 # This script assigns one or more specified roles to a service principal or user at the resource group scope.
 #
 # Usage:
@@ -15,6 +15,26 @@
 # These are not assigned by this script but may affect effective permissions.
 #
 # Update this section if you add or remove roles in the script logic or if assignments change in Azure.
+# # INVENTORY:
+# Role assignments applied (as of 2025-06-29):
+#   Resource Group: rg-ag-pssg-azure-poc-dev
+#     - ag-pssg-azure-files-poc-ServicePrincipal (ace4c5df-cd88-44cb-90d5-77dac445f2ee):
+#         * Storage Account Contributor
+#         * ag-pssg-azure-files-poc-dev-role-assignment-writer
+#   Resource Group: rg-ag-pssg-tfstate-dev
+#     - No direct role assignments
+#   Resource Group: rg-ag-pssg-cicd-tools-dev
+#    - ag-pssg-azure-files-poc-ServicePrincipal (ace4c5df-cd88-44cb-90d5-77dac445f2ee):
+#         * Managed Identity Operator
+#         * Network Contributor
+#         * Virtual Machine Contributor
+# Inherited subscription-level roles for ag-pssg-azure-files-poc-ServicePrincipal (ace4c5df-cd88-44cb-90d5-77dac445f2ee):
+#   * Reader
+#   * [BCGOV-MANAGED-LZ-LIVE] Network-Subnet-Contributor
+#   * Monitoring Contributor
+#   * Private DNS Zone Contributor
+#   * Storage Account Contributor
+#
 
 set -euo pipefail
 

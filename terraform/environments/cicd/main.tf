@@ -140,6 +140,15 @@ resource "azurerm_subnet_network_security_group_association" "runner_nsg_assoc" 
   network_security_group_id = data.azurerm_network_security_group.runner_nsg.id
 }
 
+# 4.2 Associate the NSG with the Bastion subnet
+# This resource enforces and maintains the association between the Bastion NSG and the Bastion subnet.
+# Ensures policy compliance: every subnet must have an NSG. If the Bastion subnet is created by the Bastion module,
+# reference its output for the subnet ID. Adjust the reference if your module uses a different output name.
+resource "azurerm_subnet_network_security_group_association" "bastion_nsg_assoc" {
+  subnet_id                 = module.bastion.bastion_subnet_id
+  network_security_group_id = azurerm_network_security_group.bastion.id
+}
+
 
 # ===============================================================================
 # SECTION 5.1.1: AZURE BASTION HOST (OPTIONAL, RECOMMENDED FOR SECURE ACCESS)
