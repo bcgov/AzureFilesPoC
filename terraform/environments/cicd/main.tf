@@ -52,6 +52,12 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "~> 3.0"
     }
+    # AzAPI provider is required to create subnets with NSG association in a single step,
+    # which is necessary for BC Gov Azure Policy compliance (subnets must have an NSG at creation).
+    azapi = {
+      source  = "azure/azapi"
+      version = "~> 1.12.0"
+    }
   }
   backend "azurerm" {
     key = "cicd.terraform.tfstate"

@@ -150,10 +150,12 @@ This is the foundational step to connect GitHub and Azure securely.
 > BC Government IaC/CI/CD policy requires that resource groups be created outside of Terraform when using OIDC. This ensures proper separation of duties and aligns with security best practices. See the onboarding documentation for rationale and links to official guidance.
 
 ### Step 2: Validate Your Setup Locally
-Before testing the automated pipeline, verify your setup from your local machine.
+Before testing the automated pipeline in github, verify your setup from your local machine.
 - This ensures your Azure CLI, Terraform CLI, and local variables are all correct.
+
 - See the detailed guide in [`validation/localhost/README.md`](./validation/localhost/README.md) for instructions on using the helper scripts.
 - **Only proceed when all local validation steps pass.**
+
 
 ### Step 3: Validate the CI/CD Pipeline
 This step confirms that the GitHub Actions workflow can authenticate and deploy resources.
@@ -168,7 +170,49 @@ Once the validation pipeline succeeds, you are ready to build the actual infrast
 - Instead of writing `resource` blocks directly, you will **call reusable modules** from the `modules/` directory to compose your environment.
 - This modular approach ensures consistency, reusability, and adherence to best practices.
 
+### Step 5: Local Development and Validation Best Practices
+
+When developing or updating Terraform scripts—whether in an environment folder (e.g., `environments/cicd/main.tf`) or in a module (e.g., `modules/bastion/main.tf`)—always validate your changes locally before pushing to GitHub. This helps catch errors early and ensures a smoother CI/CD process.
+
+**Recommended Local Workflow:**
+
+1. **Navigate to your environment directory:**
+   ```sh
+   cd terraform/environments/<your-environment>
+   ```
+2. **Initialize the working directory:**
+   ```sh
+   terraform init
+   ```
+   _Downloads required providers and modules, and configures the backend._
+3. **Validate the configuration:**
+   ```sh
+   terraform validate
+   ```
+   _Checks the syntax and internal consistency of your Terraform files._
+4. **Review the planned changes:**
+   ```sh
+   terraform plan
+   ```
+   _Shows what changes Terraform will make, without applying them._
+5. **(Not Recommended) Apply the changes locally:**
+   ```sh
+   terraform apply
+   ```
+   _Not recommended for normal development. Applying locally can cause state drift and bypass CI/CD controls. For best practice, commit and push your changes, then let the GitHub Actions workflow perform the apply step. Only use local apply for isolated testing or troubleshooting, and never in shared or production environments._
+
+**Why do this?**
+- Catch syntax and logic errors before they reach CI/CD.
+- See exactly what changes will be made to your infrastructure.
+- Reduce failed runs and troubleshooting time in GitHub Actions.
+
+**After local validation passes,** commit and push your changes to trigger the GitHub Actions workflow for automated deployment and further validation.
+
+
+
+
 ---
+
 
 ## Directory Structure
 
