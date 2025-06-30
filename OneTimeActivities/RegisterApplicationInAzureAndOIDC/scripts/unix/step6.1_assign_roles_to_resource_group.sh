@@ -28,6 +28,7 @@
 #         * Managed Identity Operator
 #         * Network Contributor
 #         * Virtual Machine Contributor
+#         * ag-pssg-azure-files-poc-dev-role-assignment-writer
 # Inherited subscription-level roles for ag-pssg-azure-files-poc-ServicePrincipal (ace4c5df-cd88-44cb-90d5-77dac445f2ee):
 #   * Reader
 #   * [BCGOV-MANAGED-LZ-LIVE] Network-Subnet-Contributor

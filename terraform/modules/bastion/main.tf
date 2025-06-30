@@ -26,7 +26,7 @@ resource "azurerm_public_ip" "bastion" {
 resource "azurerm_network_security_group" "bastion" {
   name                = var.network_security_group
   location            = var.location
-  resource_group_name = var.vnet_resource_group
+  resource_group_name = var.resource_group_name
   tags                = {
     environment = "bastion"
     managed_by  = "terraform"
