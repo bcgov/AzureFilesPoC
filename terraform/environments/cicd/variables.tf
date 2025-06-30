@@ -45,6 +45,12 @@ variable "dev_runner_network_security_group" {
   default       = "nsgrunners"
 }
 
+variable "dev_bastion_network_security_group" {
+  description = "The name of the Network Security Group to associate with the Bastion subnet."
+  type        = string
+  default     = ""
+}
+
 # --- Common Variables ---
 variable "admin_ssh_key_public" {
   type        = string

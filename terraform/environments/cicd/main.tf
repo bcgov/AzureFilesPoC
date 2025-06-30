@@ -142,6 +142,7 @@ module "bastion" {
   bastion_name          = var.dev_bastion_name
   public_ip_name        = var.dev_bastion_public_ip_name
   address_prefix        = var.dev_bastion_address_prefix[0]
+  network_security_group = var.dev_bastion_network_security_group
 }
 
 # ===============================================================================
