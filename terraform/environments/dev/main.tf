@@ -455,14 +455,14 @@ resource "time_sleep" "wait_for_role_propagation" {
 # --------------------------------------------------------------------------------
 # 2.10 (Optional) Bastion Host
 # --------------------------------------------------------------------------------
-module "bastion" {
-  source = "../../modules/bastion"
-  resource_group_name              = var.dev_resource_group
-  location                        = var.azure_location
-  vnet_name                       = var.dev_vnet_name
-  vnet_resource_group             = var.dev_vnet_resource_group
-  bastion_name                    = var.dev_bastion_name
-  public_ip_name                  = var.dev_bastion_public_ip_name
-  address_prefix                  = var.dev_bastion_address_prefix[0]
-  network_security_group          = var.dev_bastion_network_security_group
-}
+# module "bastion" {
+#   source = "../../modules/bastion"
+#   resource_group_name              = data.azurerm_resource_group.main.name
+#   location                        = data.azurerm_resource_group.main.location
+#   vnet_name                       = var.dev_vnet_name
+#   vnet_resource_group             = var.dev_vnet_resource_group
+#   bastion_name                    = var.dev_bastion_name
+#   public_ip_name                  = var.dev_bastion_public_ip_name
+#   address_prefix                  = var.dev_bastion_address_prefix[0]
+#   network_security_group          = var.dev_bastion_network_security_group
+# }
