@@ -85,6 +85,7 @@ jobs:
           dev_bastion_public_ip_name = "${{ vars.DEV_BASTION_PUBLIC_IP_NAME }}"
           dev_bastion_address_prefix = ${{ vars.DEV_BASTION_ADDRESS_PREFIX }}
           dev_bastion_network_security_group = "${{ vars.DEV_BASTION_NETWORK_SECURITY_GROUP }}"
+          dev_github_actions_spn_object_id = "${{ vars.DEV_GITHUB_ACTIONS_SPN_OBJECT_ID }}"
           EOF
 
       - name: Display Generated terraform.tfvars (Debug Step)
