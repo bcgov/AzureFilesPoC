@@ -61,3 +61,7 @@ output "bastion_host_name" {
 output "bastion_public_ip" {
   value = azurerm_public_ip.bastion.ip_address
 }
+output "bastion_subnet_id" {
+  description = "The resource ID of the AzureBastionSubnet."
+  value       = azurerm_subnet.bastion.id
+}
