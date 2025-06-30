@@ -81,11 +81,26 @@ data "azurerm_resource_group" "main" {
 }
 
 # ===============================================================================
-# SECTION 2: CORE NETWORKING (DATA SOURCES)
+# SECTION 2: RBAC ASSIGNMENTS (GITHUB ACTIONS SERVICE PRINCIPAL)
+# ------------------------------------------------------------------------------
+# This resource grants the GitHub Actions service principal Network Contributor
+# rights on the CI/CD resource group, so it can manage networking resources.
+#
+# Ensure you set the correct object ID for the service principal in your tfvars file:
+#   github_actions_spn_object_id = "<object-id>"
+#
+resource "azurerm_role_assignment" "github_actions_network_contributor" {
+  scope                = data.azurerm_resource_group.main.id
+  role_definition_name = "Network Contributor"
+  principal_id         = var.dev_github_actions_spn_object_id
+}
+
+# ===============================================================================
+# SECTION 3: CORE NETWORKING (DATA SOURCES)
 # -------------------------------------------------------------------------------
-# 2.1 Look up the pre-existing Spoke VNet
-# 2.2 Look up the pre-existing Subnet for the runner
-# 2.3 Look up the pre-existing NSG for the runner
+# 3.1 Look up the pre-existing Spoke VNet
+# 3.2 Look up the pre-existing Subnet for the runner
+# 3.3 Look up the pre-existing NSG for the runner
 # -------------------------------------------------------------------------------
 data "azurerm_virtual_network" "spoke_vnet" {
   name                = var.dev_vnet_name
@@ -104,14 +119,14 @@ data "azurerm_network_security_group" "runner_nsg" {
 }
 
 # ===============================================================================
-# SECTION 3: NETWORK SECURITY GROUPS (NSG)
+# SECTION 4: NETWORK SECURITY GROUPS (NSG)
 # -------------------------------------------------------------------------------
-# 3.1 Runner NSG: Pre-created and referenced as a data source above
-# 3.2 Bastion NSG: Created and managed by Terraform below
+# 4.1 Runner NSG: Pre-created and referenced as a data source above
+# 4.2 Bastion NSG: Created and managed by Terraform below
 # -------------------------------------------------------------------------------
 # (No resource block needed for runner NSG)
 
-# 3.2 Bastion NSG (Automated)
+# 4.2 Bastion NSG (Automated)
 # This resource creates a dedicated NSG for the Bastion subnet if it does not exist.
 resource "azurerm_network_security_group" "bastion" {
   name                = var.dev_bastion_network_security_group
@@ -124,9 +139,9 @@ resource "azurerm_network_security_group" "bastion" {
 }
 
 # ===============================================================================
-# SECTION 4: NSG ASSOCIATION
+# SECTION 5: NSG ASSOCIATION
 # -------------------------------------------------------------------------------
-# 4.1 Associate the NSG with the runner's subnet
+# 5.1 Associate the NSG with the runner's subnet
 # -------------------------------------------------------------------------------
 # This resource enforces and maintains the association between the specified
 # Network Security Group (NSG) and the runner subnet. Even if the NSG was
@@ -146,7 +161,7 @@ resource "azurerm_subnet_network_security_group_association" "runner_nsg_assoc" 
   network_security_group_id = data.azurerm_network_security_group.runner_nsg.id
 }
 
-# 4.2 Associate the NSG with the Bastion subnet
+# 5.2 Associate the NSG with the Bastion subnet
 # This resource enforces and maintains the association between the Bastion NSG and the Bastion subnet.
 # Ensures policy compliance: every subnet must have an NSG. If the Bastion subnet is created by the Bastion module,
 # reference its output for the subnet ID. Adjust the reference if your module uses a different output name.
@@ -157,7 +172,7 @@ resource "azurerm_subnet_network_security_group_association" "bastion_nsg_assoc"
 
 
 # ===============================================================================
-# SECTION 5.1.1: AZURE BASTION HOST (OPTIONAL, RECOMMENDED FOR SECURE ACCESS)
+# SECTION 6.1: AZURE BASTION HOST (OPTIONAL, RECOMMENDED FOR SECURE ACCESS)
 # -------------------------------------------------------------------------------
 # This module deploys Azure Bastion in the same VNet as the runner VM, providing
 # secure browser-based SSH/RDP access without a public IP on the VM.
@@ -175,9 +190,9 @@ module "bastion" {
 }
 
 # ===============================================================================
-# SECTION 5: SELF-HOSTED RUNNER VM
+# SECTION 6: SELF-HOSTED RUNNER VM
 # -------------------------------------------------------------------------------
-# 5.1 Deploy the Self-Hosted Runner VM using your existing module
+# 6.1 Deploy the Self-Hosted Runner VM using your existing module
 #    - Uncomment this section after confirming previous steps.
 # -------------------------------------------------------------------------------
 module "self_hosted_runner_vm" {
@@ -195,7 +210,7 @@ module "self_hosted_runner_vm" {
 }
 
 # ===============================================================================
-# SECTION 6: OUTPUTS (RECOMMENDED)
+# SECTION 7: OUTPUTS (RECOMMENDED)
 # -------------------------------------------------------------------------------
 # Outputs are defined in outputs.tf for easier reference and troubleshooting in CI/CD pipelines.
 # See outputs.tf for implementation.

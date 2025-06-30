@@ -163,3 +163,9 @@ variable "dev_bastion_address_prefix" {
   description = "The address prefix for the AzureBastionSubnet (must be a /27 or larger)."
   type        = list(string)
 }
+
+
+variable "dev_github_actions_spn_object_id" {
+  description = "The object ID of the GitHub Actions service principal to assign Network Contributor role in the dev/cicd environment."
+  type        = string
+}
