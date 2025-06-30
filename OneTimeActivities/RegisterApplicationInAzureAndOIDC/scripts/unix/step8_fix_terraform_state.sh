@@ -72,19 +72,21 @@ cd "$TERRAFORM_DIR"
 echo "Changed directory to $(pwd)"
 
 # --- STEP 1: FIND THE EXISTING ROLE ASSIGNMENT ID ---
-echo "Searching for existing 'Storage File Data SMB Share Contributor' role assignment..."
-STORAGE_ACCOUNT_ID=$(az storage account show --name "$APP_SA" --resource-group "$APP_RG" --query id -o tsv)
+echo "Searching for existing 'Network Contributor' role assignment on the resource group..."
 
-if [[ -z "$STORAGE_ACCOUNT_ID" ]]; then
-    echo "Warning: Application storage account '$APP_SA' not found. Cannot check for role assignment. Exiting."
+# Get the resource group ID for the assignment scope
+RESOURCE_GROUP_ID=$(az group show --name "$APP_RG" --query id -o tsv)
+
+if [[ -z "$RESOURCE_GROUP_ID" ]]; then
+    echo "Warning: Resource group '$APP_RG' not found. Cannot check for role assignment. Exiting."
     exit 0
 fi
 
 ROLE_ASSIGNMENT_ID=$(az role assignment list \
   --assignee "$PRINCIPAL_ID" \
-  --scope "$STORAGE_ACCOUNT_ID" \
-  --role "Storage File Data SMB Share Contributor" \
-  --query "[0].id" -o tsv || true) # Use '|| true' to prevent script exit if role is not found
+  --scope "$RESOURCE_GROUP_ID" \
+  --role "Network Contributor" \
+  --query "[0].id" -o tsv || true)
 
 if [[ -z "$ROLE_ASSIGNMENT_ID" ]]; then
   echo "✅ No pre-existing role assignment found. No import needed."
@@ -103,7 +105,7 @@ terraform init \
 
 # --- STEP 3: IMPORT THE EXISTING RESOURCE INTO TERRAFORM STATE ---
 echo "Importing the role assignment into Terraform state..."
-terraform import azurerm_role_assignment.storage_data_contributor_for_files "$ROLE_ASSIGNMENT_ID"
+terraform import azurerm_role_assignment.github_actions_network_contributor "$ROLE_ASSIGNMENT_ID"
 
 echo "✅ Import successful!"
 

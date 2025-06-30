@@ -31,6 +31,74 @@ resource "azurerm_network_security_group" "bastion" {
     environment = "bastion"
     managed_by  = "terraform"
   }
+
+  # Required Bastion rules (per Microsoft and BC Gov landing zone policy)
+  security_rule {
+    name                       = "AllowGatewayManagerInbound"
+    priority                   = 100
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "443"
+    source_address_prefix      = "GatewayManager"
+    destination_address_prefix = "*"
+    description                = "Allow Azure Bastion GatewayManager inbound."
+  }
+
+  security_rule {
+    name                       = "AllowAzureLoadBalancerInbound"
+    priority                   = 110
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "443"
+    source_address_prefix      = "AzureLoadBalancer"
+    destination_address_prefix = "*"
+    description                = "Allow AzureLoadBalancer inbound for Bastion."
+  }
+
+  security_rule {
+    name                       = "AllowBastionHostOutbound"
+    priority                   = 120
+    direction                  = "Outbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "*"
+    source_address_prefix      = "*"
+    destination_address_prefix = "Internet"
+    description                = "Allow Bastion outbound to Internet."
+  }
+
+  # Common BC Gov/landing zone policy: Deny all inbound except required
+  security_rule {
+    name                       = "DenyAllInbound"
+    priority                   = 4096
+    direction                  = "Inbound"
+    access                     = "Deny"
+    protocol                   = "*"
+    source_port_range          = "*"
+    destination_port_range     = "*"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+    description                = "Deny all other inbound traffic."
+  }
+
+  # Common BC Gov/landing zone policy: Deny all outbound except required
+  security_rule {
+    name                       = "DenyAllOutbound"
+    priority                   = 4096
+    direction                  = "Outbound"
+    access                     = "Deny"
+    protocol                   = "*"
+    source_port_range          = "*"
+    destination_port_range     = "*"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+    description                = "Deny all other outbound traffic."
+  }
 }
 
 # Use AzAPI to create the Bastion subnet and associate the NSG at creation time (policy compliant)
@@ -72,6 +140,9 @@ output "bastion_public_ip" {
 output "bastion_subnet_id" {
   description = "The resource ID of the AzureBastionSubnet."
   value       = azapi_resource.bastion_subnet.id
+}
+output "bastion_nsg_id" {
+  value = azurerm_network_security_group.bastion.id
 }
 
 terraform {

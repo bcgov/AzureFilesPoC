@@ -128,15 +128,8 @@ data "azurerm_network_security_group" "runner_nsg" {
 
 # 4.2 Bastion NSG (Automated)
 # This resource creates a dedicated NSG for the Bastion subnet if it does not exist.
-resource "azurerm_network_security_group" "bastion" {
-  name                = var.dev_bastion_network_security_group
-  location            = var.azure_location
-  resource_group_name = var.dev_vnet_resource_group
-  tags = {
-    environment = "bastion"
-    managed_by  = "terraform"
-  }
-}
+# (Removed: azurerm_network_security_group.bastion resource. Bastion NSG is now managed only by the Bastion module.)
+# -------------------------------------------------------------------------------
 
 # ===============================================================================
 # SECTION 5: NSG ASSOCIATION
@@ -167,7 +160,7 @@ resource "azurerm_subnet_network_security_group_association" "runner_nsg_assoc" 
 # reference its output for the subnet ID. Adjust the reference if your module uses a different output name.
 resource "azurerm_subnet_network_security_group_association" "bastion_nsg_assoc" {
   subnet_id                 = module.bastion.bastion_subnet_id
-  network_security_group_id = azurerm_network_security_group.bastion.id
+  network_security_group_id = module.bastion.bastion_nsg_id
 }
 
 
@@ -186,7 +179,7 @@ module "bastion" {
   bastion_name          = var.dev_bastion_name
   public_ip_name        = var.dev_bastion_public_ip_name
   address_prefix        = var.dev_bastion_address_prefix[0]
-  network_security_group = azurerm_network_security_group.bastion.name
+  network_security_group = var.dev_bastion_network_security_group
 }
 
 # ===============================================================================
