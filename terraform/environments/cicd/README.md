@@ -204,12 +204,82 @@ This configuration should be run **once** from your local machine to bootstrap t
 
 ---
 
+## 6.1. Connecting to the Runner VM via Azure Bastion (SSH from Terminal)
+
+To securely connect to your self-hosted runner VM using Azure Bastion from your terminal, follow these steps:
+
+### Prerequisites
+- Azure CLI installed (`az`)
+- Your SSH private key (e.g., `~/.ssh/id_rsa`)
+- The Azure CLI `bastion` and `ssh` extensions installed
+
+### 1. Install Required Azure CLI Extensions
+If prompted, install the extensions, or run these commands manually:
+```sh
+az extension add -n bastion
+az extension add -n ssh
+```
+
+### 2. Connect to the VM via Bastion from Your Terminal
+Replace the SSH key path if you use a different private key file.
+```sh
+az network bastion ssh \
+  --name <var.dev_bastion_name> \
+  --resource-group <var.dev_cicd_resource_group_name> \
+  --target-resource-id <VM resource ID> \
+  --auth-type "SSHKey" \
+  --username <var.dev_runner_vm_admin_username> \
+  --ssh-key ~/.ssh/id_rsa
+``
+
+- If you see a prompt to install an extension, answer `y` or follow the instructions.
+- If you see an error about the `ssh` extension, run `az extension add -n ssh` and try again.
+
+**Note:** This method does not require a public IP on the VM and is the recommended secure access method for private subnets.
+
+---
+
 ## 7. Cleanup
 
 To remove all resources created by this configuration:
 ```bash
 terraform destroy -var-file=terraform.tfvars
 ```
+
+---
+
+## 7.1. Azure Bastion Cleanup: Removing NSG and Subnet Associations
+
+If you need to delete the Bastion NSG or subnet (for example, to allow Terraform to recreate them), follow these steps:
+
+1. **Disassociate the NSG from the Bastion subnet:**
+
+   ```sh
+   az network vnet subnet update \
+     --name AzureBastionSubnet \
+     --vnet-name d5007d-dev-vwan-spoke \
+     --resource-group d5007d-dev-networking \
+     --network-security-group ""
+   ```
+
+2. **Delete the Bastion NSG:**
+
+   ```sh
+   az network nsg delete \
+     --name nsg-bastion-vm-ag-pssg-azure-poc-dev-01 \
+     --resource-group rg-ag-pssg-cicd-tools-dev
+   ```
+
+3. **(Optional) Delete the Bastion subnet:**
+
+   ```sh
+   az network vnet subnet delete \
+     --name AzureBastionSubnet \
+     --vnet-name d5007d-dev-vwan-spoke \
+     --resource-group d5007d-dev-networking
+   ```
+
+> **Note:** You must remove the NSG association before deleting the NSG. If you see an error that the NSG is in use, ensure it is not associated with any subnet.
 
 ---
 

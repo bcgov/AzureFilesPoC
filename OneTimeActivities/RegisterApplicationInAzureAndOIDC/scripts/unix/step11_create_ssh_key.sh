@@ -12,7 +12,8 @@ if [[ -f "$KEY_PATH" && -f "$KEY_PATH.pub" ]]; then
   echo "✅ SSH key already exists at $KEY_PATH"
 else
   echo "Generating new SSH key at $KEY_PATH"
-  ssh-keygen -t rsa -b 4096 -C "$EMAIL" -f "$KEY_PATH" -N ""
+  ssh-keygen -t rsa -b 4096 -C "$EMAIL" -f "$KEY_PATH" -N "" #no passphrase required
+  #ssh-keygen -t rsa -b 4096 -C "$EMAIL" -f "$KEY_PATH"  #requires user to enter a passphrase
 fi
 
 echo "\nPublic key (copy this to your GitHub secret, e.g., ADMIN_SSH_KEY_PUBLIC):"

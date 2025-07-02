@@ -121,6 +121,7 @@ resource "azurerm_bastion_host" "main" {
   location            = var.location
   resource_group_name = var.resource_group_name
   dns_name            = null
+  sku                 = "Standard"
   ip_configuration {
     name                 = "configuration"
     subnet_id            = azapi_resource.bastion_subnet.id
