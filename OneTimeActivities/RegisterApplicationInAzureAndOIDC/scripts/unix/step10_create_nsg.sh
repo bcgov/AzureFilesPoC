@@ -14,6 +14,10 @@
 #
 # NSGs created by script:
 #   1. GitHub runners NSG (e.g., "nsg-github-runners")
+# NOTE: This script is only required if your service principal does NOT have permission to create NSGs in Terraform.
+# In most environments, NSGs can be created and managed by Terraform if the service principal has the Network Contributor role on the resource group.
+# Prefer managing NSGs in Terraform for full automation and drift detection.
+
 set -euo pipefail
 
 # --- ARGUMENT PARSING ---

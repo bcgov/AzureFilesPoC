@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 # step9_create_subnet.sh
+# NOTE: This script is only required if your service principal does NOT have permission to create subnets with NSG association in a single step (required by strict Azure policy).
+# If your service principal can create subnets with an NSG at creation time (using the AzAPI provider in Terraform), prefer managing subnets in Terraform for full automation.
+#
+# In most BC Gov environments, policy restricts subnet creation unless an NSG is assigned at creation. The standard Terraform azurerm provider cannot do this, but the AzAPI provider can.
+#
+# If you do not have the required permissions or cannot use AzAPI, use this script for manual onboarding.
+#
 # This script creates a subnet in an existing VNet and records it in the inventory.
 # It is reusable for creating additional subnets as needed.
 #

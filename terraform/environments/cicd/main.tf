@@ -222,15 +222,18 @@ resource "azurerm_network_security_group" "test_nsg" {
   }
 }
 
-# TEST: Create a test subnet and associate with test-cicd-nsg to verify Terraform permissions
-resource "azurerm_subnet" "test_subnet" {
-  name                 = "test-cicd-subnet"
-  resource_group_name  = data.azurerm_resource_group.main.name
-  virtual_network_name = data.azurerm_virtual_network.spoke_vnet.name
-  address_prefixes     = ["10.46.73.240/28"] # Use a non-overlapping range
-}
+# TEST: Create a test subnet with NSG association at creation (required by policy)
+resource "azapi_resource" "test_subnet" {
+  type      = "Microsoft.Network/virtualNetworks/subnets@2023-04-01"
+  name      = "test-cicd-subnet"
+  parent_id = data.azurerm_virtual_network.spoke_vnet.id
 
-resource "azurerm_subnet_network_security_group_association" "test_subnet_nsg_assoc" {
-  subnet_id                 = azurerm_subnet.test_subnet.id
-  network_security_group_id = azurerm_network_security_group.test_nsg.id
+  body = jsonencode({
+    properties = {
+      addressPrefix = "10.46.73.240/28"
+      networkSecurityGroup = {
+        id = azurerm_network_security_group.test_nsg.id
+      }
+    }
+  })
 }

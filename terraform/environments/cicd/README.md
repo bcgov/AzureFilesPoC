@@ -73,7 +73,7 @@ The self-hosted runner VM communicates with GitHub Actions using a secure, outbo
 6. **No inbound connections from GitHub to your VM are required.**
 7. The VM does **not** need a public IP address; it only needs outbound internet access (e.g., via NAT, Azure Firewall, or default subnet access).
 8. This design is secure and works in private subnets, as long as outbound HTTPS is allowed by your NSG/firewall.
-9. If outbound internet is restricted, you must allow access to GitHub's endpoints (see [GitHub's documentation](https://docs.github.com/en/actions/hosting-your-own-runners/about-self-hosted-runners) for required domains/IPs).
+9. If outbound internet is restricted, you must allow access to GitHub's endpoints (see [GitHub's documentation](https://docs.github.com/en/actions/hosting-your-own-runners) for required domains/IPs).
 
 > **Summary:** The runner VM connects out to GitHub, so you do not need to open any inbound firewall ports or assign a public IP for CI/CD jobs to work.
 
@@ -297,3 +297,8 @@ If you need to delete the Bastion NSG or subnet (for example, to allow Terraform
 - [GitHub Actions: Self-hosted runners](https://docs.github.com/en/actions/hosting-your-own-runners)
 - [Azure Bastion](https://learn.microsoft.com/en-us/azure/bastion/bastion-overview)
 - [Terraform Azure Provider Docs](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs)
+
+> **Note on NSG and Subnet Creation:**
+> - **NSGs** can be created and managed by Terraform if your service principal has the Network Contributor role on the resource group.
+> - **Subnets** can only be created by Terraform if your service principal has the Network Contributor role **and** you use the AzAPI provider to assign an NSG at creation time (required by strict Azure policy). The standard Terraform azurerm provider cannot create subnets with an NSG in a single step.
+> - If you do not have the required permissions or cannot use AzAPI, use the onboarding scripts (`step9_create_subnet.sh` and `step10_create_nsg.sh`) for manual onboarding. See script comments for details.
