@@ -199,7 +199,7 @@ variable "dev_vng_vpn_type" {
   description = "The VPN type for the Virtual Network Gateway."
 }
 
-variable "DEV_GATEWAY_SUBNET_ADDRESS_PREFIX" {
+variable "dev_gateway_subnet_address_prefix" {
   type        = list(string)
   description = "Address prefix for the GatewaySubnet."
 }
