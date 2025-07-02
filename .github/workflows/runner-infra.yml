@@ -77,7 +77,6 @@ jobs:
           dev_subnet_address_prefixes = ${{ vars.DEV_SUBNET_ADDRESS_PREFIXES }}
           dev_vnet_id                 = "${{ vars.DEV_VNET_ID }}"
           dev_resource_id             = "${{ vars.DEV_RESOURCE_ID }}"
-          dev_vnet_dns_servers         = ${{ vars.DEV_VNET_DNS_SERVERS }}
           dev_resource_group          = "${{ vars.DEV_RESOURCE_GROUP }}"
           dev_storage_account_name    = "${{ vars.DEV_STORAGE_ACCOUNT_NAME }}"
           common_tags                 = ${{ vars.DEV_COMMON_TAGS }}
