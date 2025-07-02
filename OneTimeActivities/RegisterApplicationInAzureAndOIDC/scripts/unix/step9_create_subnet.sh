@@ -3,6 +3,8 @@
 # NOTE: This script is only required if your service principal does NOT have permission to create subnets with NSG association in a single step (required by strict Azure policy).
 # If your service principal can create subnets with an NSG at creation time (using the AzAPI provider in Terraform), prefer managing subnets in Terraform for full automation.
 #
+# IMPORTANT: If you want to associate an NSG, the NSG must already exist before running this script.
+#
 # In most BC Gov environments, policy restricts subnet creation unless an NSG is assigned at creation. The standard Terraform azurerm provider cannot do this, but the AzAPI provider can.
 #
 # If you do not have the required permissions or cannot use AzAPI, use this script for manual onboarding.
@@ -11,18 +13,19 @@
 # It is reusable for creating additional subnets as needed.
 #
 # Example usage:
-# bash step9_create_subnet.sh --vnetname d5007d-dev-vwan-spoke --vnetrg d5007d-dev-networking --subnetname snet-github-runners --addressprefix 10.46.73.16/28
+# bash step9_create_subnet.sh --vnetname d5007d-dev-vwan-spoke --vnetrg d5007d-dev-networking --subnetname AzureBastionSubnet --addressprefix 10.46.73.64/26 --nsg nsg-bastion-vm-ag-pssg-azure-poc-dev-01
 #
 # Parameters:
 #   --vnetname      Name of the existing VNet
 #   --vnetrg        Resource group of the VNet
-#   --subnetname    Name for the new subnet
-#   --addressprefix Address prefix for the subnet (e.g., 10.46.73.16/28)
-#   [--nsg]         (Optional) NSG to associate
+#   --subnetname    Name for the new subnet (e.g., AzureBastionSubnet)
+#   --addressprefix Address prefix for the subnet (e.g., 10.46.73.64/26)
+#   [--nsg]         (Optional, but required by policy for Bastion) NSG to associate (e.g., nsg-bastion-vm-ag-pssg-azure-poc-dev-01)
 #   [--route-table] (Optional) Route table to associate
 #
 # Subnets created by script:
-#  1. GitHub runners subnet (e.g., "snet-github-runners") 10.46.73.16/28
+#  1. Bastion subnet ("AzureBastionSubnet") 10.46.73.64/26
+#  2. GitHub runners subnet (e.g., "snet-github-runners") 10.46.73.16/28
 set -euo pipefail
 
 # --- ARGUMENT PARSING ---
@@ -62,8 +65,22 @@ fi
 EXISTING_SUBNET=$(az network vnet subnet show --name "$SUBNET_NAME" --vnet-name "$VNET_NAME" --resource-group "$VNET_RG" -o json 2>/dev/null || true)
 if [[ -n "$EXISTING_SUBNET" && "$EXISTING_SUBNET" != "" ]]; then
   EXISTING_PREFIX=$(echo "$EXISTING_SUBNET" | jq -r '.addressPrefix // .addressPrefixes[0]')
+  EXISTING_NSG_ID=$(echo "$EXISTING_SUBNET" | jq -r '.networkSecurityGroup.id // empty')
+  NSG_ID=""
+  if [[ -n "$NSG_NAME" ]]; then
+    NSG_ID=$(az network nsg show --name "$NSG_NAME" --resource-group "$VNET_RG" -o tsv --query id 2>/dev/null || true)
+    if [[ -z "$NSG_ID" ]]; then
+      echo "Error: NSG '$NSG_NAME' does not exist in resource group '$VNET_RG'. Please create it first."; exit 1
+    fi
+  fi
   if [[ "$EXISTING_PREFIX" == "$ADDRESS_PREFIX" ]]; then
-    echo "Subnet '$SUBNET_NAME' already exists in VNet '$VNET_NAME' with the same address prefix ($ADDRESS_PREFIX). Skipping creation."
+    # Check NSG association
+    if [[ -n "$NSG_NAME" && "$EXISTING_NSG_ID" != "$NSG_ID" ]]; then
+      echo "Updating NSG association for subnet '$SUBNET_NAME'..."
+      az network vnet subnet update --name "$SUBNET_NAME" --vnet-name "$VNET_NAME" --resource-group "$VNET_RG" --network-security-group "$NSG_NAME"
+    else
+      echo "Subnet '$SUBNET_NAME' already exists in VNet '$VNET_NAME' with the same address prefix ($ADDRESS_PREFIX) and correct NSG association. Skipping creation."
+    fi
   else
     echo "Error: Subnet '$SUBNET_NAME' already exists but with a different address prefix ($EXISTING_PREFIX). Please review and delete or update as needed."
     exit 1
@@ -73,6 +90,11 @@ else
   echo "Creating subnet '$SUBNET_NAME' in VNet '$VNET_NAME' (RG: $VNET_RG) with address prefix $ADDRESS_PREFIX..."
   CREATE_ARGS=(--name "$SUBNET_NAME" --vnet-name "$VNET_NAME" --resource-group "$VNET_RG" --address-prefixes "$ADDRESS_PREFIX")
   if [[ -n "$NSG_NAME" ]]; then
+    # Check NSG exists
+    NSG_ID=$(az network nsg show --name "$NSG_NAME" --resource-group "$VNET_RG" -o tsv --query id 2>/dev/null || true)
+    if [[ -z "$NSG_ID" ]]; then
+      echo "Error: NSG '$NSG_NAME' does not exist in resource group '$VNET_RG'. Please create it first."; exit 1
+    fi
     CREATE_ARGS+=(--network-security-group "$NSG_NAME")
   fi
   if [[ -n "$ROUTE_TABLE_NAME" ]]; then

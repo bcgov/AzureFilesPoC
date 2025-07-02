@@ -109,36 +109,36 @@ data "azurerm_virtual_network" "spoke_vnet" {
   resource_group_name = var.dev_vnet_resource_group
 }
 
-data "azurerm_subnet" "runner_subnet" {
-  name                 = var.dev_runner_subnet_name
-  virtual_network_name = var.dev_vnet_name
-  resource_group_name  = var.dev_vnet_resource_group
-}
+# data "azurerm_subnet" "runner_subnet" {
+#   name                 = var.dev_runner_subnet_name
+#   virtual_network_name = var.dev_vnet_name
+#   resource_group_name  = var.dev_vnet_resource_group
+# }
 
-data "azurerm_network_security_group" "runner_nsg" {
-  name                = var.dev_runner_network_security_group
-  resource_group_name = var.dev_vnet_resource_group
-}
+# data "azurerm_network_security_group" "runner_nsg" {
+#   name                = var.dev_runner_network_security_group
+#   resource_group_name = var.dev_vnet_resource_group
+# }
 
 # ===============================================================================
 # SECTION 4: NETWORK SECURITY GROUPS (NSG)
 # -------------------------------------------------------------------------------
 # 4.1 Runner NSG: Pre-created and referenced as a data source above
-# 4.2 Bastion NSG: Created and managed by bastion module
+# 4.2 Bastion NSG: Created and managed by bastion/nsg module
 # -------------------------------------------------------------------------------
-# (No resource block needed for runner NSG)
+module "bastion_nsg" {
+  source                = "../../modules/bastion/nsg"
+  resource_group_name   = data.azurerm_resource_group.main.name
+  location              = data.azurerm_resource_group.main.location
+  nsg_name              = var.dev_bastion_network_security_group
+  tags                  = var.dev_common_tags
+}
 
 # ===============================================================================
-# SECTION 5: AZURE BASTION HOST, network security group and subnet
+# SECTION 5: BASTION SUBNET AND HOST
 # -------------------------------------------------------------------------------
-# This module deploys Azure Bastion in the same VNet as the runner VM, providing
-# secure browser-based SSH/RDP access without a public IP on the VM.
-# The Bastion NSG, including all required inbound and outbound rules, and the Bastion subnet are both fully defined and managed inside the Bastion module (see modules/bastion/main.tf).
-# To provision Bastion, the main module calls the Bastion module (see section 6.1 below), which creates the NSG, subnet (with NSG association), and Bastion host in the correct sequence.
-# This ensures the NSG (with all Bastion-specific rules) is created first, then the subnet is created and associated with the NSG,
-# and finally the Bastion Host is deployed. This sequence is required for Azure policy compliance and Bastion provisioning to succeed.
-# (There is no Bastion NSG resource or rules defined in this root module. All Bastion NSG logic is in the Bastion module.)
-# -------------------------------------------------------------------------------
+# The Bastion subnet is created by the bastion/nsg module (using AzAPI for policy compliance).
+# The Bastion host is created by the bastion module, which takes the subnet ID and NSG ID as inputs.
 # module "bastion" {
 #   source                = "../../modules/bastion"
 #   resource_group_name   = data.azurerm_resource_group.main.name
@@ -147,8 +147,7 @@ data "azurerm_network_security_group" "runner_nsg" {
 #   vnet_resource_group   = data.azurerm_virtual_network.spoke_vnet.resource_group_name
 #   bastion_name          = var.dev_bastion_name
 #   public_ip_name        = var.dev_bastion_public_ip_name
-#   address_prefix        = var.dev_bastion_address_prefix[0]
-#   network_security_group = var.dev_bastion_network_security_group
+#   subnet_id             = module.bastion_nsg.bastion_subnet_id
 # }
 
 # ===============================================================================
@@ -169,10 +168,10 @@ data "azurerm_network_security_group" "runner_nsg" {
 # - Maintains idempotency and drift correction: if the association is changed
 #   outside of Terraform, it will be restored on the next apply.
 # - Allows for safe, repeatable infrastructure automation and compliance.
-resource "azurerm_subnet_network_security_group_association" "runner_nsg_assoc" {
-  subnet_id                 = data.azurerm_subnet.runner_subnet.id
-  network_security_group_id = data.azurerm_network_security_group.runner_nsg.id
-}
+# resource "azurerm_subnet_network_security_group_association" "runner_nsg_assoc" {
+#   subnet_id                 = data.azurerm_subnet.runner_subnet.id
+#   network_security_group_id = data.azurerm_network_security_group.runner_nsg.id
+# }
 
 # 6.2 Associate the NSG with the Bastion subnet
 # This resource enforces and maintains the association between the Bastion NSG and the Bastion subnet.
@@ -210,30 +209,3 @@ resource "azurerm_subnet_network_security_group_association" "runner_nsg_assoc" 
 # Outputs are defined in outputs.tf for easier reference and troubleshooting in CI/CD pipelines.
 # See outputs.tf for implementation.
 # -------------------------------------------------------------------------------
-
-# TEST: Create a test NSG to verify if policy allows Terraform to create NSGs
-resource "azurerm_network_security_group" "test_nsg" {
-  name                = "test-cicd-nsg"
-  location            = data.azurerm_resource_group.main.location
-  resource_group_name = data.azurerm_resource_group.main.name
-  tags = {
-    environment = "test"
-    managed_by  = "terraform"
-  }
-}
-
-# TEST: Create a test subnet with NSG association at creation (required by policy)
-resource "azapi_resource" "test_subnet" {
-  type      = "Microsoft.Network/virtualNetworks/subnets@2023-04-01"
-  name      = "test-cicd-subnet"
-  parent_id = data.azurerm_virtual_network.spoke_vnet.id
-
-  body = jsonencode({
-    properties = {
-      addressPrefix = "10.46.73.240/28"
-      networkSecurityGroup = {
-        id = azurerm_network_security_group.test_nsg.id
-      }
-    }
-  })
-}

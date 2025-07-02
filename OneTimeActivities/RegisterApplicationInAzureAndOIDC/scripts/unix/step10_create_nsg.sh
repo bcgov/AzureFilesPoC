@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 # step10_create_nsg.sh
 # This script creates a Network Security Group (NSG) in a specified resource group and location.
-# It is reusable for creating additional NSGs as needed and records them in the inventory.
+#
+# POLICY & PERMISSION LIMITATIONS:
+# - This script is only required if your service principal (used by Terraform or CI/CD) does NOT have sufficient permissions (e.g., Network Contributor) to create or update NSGs in Azure.
+# - If Azure Policy restricts NSG creation or modification (e.g., only allowed via specific process or with required tags), you may need to run this script manually as a workaround.
+# - For full automation and drift detection, ensure your service principal has the required roles and any necessary policy exemptions.
+# - If you can manage NSGs in Terraform, prefer that approach for consistency and auditability.
 #
 # Example usage:
 # bash step10_create_nsg.sh --nsgname nsg-github-runners --rg d5007d-dev-networking --location canadacentral
@@ -14,8 +19,10 @@
 #
 # NSGs created by script:
 #   1. GitHub runners NSG (e.g., "nsg-github-runners")
-# NOTE: This script is only required if your service principal does NOT have permission to create NSGs in Terraform.
-# In most environments, NSGs can be created and managed by Terraform if the service principal has the Network Contributor role on the resource group.
+#   2. dev_bastion_network_security_group = "nsg-bastion-vm-ag-pssg-azure-poc-dev-01"
+#   3. dev_network_security_group = "nsg-ag-pssg-azure-poc-dev-01"
+#
+# NOTE: In most environments, NSGs can be created and managed by Terraform if the service principal has the Network Contributor role on the resource group.
 # Prefer managing NSGs in Terraform for full automation and drift detection.
 
 set -euo pipefail
@@ -47,13 +54,26 @@ if [[ -z "$NSG_NAME" || -z "$RESOURCE_GROUP" || -z "$LOCATION" ]]; then
   echo "Error: --nsgname, --rg, and --location are required."; exit 1
 fi
 
-# --- CREATE NSG ---
-echo "Creating NSG '$NSG_NAME' in resource group '$RESOURCE_GROUP' ($LOCATION)..."
-CREATE_ARGS=(--name "$NSG_NAME" --resource-group "$RESOURCE_GROUP" --location "$LOCATION")
-if [[ -n "$TAGS" ]]; then
-  CREATE_ARGS+=(--tags $TAGS)
+# --- CREATE OR UPDATE NSG (IDEMPOTENT) ---
+EXISTS=0
+if az network nsg show --name "$NSG_NAME" --resource-group "$RESOURCE_GROUP" &>/dev/null; then
+  EXISTS=1
 fi
-az network nsg create "${CREATE_ARGS[@]}"
+
+if [[ $EXISTS -eq 1 ]]; then
+  echo "NSG '$NSG_NAME' already exists in resource group '$RESOURCE_GROUP'."
+  if [[ -n "$TAGS" ]]; then
+    echo "Updating tags for NSG '$NSG_NAME'..."
+    az network nsg update --name "$NSG_NAME" --resource-group "$RESOURCE_GROUP" --tags $TAGS
+  fi
+else
+  echo "Creating NSG '$NSG_NAME' in resource group '$RESOURCE_GROUP' ($LOCATION)..."
+  CREATE_ARGS=(--name "$NSG_NAME" --resource-group "$RESOURCE_GROUP" --location "$LOCATION")
+  if [[ -n "$TAGS" ]]; then
+    CREATE_ARGS+=(--tags $TAGS)
+  fi
+  az network nsg create "${CREATE_ARGS[@]}"
+fi
 
 # --- FETCH NSG DETAILS ---
 NSG_JSON=$(az network nsg show --name "$NSG_NAME" --resource-group "$RESOURCE_GROUP" -o json)
