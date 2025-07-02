@@ -21,22 +21,15 @@ dev_resource_id          = ""
 ## CREATED BY TERRAFORM
 dev_storage_account_name = ""
 
+dev_cicd_resource_group_name = ""
+
 # --- Provide values for the CICD-specific resources ---
 dev_cicd_resource_group_name = ""
 dev_runner_subnet_name       = ""
 dev_runner_vnet_address_space = [""]
 dev_runner_vm_ip_address = ""
 dev_runner_network_security_group = ""
-dev_runner_vm_name = ""
 dev_my_home_ip_address = ""
-
-#BASTION CICD resources
-dev_bastion_name           = ""
-dev_bastion_public_ip_name = ""
-dev_bastion_address_prefix = [""] # Or your chosen prefix
-dev_bastion_network_security_group = ""
-
-dev_github_actions_spn_object_id = ""
 
 dev_file_share_name = ""
 dev_file_share_quota_gb = 10
@@ -48,12 +41,51 @@ dev_subnet_address_prefixes = [""]
 
 dev_dns_servers = [""]
 
+# Gateway Subnet for VPN Gateway
+dev_gateway_subnet_name            = ""
+dev_gateway_subnet_address_prefix = [""]
+
+# Virtual Network Gateway
+dev_vng_name             = ""
+dev_vng_public_ip_name   = ""
+dev_vng_sku              = ""
+dev_vng_type             = ""
+dev_vng_vpn_type         = ""
+
+
 dev_vnet_dns_servers = [""]
 
-common_tags = {
+# --- Bastion Host Variables ---
+dev_bastion_name                   = ""
+dev_bastion_subnet_name            = ""
+dev_bastion_address_prefix         = [""]
+dev_bastion_network_security_group = ""
+dev_bastion_public_ip_name         = ""
+
+# --- Runner VM/Subnet Variables ---
+dev_runner_vm_name               = ""
+dev_runner_vm_ip_address         = ""
+dev_runner_network_security_group = ""
+dev_runner_subnet_name           = ""
+dev_runner_vnet_address_space    = [""]
+dev_runner_vm_admin_username     = ""
+
+# --- TF State Storage ---
+dev_tfstate_container = ""
+dev_tfstate_rg        = ""
+dev_tfstate_sa        = ""
+
+# --- Other Variables ---
+dev_github_actions_spn_object_id = ""
+dev_my_home_ip_address          = ""
+
+# --- Common Tags (override if needed) ---
+dev_common_tags = {
   project        = ""
   owner          = ""
   account_coding = ""
   billing_group  = ""
   ministry_name  = ""
 }
+
+admin_ssh_key_public       = ""

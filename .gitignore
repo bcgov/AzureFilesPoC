@@ -86,3 +86,10 @@ terraform_*.zip
 
 # Ignore Terraform environment licenses
 LICENSE.txt
+
+# Ignore private keys and sensitive files
+privatekey.txt
+**/privatekey.txt
+terraform/environments/cicd/privatekey.txt
+sshkey.txt
+**/sshkey.txt

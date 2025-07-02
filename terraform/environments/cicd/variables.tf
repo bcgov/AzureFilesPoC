@@ -134,11 +134,6 @@ variable "dev_resource_id" {
   type        = string
 }
 
-variable "dev_vnet_dnsServers" {
-  description = "DNS servers for the dev VNet (alternate spelling, see dev_vnet_dns_servers)."
-  type        = list(string)
-}
-
 variable "dev_resource_group" {
   description = "The resource group for the dev environment (alternate to dev_vnet_resource_group)."
   type        = string
@@ -164,8 +159,72 @@ variable "dev_bastion_address_prefix" {
   type        = list(string)
 }
 
+variable "dev_tfstate_container" {
+  type        = string
+  description = "The name of the container for Terraform state storage."
+}
+
+variable "dev_tfstate_rg" {
+  type        = string
+  description = "The resource group for the Terraform state storage account."
+}
+
+variable "dev_tfstate_sa" {
+  type        = string
+  description = "The storage account for Terraform state."
+}
+
+variable "dev_vng_name" {
+  type        = string
+  description = "The name of the Virtual Network Gateway."
+}
+
+variable "dev_vng_public_ip_name" {
+  type        = string
+  description = "The name of the public IP for the Virtual Network Gateway."
+}
+
+variable "dev_vng_sku" {
+  type        = string
+  description = "The SKU for the Virtual Network Gateway."
+}
+
+variable "dev_vng_type" {
+  type        = string
+  description = "The type of the Virtual Network Gateway."
+}
+
+variable "dev_vng_vpn_type" {
+  type        = string
+  description = "The VPN type for the Virtual Network Gateway."
+}
+
+variable "DEV_GATEWAY_SUBNET_ADDRESS_PREFIX" {
+  type        = list(string)
+  description = "Address prefix for the GatewaySubnet."
+}
+
+variable "dev_bastion_subnet_name" {
+  type        = string
+  description = "The name of the subnet for Azure Bastion."
+}
+
+variable "dev_common_tags" {
+  type        = map(string)
+  description = "A map of common tags to apply to all resources."
+}
 
 variable "dev_github_actions_spn_object_id" {
-  description = "The object ID of the GitHub Actions service principal to assign Network Contributor role in the dev/cicd environment."
   type        = string
+  description = "The object ID of the GitHub Actions service principal."
+}
+
+variable "dev_runner_vm_admin_username" {
+  type        = string
+  description = "The admin username for the runner VM."
+}
+
+variable "dev_gateway_subnet_name" {
+  type        = string
+  description = "The name of the GatewaySubnet."
 }
