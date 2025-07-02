@@ -70,6 +70,7 @@ jobs:
           dev_dns_servers             = ${{ vars.DEV_DNS_SERVERS }}
           dev_runner_vnet_address_space = ${{ vars.DEV_RUNNER_VNET_ADDRESS_SPACE }}
           dev_runner_vm_ip_address    = "${{ vars.DEV_RUNNER_VM_IP_ADDRESS }}"
+          dev_runner_vm_admin_username = "${{ vars.DEV_RUNNER_VM_ADMIN_USERNAME }}"
           dev_file_share_name         = "${{ vars.DEV_FILE_SHARE_NAME }}"
           dev_file_share_quota_gb     = ${{ vars.DEV_FILE_SHARE_QUOTA_GB }}
           dev_network_security_group  = "${{ vars.DEV_NETWORK_SECURITY_GROUP }}"
