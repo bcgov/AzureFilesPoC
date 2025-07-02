@@ -79,7 +79,7 @@ jobs:
           dev_runner_subnet_name = "${{ vars.DEV_RUNNER_SUBNET_NAME }}"
           dev_runner_vnet_address_space = ${{ vars.DEV_RUNNER_VNET_ADDRESS_SPACE }}
           dev_runner_vm_admin_username = "${{ vars.DEV_RUNNER_VM_ADMIN_USERNAME }}"
-          dev_runner_vm_ip_address = "${{ vars.DEV_RUNNER_VM_IP_ADDRESS }}""
+          dev_runner_vm_ip_address = "${{ vars.DEV_RUNNER_VM_IP_ADDRESS }}"
           dev_runner_vm_name = "${{ vars.DEV_RUNNER_VM_NAME }}"
           dev_service_principal_id = "${{ secrets.DEV_SERVICE_PRINCIPAL_ID }}"
           dev_storage_account_name = "${{ vars.DEV_STORAGE_ACCOUNT_NAME }}"
