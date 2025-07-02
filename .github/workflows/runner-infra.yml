@@ -79,7 +79,7 @@ jobs:
           dev_resource_id             = "${{ vars.DEV_RESOURCE_ID }}"
           dev_resource_group          = "${{ vars.DEV_RESOURCE_GROUP }}"
           dev_storage_account_name    = "${{ vars.DEV_STORAGE_ACCOUNT_NAME }}"
-          common_tags                 = ${{ vars.DEV_COMMON_TAGS }}
+          dev_common_tags                 = ${{ vars.DEV_COMMON_TAGS }}
           dev_bastion_name           = "${{ vars.DEV_BASTION_NAME }}"
           dev_bastion_public_ip_name = "${{ vars.DEV_BASTION_PUBLIC_IP_NAME }}"
           dev_bastion_address_prefix = ${{ vars.DEV_BASTION_ADDRESS_PREFIX }}

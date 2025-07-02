@@ -98,9 +98,8 @@ jobs:
           dev_vnet_address_space      = ${{ vars.DEV_VNET_ADDRESS_SPACE }}
           dev_vnet_dns_servers        = ${{ vars.DEV_VNET_DNS_SERVERS }}
           dev_dns_servers             = ${{ vars.DEV_DNS_SERVERS }}
-          common_tags                 = ${{ vars.DEV_COMMON_TAGS }}
-          allowed_ip_rules            = ${{ vars.ALLOWED_IP_RULES }}
-          service_principal_id        = "${{ vars.SERVICE_PRINCIPAL_ID }}"
+          dev_common_tags             = ${{ vars.DEV_COMMON_TAGS }}
+          dev_service_principal_id    = "${{ vars.DEV_SERVICE_PRINCIPAL_ID }}"
           dev_file_sync_service_name  = "${{ vars.DEV_FILE_SYNC_SERVICE_NAME }}"
           dev_log_analytics_workspace_name = "${{ vars.DEV_LOG_ANALYTICS_WORKSPACE_NAME }}"
           dev_automation_account_name = "${{ vars.DEV_AUTOMATION_ACCOUNT_NAME }}"
