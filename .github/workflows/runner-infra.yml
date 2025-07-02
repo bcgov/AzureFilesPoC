@@ -69,8 +69,8 @@ jobs:
           dev_file_share_name = "${{ vars.DEV_FILE_SHARE_NAME }}"
           dev_file_share_quota_gb = ${{ vars.DEV_FILE_SHARE_QUOTA_GB }}
           dev_github_actions_spn_object_id = "${{ vars.DEV_GITHUB_ACTIONS_SPN_OBJECT_ID }}"
-          dev_gateway_subnet_address_prefix = ${{ vars.DEV_GATEWAY_SUBNET_ADDRESS_PREFIX }}
-          dev_gateway_subnet_name = ${{ vars.DEV_GATEWAY_SUBNET_NAME }}
+          dev_gateway_subnet_address_prefix = "${{ vars.DEV_GATEWAY_SUBNET_ADDRESS_PREFIX }}""
+          dev_gateway_subnet_name = "${{ vars.DEV_GATEWAY_SUBNET_NAME }}""
           dev_my_home_ip_address = "${{ vars.DEV_MY_HOME_IP_ADDRESS }}"
           dev_network_security_group = "${{ vars.DEV_NETWORK_SECURITY_GROUP }}"
           dev_resource_group = "${{ vars.DEV_RESOURCE_GROUP }}"
