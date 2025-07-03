@@ -135,7 +135,7 @@ module "runner_nsg" {
   nsg_name            = var.dev_runner_network_security_group
   tags                = var.dev_common_tags
   vnet_id             = var.dev_vnet_id
-  address_prefix      = var.dev_runner_address_prefix
+  address_prefix      = var.dev_runner_vnet_address_space[0]
   subnet_name         = var.dev_runner_subnet_name
   # ssh_allowed_cidr  = var.dev_runner_ssh_allowed_cidr # Uncomment if you want to allow SSH inbound
 }
