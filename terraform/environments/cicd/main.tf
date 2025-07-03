@@ -10,16 +10,14 @@
 # Preconditions / Assumptions:
 #   1. Resource group for CI/CD (e.g., rg-ag-pssg-cicd-tools-dev) is pre-created. (done)
 #      - Created using: OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/step6_create_resource_group.sh
-#   2. Network Security Group for runner subnet (e.g., nsg-github-runners) is pre-created. (done)
-#      - Created using: OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/step10_create_nsg.sh
-#   3. Subnet for runner (e.g., snet-github-runners) is pre-created and associated with the NSG.
-#      - Created using: OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/step9_create_subnet.sh (with --nsg argument for association) (done)
+#   2. Network Security Group for runner subnet (e.g., nsg-github-runners) is created by Terraform pipeline (automated, policy-compliant)
+#      - Created by: module.runner_nsg (see below)
+#   3. Subnet for runner (e.g., snet-github-runners) is created and associated with the NSG by Terraform pipeline (automated, policy-compliant)
+#      - Created by: module.runner_nsg (see below)
 #   4. SSH key pair for VM admin access is generated and public key is registered as a GitHub secret.
 #      - Created using: OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/step11_create_ssh_key.sh
-#   5. Any pre-existing Azure resources (such as subnet/NSG associations) are imported into Terraform state.
-#      - Imported using: OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/step12_import_existing_resources.sh
-#   6. All names and address spaces are set in terraform.tfvars.(done)
-#   7. All names and address spaces are set in github variables (done)
+#   5. All names and address spaces are set in terraform.tfvars. (done)
+#   6. All names and address spaces are set in github variables. (done)
 #
 # Step 1. (Manual, One-Time): Create the CI/CD Resource Group
 #   - Use your user identity and the onboarding script:
@@ -28,16 +26,15 @@
 #   - Reference the created resource group in your variables (var.dev_cicd_resource_group_name).
 #   STATUS:  created
 # 
-# Step 2. (Manual, One-Time): Create the NSG for the runner subnet
-#   - Use onboarding script:
-#     bash OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/step10_create_nsg.sh --nsgname "<nsg-name>" --rg "<resource-group>" --location "<location>"
-#   - Reference the created NSG in your variables (var.dev_runner_network_security_group).
-#   STATUS:  created
+# Step 2. (Automated): Create the NSG and subnet for the runner
+#   - Both are created and associated in a single step by the Terraform pipeline (module.runner_nsg).
+#   - No manual onboarding scripts are required for these resources.
+#   STATUS:  created by pipeline
 #
-# Step 3. (Manual, One-Time): Create the runner subnet and associate with NSG
+# Step 3. (Manual, One-Time): Generate SSH key pair for VM admin access
 #   - Use onboarding script:
-#     bash OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/step9_create_subnet.sh --vnetname "<vnet-name>" --vnetrg "<vnet-resource-group>" --subnetname "<subnet-name>" --addressprefix "<address-prefix>" --nsg "<nsg-name>"
-#   - Reference the created subnet in your variables (var.dev_runner_subnet_name).
+#     bash OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/step11_create_ssh_key.sh
+#   - Register the public key as a GitHub secret.
 #   STATUS:  created
 #
 # Step 4. (Automated): Run Terraform to Deploy the Self-Hosted Runner
@@ -108,7 +105,7 @@ data "azurerm_virtual_network" "spoke_vnet" {
 }
 
 # ===============================================================================
-# SECTION 4: NETWORK SECURITY GROUPS (NSG)
+# SECTION 4: NETWORK SECURITY GROUPS (NSG) and subnets
 # -------------------------------------------------------------------------------
 # 4.1 Runner NSG: Pre-created and referenced as a data source above
 # 4.2 Bastion NSG: Created and managed by bastion/nsg module
@@ -140,61 +137,26 @@ module "runner_nsg" {
   # ssh_allowed_cidr  = var.dev_runner_ssh_allowed_cidr # Uncomment if you want to allow SSH inbound
 }
 
-
 # ===============================================================================
-# SECTION 5: BASTION SUBNET AND HOST
+# SECTION 5: BASTION 
 # -------------------------------------------------------------------------------
 # The Bastion subnet is created by the bastion/nsg module (using AzAPI for policy compliance).
 # The Bastion host is created by the bastion module, which takes the subnet ID and NSG ID as inputs.
-# module "bastion" {
-#   source                = "../../modules/bastion"
-#   resource_group_name   = data.azurerm_resource_group.main.name
-#   location              = data.azurerm_resource_group.main.location
-#   vnet_name             = data.azurerm_virtual_network.spoke_vnet.name
-#   vnet_resource_group   = data.azurerm_virtual_network.spoke_vnet.resource_group_name
-#   bastion_name          = var.dev_bastion_name
-#   public_ip_name        = var.dev_bastion_public_ip_name
-#   subnet_id             = module.bastion_nsg.bastion_subnet_id
-# }
+module "bastion" {
+  source                = "../../modules/bastion"
+  resource_group_name   = data.azurerm_resource_group.main.name
+  location              = data.azurerm_resource_group.main.location
+  vnet_name             = data.azurerm_virtual_network.spoke_vnet.name
+  vnet_resource_group   = data.azurerm_virtual_network.spoke_vnet.resource_group_name
+  bastion_name          = var.dev_bastion_name
+  public_ip_name        = var.dev_bastion_public_ip_name
+  subnet_id             = module.bastion_nsg.bastion_subnet_id
+}
 
 # ===============================================================================
-# SECTION 6: NSG ASSOCIATION
+# SECTION 6: SELF-HOSTED RUNNER VM
 # -------------------------------------------------------------------------------
-# 6.1 Associate the NSG with the runner's subnet
-# -------------------------------------------------------------------------------
-# This resource enforces and maintains the association between the specified
-# Network Security Group (NSG) and the runner subnet. Even if the NSG was
-# associated with the subnet during manual onboarding (via shell script),
-# Terraform will ensure the association is present and correct as part of the
-# infrastructure state. If the association is missing or different, Terraform
-# will create or update it to match this configuration. If removed from the
-# configuration, Terraform will remove the association in Azure.
-#
-# Purpose:
-# - Ensures the runner subnet is always protected by the intended NSG.
-# - Maintains idempotency and drift correction: if the association is changed
-#   outside of Terraform, it will be restored on the next apply.
-# - Allows for safe, repeatable infrastructure automation and compliance.
-# resource "azurerm_subnet_network_security_group_association" "runner_nsg_assoc" {
-#   subnet_id                 = data.azurerm_subnet.runner_subnet.id
-#   network_security_group_id = data.azurerm_network_security_group.runner_nsg.id
-# }
-
-# 6.2 Associate the NSG with the Bastion subnet
-# This resource enforces and maintains the association between the Bastion NSG and the Bastion subnet.
-# Ensures policy compliance: every subnet must have an NSG. If the Bastion subnet is created by the Bastion module,
-# reference its output for the subnet ID. Adjust the reference if your module uses a different output name.
-# resource "azurerm_subnet_network_security_group_association" "bastion_nsg_assoc" {
-#   subnet_id                 = module.bastion.bastion_subnet_id
-#   network_security_group_id = module.bastion.bastion_nsg_id
-# }
-
-
-
-# ===============================================================================
-# SECTION 7: SELF-HOSTED RUNNER VM
-# -------------------------------------------------------------------------------
-# 7.1 Deploy the Self-Hosted Runner VM using your existing module
+# 6.1 Deploy the Self-Hosted Runner VM using your existing module
 #    - Uncomment this section after confirming previous steps.
 # -------------------------------------------------------------------------------
 # module "self_hosted_runner_vm" {
@@ -211,7 +173,7 @@ module "runner_nsg" {
 #   ]
 # }
 # ===============================================================================
-# SECTION 8: OUTPUTS (RECOMMENDED)
+# SECTION 7: OUTPUTS (RECOMMENDED)
 # -------------------------------------------------------------------------------
 # Outputs are defined in outputs.tf for easier reference and troubleshooting in CI/CD pipelines.
 # See outputs.tf for implementation.
