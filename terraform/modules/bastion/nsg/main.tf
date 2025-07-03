@@ -51,21 +51,23 @@ resource "azurerm_network_security_group" "bastion" {
   resource_group_name = var.resource_group_name
   tags                = var.tags
 
+
+# --- Inbound Security Rules ---
+
   security_rule {
-    name                       = "AllowGatewayManagerInbound"
+    name                       = "AllowTagHTTPSInbound"
     priority                   = 100
     direction                  = "Inbound"
     access                     = "Allow"
     protocol                   = "Tcp"
     source_port_range          = "*"
     destination_port_range     = "443"
-    source_address_prefix      = "GatewayManager"
+    source_address_prefix      = "Internet"
     destination_address_prefix = "*"
-    description                = "Allow Azure Bastion GatewayManager inbound."
   }
 
   security_rule {
-    name                       = "AllowAzureLoadBalancerInbound"
+    name                       = "AllowAnyHTTPSInbound"
     priority                   = 110
     direction                  = "Inbound"
     access                     = "Allow"
@@ -74,49 +76,83 @@ resource "azurerm_network_security_group" "bastion" {
     destination_port_range     = "443"
     source_address_prefix      = "AzureLoadBalancer"
     destination_address_prefix = "*"
-    description                = "Allow AzureLoadBalancer inbound for Bastion."
   }
 
   security_rule {
-    name                       = "AllowBastionHostOutbound"
+    name                       = "AllowBastionHostCommunication"
     priority                   = 120
-    direction                  = "Outbound"
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "*" # "Any" in portal
+    source_port_range          = "*"
+    destination_port_ranges    = ["8080", "5701"]
+    source_address_prefix      = "VirtualNetwork"
+    destination_address_prefix = "VirtualNetwork"
+  }
+
+  security_rule {
+    name                       = "AllowGatewayManagerInbound"
+    priority                   = 130
+    direction                  = "Inbound"
     access                     = "Allow"
     protocol                   = "Tcp"
     source_port_range          = "*"
-    destination_port_range     = "*"
+    destination_port_range     = "443"
+    source_address_prefix      = "GatewayManager"
+    destination_address_prefix = "*"
+  }
+
+  # --- Outbound Security Rules ---
+
+  security_rule {
+    name                       = "AllowSshRdpOutbound"
+    priority                   = 140
+    direction                  = "Outbound"
+    access                     = "Allow"
+    protocol                   = "*" # "Any" in portal
+    source_port_range          = "*"
+    destination_port_ranges    = ["22", "3389"]
+    source_address_prefix      = "*"
+    destination_address_prefix = "VirtualNetwork"
+  }
+
+  security_rule {
+    name                       = "AllowAzureCloudOutbound"
+    priority                   = 150
+    direction                  = "Outbound"
+    access                     = "Allow"
+    protocol                   = "*" # "Any" in portal
+    source_port_range          = "*"
+    destination_port_range     = "443"
+    source_address_prefix      = "*"
+    destination_address_prefix = "AzureCloud"
+  }
+
+  security_rule {
+    name                       = "AllowBastionCommunication"
+    priority                   = 160
+    direction                  = "Outbound"
+    access                     = "Allow"
+    protocol                   = "*" # "Any" in portal
+    source_port_range          = "*"
+    destination_port_ranges    = ["8080", "5701"]
+    source_address_prefix      = "*"
+    destination_address_prefix = "VirtualNetwork"
+  }
+
+  security_rule {
+    name                       = "AllowHttpOutbound"
+    priority                   = 170
+    direction                  = "Outbound"
+    access                     = "Allow"
+    protocol                   = "*" # "Any" in portal
+    source_port_range          = "*"
+    destination_port_range     = "80"
     source_address_prefix      = "*"
     destination_address_prefix = "Internet"
-    description                = "Allow Bastion outbound to Internet."
-  }
-
-  security_rule {
-    name                       = "DenyAllInbound"
-    priority                   = 4096
-    direction                  = "Inbound"
-    access                     = "Deny"
-    protocol                   = "*"
-    source_port_range          = "*"
-    destination_port_range     = "*"
-    source_address_prefix      = "*"
-    destination_address_prefix = "*"
-    description                = "Deny all other inbound traffic."
-  }
-
-  security_rule {
-    name                       = "DenyAllOutbound"
-    priority                   = 4096
-    direction                  = "Outbound"
-    access                     = "Deny"
-    protocol                   = "*"
-    source_port_range          = "*"
-    destination_port_range     = "*"
-    source_address_prefix      = "*"
-    destination_address_prefix = "*"
-    description                = "Deny all other outbound traffic."
   }
 }
-
+  
 output "bastion_nsg_id" {
   value = azurerm_network_security_group.bastion.id
 }
