@@ -53,6 +53,8 @@ jobs:
           enable-AzPSSession: false
 
       - name: Create terraform.tfvars from secrets and variables
+        env:
+          SSH_PUBLIC_KEY: ${{ vars.ADMIN_SSH_KEY_PUBLIC }}
         run: |
           cat > terraform/terraform.tfvars << 'EOF'
           # =============================================================================
@@ -149,10 +151,9 @@ jobs:
           # RESOURCE TAGGING
           # =============================================================================
           common_tags = ${{ vars.COMMON_TAGS }}
+          # SSH Key Configuration (using heredoc to handle multi-line content safely)
+          admin_ssh_key_public = "$SSH_PUBLIC_KEY"
           EOF
-          
-          # Add SSH key separately to avoid quote issues (handle potential line breaks)
-          printf 'admin_ssh_key_public = "%s"\n' "${{ vars.ADMIN_SSH_KEY_PUBLIC }}" >> terraform/terraform.tfvars
           
           echo "✅ Generated terraform.tfvars from GitHub secrets and variables"
           echo "File size: $(wc -l < terraform/terraform.tfvars) lines"
