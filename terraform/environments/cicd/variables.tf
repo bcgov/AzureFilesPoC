@@ -84,8 +84,8 @@ variable "dev_dns_servers" {
 }
 
 variable "dev_runner_vnet_address_space" {
+  description = "Address space for the runner subnet (list, e.g., ['10.46.73.16/28']). Use the first element for subnet creation."
   type        = list(string)
-  description = "Address space for the runner subnet."
 }
 
 variable "dev_runner_vm_ip_address" {
@@ -227,9 +227,4 @@ variable "dev_runner_vm_admin_username" {
 variable "dev_gateway_subnet_name" {
   type        = string
   description = "The name of the GatewaySubnet."
-}
-
-variable "dev_runner_address_prefix" {
-  description = "The address prefix (CIDR) for the runner subnet. Example: '10.46.73.16/28'"
-  type        = string
 }

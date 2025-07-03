@@ -16,3 +16,8 @@
 #   # NOTE: This command assumes you are on a network with connectivity to the VNet (e.g., VPN or ExpressRoute).
 #   # For initial setup from the internet, you would need to assign a public IP to the VM's NIC.
 # }
+
+output "dev_runner_vnet_address_space" {
+  description = "The address space (list) for the runner subnet. Use the first element for subnet creation."
+  value       = var.dev_runner_vnet_address_space
+}
