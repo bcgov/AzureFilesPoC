@@ -228,3 +228,8 @@ variable "dev_gateway_subnet_name" {
   type        = string
   description = "The name of the GatewaySubnet."
 }
+
+variable "dev_runner_address_prefix" {
+  description = "The address prefix (CIDR) for the runner subnet. Example: '10.46.73.16/28'"
+  type        = string
+}
