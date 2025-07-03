@@ -7,7 +7,6 @@
 # - The subnet ID must be provided to this module (e.g., via output from the subnet/NSG module).
 # - The public IP must be created by this module or provided as an input.
 # - This module is intended for use in environments where strict Azure Policy requires NSG association at subnet creation.
-# - If you need to create the subnet manually, use the onboarding script (step9_create_subnet.sh) as a workaround.
 
 variable "resource_group_name" { type = string }
 variable "location" { type = string }
