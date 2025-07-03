@@ -12,11 +12,8 @@ terraform {
 # Assumptions / Constraints:
 # - This module creates a Network Security Group (NSG) with all required Bastion rules.
 # - In strict BC Gov/Azure policy environments, service principals may NOT have permission to create subnets with NSG association in a single step (required by policy).
-# - The Bastion subnet must be created with an NSG assigned at creation time, but this is often blocked for service principals by policy.
-# - As a workaround, run the onboarding script `step9_create_subnet.sh` to create the subnet manually after this NSG is created.
+# - The Bastion subnet must be created with an NSG assigned at creation time
 # - The subnet can only be created after this NSG exists.
-# - If your service principal has sufficient permissions and policy exemptions, you can uncomment and use the Terraform subnet resource below.
-#
 # Example usage:
 #   module "bastion_nsg" {
 #     source              = "../bastion/nsg"
