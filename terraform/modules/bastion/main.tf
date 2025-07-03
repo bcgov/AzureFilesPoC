@@ -15,6 +15,7 @@ variable "vnet_name" { type = string }
 variable "vnet_resource_group" { type = string }
 variable "bastion_name" { type = string }
 variable "public_ip_name" { type = string }
+variable "subnet_id" { type = string }
 
 resource "azurerm_public_ip" "bastion" {
   name                = var.public_ip_name
@@ -32,7 +33,7 @@ resource "azurerm_bastion_host" "main" {
   sku                 = "Standard"
   ip_configuration {
     name                 = "configuration"
-    subnet_id            = azapi_resource.bastion_subnet.id
+    subnet_id            = var.subnet_id
     public_ip_address_id = azurerm_public_ip.bastion.id
   }
 }
