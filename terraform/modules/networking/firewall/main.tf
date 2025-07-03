@@ -2,7 +2,7 @@
 
 resource "azurerm_firewall" "main" {
   name                = var.firewall_name
-  location            = var.location
+  location            = var.azure_location
   resource_group_name = var.resource_group_name
   sku_name            = "AZFW_VNet"
   tags                = var.tags

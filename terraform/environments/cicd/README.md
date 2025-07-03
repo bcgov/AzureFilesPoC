@@ -40,8 +40,8 @@ graph TD
     end
 
     subgraph "Azure Cloud"
-        subgraph "Spoke VNet (e.g., d5007d-dev-vwan-spoke)"
-            D["Runner VM<br>(gh-runner-dev-01)"]
+        subgraph "Spoke VNet (e.g., <spoke-vnet-name>)"
+            D["Runner VM<br>(<runner-vm-name>)"]
             PE["Private Endpoint for Storage"]
 
             D -- Private Network Traffic --> PE
@@ -102,7 +102,7 @@ sequenceDiagram
 
 This Terraform configuration will create the following objects in Azure:
 
-*   **Resource Group (`azurerm_resource_group`):** A dedicated resource group (e.g., `rg-ag-pssg-cicd-tools-dev`) to contain all the runner's infrastructure, keeping it isolated and easy to manage.
+*   **Resource Group (`azurerm_resource_group`):** A dedicated resource group (e.g., `rg-<project-name>-cicd-tools-dev`) to contain all the runner's infrastructure, keeping it isolated and easy to manage.
 *   **Public IP Address (`azurerm_public_ip`):** A static public IP address assigned to the VM. **Purpose:** To allow you to SSH into the VM from your local machine for initial setup or troubleshooting. This can be removed later for enhanced security if you have a VPN or Bastion host.
 *   **Network Security Group (NSG) (`azurerm_network_security_group`):** A firewall for the VM's subnet. **Purpose:** It is configured with a rule to allow inbound SSH (port 22) traffic **only** from your specified home/office IP address. All other traffic is blocked.
 *   **Linux Virtual Machine (`azurerm_linux_virtual_machine`):** The core resource. An Ubuntu VM that will be configured to run the GitHub Actions runner agent.
@@ -114,7 +114,7 @@ This Terraform configuration will create the following objects in Azure:
 
 Before running this configuration, you must have the following in place:
 
-1.  **An Existing Spoke VNet and Subnet:** This configuration looks up an existing network. You must ensure the Spoke VNet and a dedicated subnet for the runner (e.g., `snet-github-runners`) have been created in Azure.
+1.  **An Existing Spoke VNet and Subnet:** This configuration looks up an existing network. You must ensure the Spoke VNet and a dedicated subnet for the runner (e.g., `snet-<project-name>-runners`) have been created in Azure.
 2.  **Tools Installed:** Azure CLI and Terraform must be installed on your local machine.
 3.  **Azure Authentication:** You must be logged into the correct Azure subscription via `az login`.
 4.  **SSH Key Pair:** You need an SSH key pair. The path to your public key (e.g., `~/.ssh/id_rsa.pub`) is required.
@@ -131,8 +131,8 @@ Before using this CI/CD environment, you must complete the following one-time on
    - Scripts are located in `OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/`.
    - Steps include:
      1. Register Azure AD application and service principal (`step1_register_app.sh`)
-     2. Assign least-privilege roles (`step2_grant_permissions.sh`)
-     3. Configure OIDC for GitHub Actions (`step3_configure_oidc.sh`)
+     2. Assign least-privilege roles (`step2_grant_subscription_level_permissions.sh`)
+     3. Configure OIDC for GitHub Actions (`step3_configure_github_oidc_federation.sh`)
      4. Prepare and add GitHub secrets (`step4_prepare_github_secrets.sh`, `step5_add_github_secrets_cli.sh`)
      5. Create the required resource group (`step6_create_resource_group.sh`)
      6. Create the Terraform state storage account and container (`step7_create_tfstate_storage_account.sh`)
@@ -188,7 +188,7 @@ This configuration should be run **once** from your local machine to bootstrap t
 
 1.  **Verify the Runner in GitHub:**
     *   Navigate to your GitHub repository's **Settings > Actions > Runners**.
-    *   You should see your new runner (e.g., `gh-runner-dev-01`) in the list with an "Idle" status.
+    *   You should see your new runner (e.g., `<runner-vm-name>`) in the list with an "Idle" status.
 
 2.  **Update Your Application Workflow:**
     *   In your main application deployment workflow file (e.g., `.github/workflows/deploy-dev.yml`), change the `runs-on` property for your jobs from `ubuntu-latest` to `self-hosted`.
@@ -243,11 +243,11 @@ az extension update --name ssh
 Replace the SSH key path if you use a different private key file.
 ```sh
 az network bastion ssh \
-  --name <var.dev_bastion_name> \
-  --resource-group <var.dev_cicd_resource_group_name> \
+  --name <bastion-name> \
+  --resource-group <cicd-resource-group-name> \
   --target-resource-id <VM resource ID> \
   --auth-type "SSHKey" \
-  --username <var.dev_runner_vm_admin_username> \
+  --username <vm-admin-username> \
   --ssh-key ~/.ssh/id_rsa
 ```
 - If you see a prompt to install an extension, answer `y` or follow the instructions.
@@ -276,8 +276,8 @@ If you need to delete the Bastion NSG or subnet (for example, to allow Terraform
    ```sh
    az network vnet subnet update \
      --name AzureBastionSubnet \
-     --vnet-name d5007d-dev-vwan-spoke \
-     --resource-group d5007d-dev-networking \
+     --vnet-name <spoke-vnet-name> \
+     --resource-group <spoke-vnet-resource-group> \
      --network-security-group ""
    ```
 
@@ -285,8 +285,8 @@ If you need to delete the Bastion NSG or subnet (for example, to allow Terraform
 
    ```sh
    az network nsg delete \
-     --name nsg-bastion-vm-ag-pssg-azure-poc-dev-01 \
-     --resource-group rg-ag-pssg-cicd-tools-dev
+     --name <bastion-nsg-name> \
+     --resource-group <cicd-resource-group-name>
    ```
 
 3. **(Optional) Delete the Bastion subnet:**
@@ -294,8 +294,8 @@ If you need to delete the Bastion NSG or subnet (for example, to allow Terraform
    ```sh
    az network vnet subnet delete \
      --name AzureBastionSubnet \
-     --vnet-name d5007d-dev-vwan-spoke \
-     --resource-group d5007d-dev-networking
+     --vnet-name <spoke-vnet-name> \
+     --resource-group <spoke-vnet-resource-group>
    ```
 
 > **Note:** You must remove the NSG association before deleting the NSG. If you see an error that the NSG is in use, ensure it is not associated with any subnet.

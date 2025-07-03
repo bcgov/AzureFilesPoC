@@ -48,7 +48,7 @@ jobs:
       ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       ARM_USE_OIDC: true
-      TF_VAR_service_principal_id: ${{ secrets.DEV_SERVICE_PRINCIPAL_ID }}
+      TF_VAR_service_principal_id: ${{ secrets.SERVICE_PRINCIPAL_ID }}
 
     steps:
       - name: Checkout repository
@@ -81,45 +81,45 @@ jobs:
       - name: Generate terraform.tfvars for dev
         run: |
           # Ensure this script does not try to set 'allowed_ip_rules' if it was previously there.
-          cat <<EOF > terraform/environments/dev/terraform.tfvars
+          cat <<EOF > terraform/terraform.tfvars
           azure_location              = "${{ vars.AZURE_LOCATION }}"
-          dev_service_principal_id    = "${{ vars.DEV_SERVICE_PRINCIPAL_ID }}"
-          dev_resource_group          = "${{ vars.DEV_RESOURCE_GROUP }}"
-          dev_storage_account_name    = "${{ vars.DEV_STORAGE_ACCOUNT_NAME }}"
-          dev_file_share_name         = "${{ vars.DEV_FILE_SHARE_NAME }}"
-          dev_file_share_quota_gb     = ${{ vars.DEV_FILE_SHARE_QUOTA_GB }}
-          dev_network_security_group  = "${{ vars.DEV_NETWORK_SECURITY_GROUP }}"
-          dev_resource_id             = "${{ vars.DEV_RESOURCE_ID }}"
-          dev_subnet_name             = "${{ vars.DEV_SUBNET_NAME }}"
-          dev_vnet_id                 = "${{ vars.DEV_VNET_ID }}"
-          dev_vnet_name               = "${{ vars.DEV_VNET_NAME }}"
-          dev_vnet_resource_group     = "${{ vars.DEV_VNET_RESOURCE_GROUP }}"
-          dev_subnet_address_prefixes = ${{ vars.DEV_SUBNET_ADDRESS_PREFIXES }}
-          dev_vnet_address_space      = ${{ vars.DEV_VNET_ADDRESS_SPACE }}
-          dev_vnet_dns_servers        = ${{ vars.DEV_VNET_DNS_SERVERS }}
-          dev_dns_servers             = ${{ vars.DEV_DNS_SERVERS }}
-          dev_common_tags             = ${{ vars.DEV_COMMON_TAGS }}
-          dev_service_principal_id    = "${{ vars.DEV_SERVICE_PRINCIPAL_ID }}"
-          dev_file_sync_service_name  = "${{ vars.DEV_FILE_SYNC_SERVICE_NAME }}"
-          dev_log_analytics_workspace_name = "${{ vars.DEV_LOG_ANALYTICS_WORKSPACE_NAME }}"
-          dev_automation_account_name = "${{ vars.DEV_AUTOMATION_ACCOUNT_NAME }}"
-          dev_firewall_name           = "${{ vars.DEV_FIREWALL_NAME }}"
-          dev_route_table_name        = "${{ vars.DEV_ROUTE_TABLE_NAME }}"
+          service_principal_id    = "${{ vars.SERVICE_PRINCIPAL_ID }}"
+          resource_group          = "${{ vars.RESOURCE_GROUP }}"
+          storage_account_name    = "${{ vars.STORAGE_ACCOUNT_NAME }}"
+          file_share_name         = "${{ vars.FILE_SHARE_NAME }}"
+          file_share_quota_gb     = ${{ vars.FILE_SHARE_QUOTA_GB }}
+          network_security_group  = "${{ vars.NETWORK_SECURITY_GROUP }}"
+          resource_id             = "${{ vars.RESOURCE_ID }}"
+          subnet_name             = "${{ vars.SUBNET_NAME }}"
+          vnet_id                 = "${{ vars.VNET_ID }}"
+          vnet_name               = "${{ vars.VNET_NAME }}"
+          vnet_resource_group     = "${{ vars.VNET_RESOURCE_GROUP }}"
+          subnet_address_prefixes = ${{ vars.SUBNET_ADDRESS_PREFIXES }}
+          vnet_address_space      = ${{ vars.VNET_ADDRESS_SPACE }}
+          vnet_dns_servers        = ${{ vars.VNET_DNS_SERVERS }}
+          dns_servers             = ${{ vars.DNS_SERVERS }}
+          common_tags             = ${{ vars.COMMON_TAGS }}
+          service_principal_id    = "${{ vars.SERVICE_PRINCIPAL_ID }}"
+          file_sync_service_name  = "${{ vars.FILE_SYNC_SERVICE_NAME }}"
+          log_analytics_workspace_name = "${{ vars.LOG_ANALYTICS_WORKSPACE_NAME }}"
+          automation_account_name = "${{ vars.AUTOMATION_ACCOUNT_NAME }}"
+          firewall_name           = "${{ vars.FIREWALL_NAME }}"
+          route_table_name        = "${{ vars.ROUTE_TABLE_NAME }}"
           EOF
 
       - name: "debug TF_VAR_service_principal_id"
         run: |
           echo "TF_VAR_service_principal_id: ${{ env.TF_VAR_service_principal_id }}"
-          echo "service_principal_id: ${{ secrets.DEV_SERVICE_PRINCIPAL_ID }}"
+          echo "service_principal_id: ${{ secrets.SERVICE_PRINCIPAL_ID }}"
 
       - name: Display Generated terraform.tfvars (Debug Step)
         run: |
-          echo "Content of the generated terraform/environments/dev/terraform.tfvars:"
-          cat terraform/environments/dev/terraform.tfvars || echo "File not found or empty."
+          echo "Content of the generated terraform/terraform.tfvars:"
+          cat terraform/terraform.tfvars || echo "File not found or empty."
 
       - name: Terraform Init
         working-directory: terraform/environments/dev
-        run: terraform init -backend-config="resource_group_name=${{ vars.DEV_TFSTATE_RG }}" -backend-config="storage_account_name=${{ vars.DEV_TFSTATE_SA }}" -backend-config="container_name=${{ vars.DEV_TFSTATE_CONTAINER }}" -backend-config="key=dev.terraform.tfstate"
+        run: terraform init -backend-config="resource_group_name=${{ vars.TFSTATE_RG }}" -backend-config="storage_account_name=${{ vars.TFSTATE_SA }}" -backend-config="container_name=${{ vars.TFSTATE_CONTAINER }}" -backend-config="key=dev.terraform.tfstate"
 
       - name: Terraform Validate
         working-directory: terraform/environments/dev

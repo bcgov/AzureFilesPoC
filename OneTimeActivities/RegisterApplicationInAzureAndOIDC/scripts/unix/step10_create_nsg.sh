@@ -13,18 +13,18 @@
 # - If you can manage NSGs in Terraform, prefer that approach for consistency and auditability.
 #
 # Example usage:
-# bash step10_create_nsg.sh --nsgname nsg-github-runners --rg d5007d-dev-networking --location canadacentral
+# bash step10_create_nsg.sh --nsgname <nsg-name> --rg <resource-group> --location <azure-region>
 #
 # Parameters:
-#   --nsgname   Name for the new NSG (e.g., nsg-github-runners)
+#   --nsgname   Name for the new NSG (e.g., <nsg-name>)
 #   --rg        Resource group for the NSG
-#   --location  Azure region (e.g., canadacentral)
-#   [--tags]    (Optional) Tags in key=value format, space separated (e.g., "env=dev project=ag-pssg-azure-files-poc")
+#   --location  Azure region (e.g., <azure-region>)
+#   [--tags]    (Optional) Tags in key=value format, space separated (e.g., "env=dev project=<project-name>")
 #
 # NSGs created by script:
-#   1. GitHub runners NSG (e.g., "nsg-github-runners")
-#   2. dev_bastion_network_security_group = "nsg-bastion-vm-ag-pssg-azure-poc-dev-01"
-#   3. dev_network_security_group = "nsg-ag-pssg-azure-poc-dev-01"
+#   1. GitHub runners NSG (e.g., "<runner-nsg-name>")
+#   2. Bastion NSG (e.g., "<bastion-nsg-name>")
+#   3. General NSG (e.g., "<project-nsg-name>")
 #
 # NOTE: In most environments, NSGs can be created and managed by Terraform if the service principal has the Network Contributor role on the resource group.
 # Prefer managing NSGs in Terraform for full automation and drift detection.

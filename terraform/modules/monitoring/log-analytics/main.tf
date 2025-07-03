@@ -3,7 +3,7 @@
 
 # resource "azurerm_log_analytics_workspace" "main" {
 #   name                = var.workspace_name
-#   location            = var.location
+#   location            = var.azure_location
 #   resource_group_name = var.resource_group_name
 #   tags                = var.tags
 # }

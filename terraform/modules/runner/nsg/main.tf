@@ -20,7 +20,7 @@ variable "subnet_name" { type = string }
 
 resource "azurerm_network_security_group" "runner" {
   name                = var.nsg_name
-  location            = var.location
+  location            = var.azure_location
   resource_group_name = var.resource_group_name
   tags                = var.tags
 

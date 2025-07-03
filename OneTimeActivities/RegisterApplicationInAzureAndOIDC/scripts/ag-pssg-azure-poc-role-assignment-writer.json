@@ -1,9 +1,9 @@
 {
     "properties": {
-        "roleName": "d5007d-dev-role-assignment-contributor",
+        "roleName": "<project-name>-dev-role-assignment-contributor",
         "description": "Allows writing and reading role assignments for automation.\n  ",
         "assignableScopes": [
-            "/subscriptions/d321bcbe-c5e8-4830-901c-dab5fab3a834/resourceGroups/rg-ag-pssg-azure-poc-dev"
+            "/subscriptions/<subscription id>/resourceGroups/<resource group name>"
         ],
         "permissions": [
             {

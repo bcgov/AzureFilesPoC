@@ -33,7 +33,7 @@ jobs:
       ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       ARM_USE_OIDC: true
-      TF_VAR_service_principal_id: ${{ secrets.DEV_SERVICE_PRINCIPAL_ID }}
+      TF_VAR_service_principal_id: ${{ secrets.SERVICE_PRINCIPAL_ID }}
       TF_VAR_admin_ssh_key_public: ${{ secrets.ADMIN_SSH_KEY_PUBLIC }}
 
     steps:
@@ -58,46 +58,46 @@ jobs:
           cat <<EOF > terraform/environments/cicd/terraform.tfvars
           admin_ssh_key_public = "${{ secrets.ADMIN_SSH_KEY_PUBLIC }}"
           azure_location = "${{ vars.AZURE_LOCATION }}"
-          dev_bastion_address_prefix = ${{ vars.DEV_BASTION_ADDRESS_PREFIX }}
-          dev_bastion_name = "${{ vars.DEV_BASTION_NAME }}"
-          dev_bastion_network_security_group = "${{ vars.DEV_BASTION_NETWORK_SECURITY_GROUP }}"
-          dev_bastion_public_ip_name = "${{ vars.DEV_BASTION_PUBLIC_IP_NAME }}"
-          dev_bastion_subnet_name = "${{ vars.DEV_BASTION_SUBNET_NAME }}"
-          dev_cicd_resource_group_name = "${{ vars.DEV_CICD_RESOURCE_GROUP_NAME }}"
-          dev_common_tags = ${{ vars.DEV_COMMON_TAGS }}
-          dev_dns_servers = ${{ vars.DEV_DNS_SERVERS }}
-          dev_file_share_name = "${{ vars.DEV_FILE_SHARE_NAME }}"
-          dev_file_share_quota_gb = ${{ vars.DEV_FILE_SHARE_QUOTA_GB }}
-          dev_github_actions_spn_object_id = "${{ vars.DEV_GITHUB_ACTIONS_SPN_OBJECT_ID }}"
-          dev_gateway_subnet_address_prefix = ${{ vars.DEV_GATEWAY_SUBNET_ADDRESS_PREFIX }}
-          dev_gateway_subnet_name = "${{ vars.DEV_GATEWAY_SUBNET_NAME }}"
-          dev_my_home_ip_address = "${{ vars.DEV_MY_HOME_IP_ADDRESS }}"
-          dev_network_security_group = "${{ vars.DEV_NETWORK_SECURITY_GROUP }}"
-          dev_resource_group = "${{ vars.DEV_RESOURCE_GROUP }}"
-          dev_resource_id = "${{ vars.DEV_RESOURCE_ID }}"
-          dev_runner_network_security_group = "${{ vars.DEV_RUNNER_NETWORK_SECURITY_GROUP }}"
-          dev_runner_subnet_name = "${{ vars.DEV_RUNNER_SUBNET_NAME }}"
-          dev_runner_vnet_address_space = ${{ vars.DEV_RUNNER_VNET_ADDRESS_SPACE }}
-          dev_runner_vm_admin_username = "${{ vars.DEV_RUNNER_VM_ADMIN_USERNAME }}"
-          dev_runner_vm_ip_address = "${{ vars.DEV_RUNNER_VM_IP_ADDRESS }}"
-          dev_runner_vm_name = "${{ vars.DEV_RUNNER_VM_NAME }}"
-          dev_service_principal_id = "${{ secrets.DEV_SERVICE_PRINCIPAL_ID }}"
-          dev_storage_account_name = "${{ vars.DEV_STORAGE_ACCOUNT_NAME }}"
-          dev_subnet_address_prefixes = ${{ vars.DEV_SUBNET_ADDRESS_PREFIXES }}
-          dev_subnet_name = "${{ vars.DEV_SUBNET_NAME }}"
-          dev_tfstate_container = "${{ vars.DEV_TFSTATE_CONTAINER }}"
-          dev_tfstate_rg = "${{ vars.DEV_TFSTATE_RG }}"
-          dev_tfstate_sa = "${{ vars.DEV_TFSTATE_SA }}"
-          dev_vnet_address_space = ${{ vars.DEV_VNET_ADDRESS_SPACE }}
-          dev_vnet_dns_servers = ${{ vars.DEV_VNET_DNS_SERVERS }}
-          dev_vnet_id = "${{ vars.DEV_VNET_ID }}"
-          dev_vnet_name = "${{ vars.DEV_VNET_NAME }}"
-          dev_vnet_resource_group = "${{ vars.DEV_VNET_RESOURCE_GROUP }}"
-          dev_vng_name = "${{ vars.DEV_VNG_NAME }}"
-          dev_vng_public_ip_name = "${{ vars.DEV_VNG_PUBLIC_IP_NAME }}"
-          dev_vng_sku = "${{ vars.DEV_VNG_SKU }}"
-          dev_vng_type = "${{ vars.DEV_VNG_TYPE }}"
-          dev_vng_vpn_type = "${{ vars.DEV_VNG_VPN_TYPE }}"
+          bastion_address_prefix = ${{ vars.BASTION_ADDRESS_PREFIX }}
+          bastion_name = "${{ vars.BASTION_NAME }}"
+          bastion_network_security_group = "${{ vars.BASTION_NETWORK_SECURITY_GROUP }}"
+          bastion_public_ip_name = "${{ vars.BASTION_PUBLIC_IP_NAME }}"
+          bastion_subnet_name = "${{ vars.BASTION_SUBNET_NAME }}"
+          cicd_resource_group_name = "${{ vars.CICD_RESOURCE_GROUP_NAME }}"
+          common_tags = ${{ vars.COMMON_TAGS }}
+          dns_servers = ${{ vars.DNS_SERVERS }}
+          file_share_name = "${{ vars.FILE_SHARE_NAME }}"
+          file_share_quota_gb = ${{ vars.FILE_SHARE_QUOTA_GB }}
+          my_github_actions_spn_object_id = "${{ vars.MY_GITHUB_ACTIONS_SPN_OBJECT_ID }}"
+          gateway_subnet_address_prefix = ${{ vars.GATEWAY_SUBNET_ADDRESS_PREFIX }}
+          gateway_subnet_name = "${{ vars.GATEWAY_SUBNET_NAME }}"
+          my_home_ip_address = "${{ vars.MY_HOME_IP_ADDRESS }}"
+          network_security_group = "${{ vars.NETWORK_SECURITY_GROUP }}"
+          resource_group = "${{ vars.RESOURCE_GROUP }}"
+          resource_id = "${{ vars.RESOURCE_ID }}"
+          runner_network_security_group = "${{ vars.RUNNER_NETWORK_SECURITY_GROUP }}"
+          runner_subnet_name = "${{ vars.RUNNER_SUBNET_NAME }}"
+          runner_vnet_address_space = ${{ vars.RUNNER_VNET_ADDRESS_SPACE }}
+          runner_vm_admin_username = "${{ vars.RUNNER_VM_ADMIN_USERNAME }}"
+          runner_vm_ip_address = "${{ vars.RUNNER_VM_IP_ADDRESS }}"
+          runner_vm_name = "${{ vars.RUNNER_VM_NAME }}"
+          service_principal_id = "${{ secrets.SERVICE_PRINCIPAL_ID }}"
+          storage_account_name = "${{ vars.STORAGE_ACCOUNT_NAME }}"
+          subnet_address_prefixes = ${{ vars.SUBNET_ADDRESS_PREFIXES }}
+          subnet_name = "${{ vars.SUBNET_NAME }}"
+          tfstate_container = "${{ vars.TFSTATE_CONTAINER }}"
+          tfstate_rg = "${{ vars.TFSTATE_RG }}"
+          tfstate_sa = "${{ vars.TFSTATE_SA }}"
+          vnet_address_space = ${{ vars.VNET_ADDRESS_SPACE }}
+          vnet_dns_servers = ${{ vars.VNET_DNS_SERVERS }}
+          vnet_id = "${{ vars.VNET_ID }}"
+          vnet_name = "${{ vars.VNET_NAME }}"
+          vnet_resource_group = "${{ vars.VNET_RESOURCE_GROUP }}"
+          vng_name = "${{ vars.VNG_NAME }}"
+          vng_public_ip_name = "${{ vars.VNG_PUBLIC_IP_NAME }}"
+          vng_sku = "${{ vars.VNG_SKU }}"
+          vng_type = "${{ vars.VNG_TYPE }}"
+          vng_vpn_type = "${{ vars.VNG_VPN_TYPE }}"
           EOF
 
       - name: Display Generated terraform.tfvars (Debug Step)
@@ -107,7 +107,7 @@ jobs:
 
       - name: Terraform Init
         working-directory: terraform/environments/cicd
-        run: terraform init -backend-config="resource_group_name=${{ vars.DEV_TFSTATE_RG }}" -backend-config="storage_account_name=${{ vars.DEV_TFSTATE_SA }}" -backend-config="container_name=${{ vars.DEV_TFSTATE_CONTAINER }}" -backend-config="key=cicd.terraform.tfstate"
+        run: terraform init -backend-config="resource_group_name=${{ vars.TFSTATE_RG }}" -backend-config="storage_account_name=${{ vars.TFSTATE_SA }}" -backend-config="container_name=${{ vars.TFSTATE_CONTAINER }}" -backend-config="key=cicd.terraform.tfstate"
 
       - name: Terraform Validate
         working-directory: terraform/environments/cicd

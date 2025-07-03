@@ -114,12 +114,12 @@ For example, you may see a pre-provisioned spoke VNet like:
 **Example:**
 ```hcl
 data "azurerm_virtual_network" "spoke" {
-  name                = "d5007d-dev-vwan-spoke"
-  resource_group_name = "d5007d-dev-networking"
+  name                = "<vnet-name>"
+  resource_group_name = "<networking-resource-group-name>"
 }
 
 data "azurerm_subnet" "workload" {
-  name                 = "<your-subnet-name>"
+  name                 = "<workload-subnet-name>"
   virtual_network_name = data.azurerm_virtual_network.spoke.name
   resource_group_name  = data.azurerm_virtual_network.spoke.resource_group_name
 }

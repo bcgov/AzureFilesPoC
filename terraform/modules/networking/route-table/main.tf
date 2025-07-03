@@ -2,7 +2,7 @@
 
 resource "azurerm_route_table" "main" {
   name                = var.route_table_name
-  location            = var.location
+  location            = var.azure_location
   resource_group_name = var.resource_group_name
   tags                = var.tags
 }

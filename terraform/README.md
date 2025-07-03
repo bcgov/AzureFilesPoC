@@ -71,15 +71,15 @@ You must re-initialize the backend with all required parameters:
 
 ```sh
 terraform init -reconfigure \
-  -backend-config="container_name=sc-ag-pssg-tfstate-dev" \
+  -backend-config="container_name=sc-<project-name>-tfstate-dev" \
   -backend-config="storage_account_name=stagpssgtfstatedev01" \
-  -backend-config="resource_group_name=rg-ag-pssg-tfstate-dev"
+  -backend-config="resource_group_name=rg-<project-name>-tfstate-dev"
 ```
 
 **Option 1: Azure CLI**
 1. Find your backend details (from your workflow or backend config):
    - Storage account: e.g. `stagpssgtfstatedev01`
-   - Container: e.g. `sc-ag-pssg-tfstate-dev`
+   - Container: e.g. `sc-<project-name>-tfstate-dev`
    - Blob: e.g. `dev.terraform.tfstate.tflock` or `cicd.terraform.tfstate.tflock`
 2. Run:
    ```sh
@@ -93,7 +93,7 @@ terraform init -reconfigure \
    ```sh
    az storage blob delete \
      --account-name stagpssgtfstatedev01 \
-     --container-name sc-ag-pssg-tfstate-dev \
+     --container-name sc-<project-name>-tfstate-dev \
      --name cicd.terraform.tfstate.tflock \
      --auth-mode login
    ```
@@ -109,7 +109,7 @@ terraform init -reconfigure \
    ```sh
    az storage blob lease break \
      --account-name stagpssgtfstatedev01 \
-     --container-name sc-ag-pssg-dev \
+     --container-name sc-<project-name>-dev \
      --blob-name cicd.terraform.tfstate \
      --auth-mode login
    ```
@@ -128,7 +128,7 @@ Note: the ID to unlock is the ID in the error message for workflow run
 
 **Option 2: Azure Portal (GUI)**
 1. Go to your Storage Account in the Azure Portal.
-2. Open the container (e.g., `sc-ag-pssg-tfstate-dev`).
+2. Open the container (e.g., `sc-<project-name>-tfstate-dev`).
 3. If you see a blob ending with `.tflock`, select it and click **Delete**.
 4. If the state file (e.g., `dev.terraform.tfstate`) shows a status of **Leased**, select it, click **Break lease**, and confirm. This will release the lock and allow Terraform to proceed.
 
@@ -153,13 +153,15 @@ This is the foundational step to connect GitHub and Azure securely.
 Before testing the automated pipeline in github, verify your setup from your local machine.
 - This ensures your Azure CLI, Terraform CLI, and local variables are all correct.
 
-- See the detailed guide in [`validation/localhost/README.md`](./validation/localhost/README.md) for instructions on using the helper scripts.
-- **Only proceed when all local validation steps pass.**
-
+open the environment folder:
+1. terraform init
+2. terraform validate
+3. terraform plan
+I try to reserve apply for github because it uses different permissions, but you could do terraform apply and terraform destroy before trying in github. 
 
 ### Step 3: Validate the CI/CD Pipeline
 This step confirms that the GitHub Actions workflow can authenticate and deploy resources.
-- Make a small, safe change inside the `terraform/validation/` directory (e.g., add a comment to `main.tf`).
+- Make a small, safe change inside the `terraform/environments/dev/` directory (e.g., add a comment to `main.tf`). or uncomment just one resource creation.  
 - **Commit and push** this change to the `main` branch.
 - This will trigger the `azure-terraform-validation.yml` workflow, which will perform a full `plan` and `apply` of the test resources.
 - A successful run of this workflow validates the entire end-to-end automation process.
@@ -220,49 +222,70 @@ This project uses a modular, service-oriented structure. Only key directories an
 
 ```
 terraform/
-├── environments/           # Environment-specific configurations (dev, prod, test)
-│   └── dev/                # Example: main.tf, outputs.tf, variables.tf, terraform.tfvars
-│   └── test/
-│   └── prod/
-├── modules/                    # Reusable infrastructure modules (dns, networking, security, storage, etc.)
-│   ├── automation/             # Automation helpers (e.g., AzCopy)
-│   │   └── azcopy/             # AzCopy automation module
-│   ├── dns/                    # DNS zones and resolvers
-│   │   ├── private-dns/        # Private DNS zone module
-│   │   └── resolver/           # DNS resolver module
-│   ├── identity/               # Azure AD and managed identities
-│   │   ├── aad/                # Azure Active Directory app registration
-│   │   └── managed-identity/   # Managed Identity module
-│   ├── keyvault/               # Azure Key Vault module
-│   ├── monitoring/             # Monitoring and logging
-│   │   └── log-analytics/      # Log Analytics workspace
-│   ├── networking/             # Virtual networks and related resources
-│   │   ├── private-endpoint/   # Private Endpoint module
-│   │   ├── subnet/             # Subnet module
-│   │   └── vnet/               # Virtual Network module
-│   ├── policies/               # Policy assignments and definitions
-│   ├── rbac/                   # Role-Based Access Control assignments
-│   ├── security/               # Network security modules
-│   │   ├── firewall/           # Azure Firewall module
-│   │   └── nsg/                # Network Security Group module
-│   ├── storage/                # Storage account and related modules
-│   │   ├── account/            # Storage Account module
-│   │   ├── blob/               # Blob Storage module
-│   │   ├── file-share/         # File Share module (see files below)
-│   │   │   ├── main.tf
-│   │   │   ├── outputs.tf
-│   │   │   └── variables.tf
-│   │   ├── lifecycle/          # Storage lifecycle management
+├── environments/           # Environment-specific configurations (dev, prod, test, cicd)
+│   ├── cicd/               # CI/CD self-hosted runner infrastructure
+│   │   ├── main.tf         # Bastion, runner VM, NSG/subnet modules
+│   │   ├── outputs.tf      # Runner subnet address space outputs
+│   │   ├── variables.tf    # Variable declarations
+│   │   ├── terraform.tfvars # Variable values (auto-generated or manual)
+│   │   └── README.md       # Self-hosted runner setup guide
+│   ├── dev/                # Development environment
+│   ├── test/               # Test environment
+│   └── prod/               # Production environment
+├── modules/                # Reusable infrastructure modules
+│   ├── automation/         # Automation helpers (e.g., AzCopy)
+│   │   └── azcopy/         # AzCopy automation module
+│   ├── bastion/            # Azure Bastion host module
+│   │   ├── main.tf         # Bastion host with tunneling support
+│   │   ├── variables.tf    # Bastion variables
+│   │   └── nsg/            # Bastion NSG and subnet creation (AzAPI)
+│   │       └── main.tf     # Policy-compliant subnet with NSG association
+│   ├── bc-gov-azure-files/ # BC Gov specific Azure Files configuration
+│   ├── dns/                # DNS zones and resolvers
+│   │   ├── private-dns/    # Private DNS zone module
+│   │   └── resolver/       # DNS resolver module
+│   ├── identity/           # Azure AD and managed identities
+│   │   ├── aad/            # Azure Active Directory app registration
+│   │   └── managed-identity/ # Managed Identity module
+│   ├── keyvault/           # Azure Key Vault module
+│   ├── monitoring/         # Monitoring and logging
+│   │   ├── diagnostic-setting/ # Diagnostic settings
+│   │   └── log-analytics/  # Log Analytics workspace
+│   ├── networking/         # Virtual networks and related resources
+│   │   ├── firewall/       # Azure Firewall module
+│   │   ├── private-dns/    # Private DNS zone module
+│   │   ├── private-endpoint/ # Private Endpoint module
+│   │   ├── route-table/    # Route table module
+│   │   ├── subnet/         # Subnet module
+│   │   ├── vnet/           # Virtual Network module
+│   │   └── vnet-gateway/   # VPN Gateway module
+│   ├── policies/           # Policy assignments and definitions
+│   ├── rbac/               # Role-Based Access Control assignments
+│   ├── runner/             # GitHub Actions runner modules
+│   │   └── nsg/            # Runner NSG and subnet creation (AzAPI)
+│   │       └── main.tf     # Policy-compliant subnet with NSG association
+│   ├── security/           # Network security modules
+│   │   ├── firewall/       # Azure Firewall module
+│   │   └── nsg/            # Network Security Group module
+│   ├── storage/            # Storage account and related modules
+│   │   ├── account/        # Storage Account module
+│   │   ├── blob/           # Blob Storage module
+│   │   ├── blob-container/ # Blob Container module
+│   │   ├── file-share/     # File Share module
+│   │   ├── file-sync/      # Azure File Sync module
+│   │   ├── lifecycle/      # Storage lifecycle management
+│   │   ├── management-policy/ # Storage management policy
 │   │   ├── object-replication/ # Object Replication module
-│   │   └── private-link-service/# Private Link Service module
-│   ├── tags/                   # Tagging strategy module
-│   └── vm/                     # Virtual Machine module
+│   │   └── private-link-service/ # Private Link Service module
+│   ├── tags/               # Tagging strategy module
+│   └── vm/                 # Virtual Machine module (for self-hosted runners)
 ├── validation/             # Validation environment for onboarding and pipeline tests
 │   ├── localhost/          # Local validation scripts and README
+│   ├── github/             # GitHub validation
 │   ├── main.tf             # Validation Terraform config
 │   ├── secrets.tfvars*     # Secrets for validation (never commit real secrets)
 │   ├── terraform.tfvars*   # Variable values for validation
-│   └── ...
+│   └── README.md           # Validation documentation
 ```
 
 > **Note:**
@@ -328,13 +351,13 @@ This project uses a modular approach to infrastructure as code, making it easy t
 
 2. **Environments** (`environments/dev/`, etc.):
    - Each environment has its own folder with a `main.tf`, `variables.tf`, and `terraform.tfvars`.
-   - `main.tf` composes the environment by calling modules and mapping environment-specific variables (like `dev_storage_account_name`) to the module's generic variables.
+   - `main.tf` composes the environment by calling modules and mapping environment-specific variables (like `storage_account_name`) to the module's generic variables.
    - `variables.tf` defines the required variables for the environment.
    - `terraform.tfvars` provides the actual values for those variables (for local development, these are generated or edited directly; in CI/CD, they come from secrets or environment variables).
 
 3. **CI/CD (GitHub Actions):**
    - The workflow runs Terraform commands in the appropriate environment directory (e.g., `environments/dev`).
-   - Environment-specific values are provided to Terraform via secrets or environment variables (e.g., `DEV_STORAGE_ACCOUNT_NAME`).
+   - Environment-specific values are provided to Terraform via secrets or environment variables (e.g., `STORAGE_ACCOUNT_NAME`).
    - The workflow either passes these as `-var` flags or generates a `terraform.tfvars` file before running `terraform plan` and `terraform apply`.
 
 ### Example Flow
@@ -412,18 +435,16 @@ This diagram and flow show how GitHub Actions, environment configuration, and mo
 - **In CI/CD workflows (GitHub Actions), generate the required tfvars files at runtime** using the secrets/variables before running Terraform. These files are temporary and only exist for the duration of the workflow run.
 - **Locally, use your own `terraform.tfvars` for testing and development.** This file is ignored by git and only exists on your machine.
 
-### Why Generate tfvars Files at Runtime?
-- **Terraform expects variables in files:** This is the standard way to provide many variables at once.
-- **Consistency:** Keeps local and CI/CD workflows aligned.
-- **Security:** Secrets are never committed to the repo and only exist on the runner during the workflow.
+> **Note:**
+> For now, use the root `terraform/terraform.tfvars` file as the single source of truth for all environments (dev, cicd, etc.). If you run Terraform from an environment folder (like `environments/dev` or `environments/cicd`), you must specify the root tfvars file with `-var-file=../../terraform.tfvars`. If you do not specify `-var-file`, Terraform will look for a `terraform.tfvars` file in the current directory. In the future, when you have separate test and prod environments, you can move to environment-specific tfvars files (e.g., `environments/dev/terraform.tfvars`). For now, avoid duplicating variable files in each environment folder.
 
 ### Example: Writing a tfvars File in GitHub Actions
 ```yaml
 - name: Generate terraform.tfvars
   run: |
-    echo "dev_resource_group = \"${{ secrets.DEV_RESOURCE_GROUP_NAME }}\"" > terraform/environments/dev/terraform.tfvars
-    echo "dev_vnet_name = \"${{ secrets.DEV_VNET_NAME }}\"" >> terraform/environments/dev/terraform.tfvars
-    echo "dev_vnet_resource_group = \"${{ secrets.DEV_VNET_RESOURCE_GROUP }}\"" >> terraform/environments/dev/terraform.tfvars
+    echo "resource_group = \"${{ secrets.RESOURCE_GROUP_NAME }}\"" > terraform/terraform.tfvars
+    echo "vnet_name = \"${{ secrets.VNET_NAME }}\"" >> terraform/terraform.tfvars
+    echo "vnet_resource_group = \"${{ secrets.VNET_RESOURCE_GROUP }}\"" >> terraform/terraform.tfvars
     # ...add all other variables as needed
 ```
 - The file is created on the runner, used by Terraform, and deleted with the runner after the workflow completes.

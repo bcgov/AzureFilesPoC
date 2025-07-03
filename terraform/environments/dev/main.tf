@@ -80,7 +80,7 @@ provider "azurerm" {
 #================================================================================
 # Resource groups are pre-created by the BC Gov landing zone/central IT. 
 # Service principals and Terraform are NOT authorized to create resource groups.
-# Reference the pre-created resource group by name (var.dev_resource_group) in all modules.
+# Reference the pre-created resource group by name (var.resource_group) in all modules.
 # Look up the pre-existing resource group using a data source.
 # This READS data instead of trying to CREATE (write) the resource.
 # Policy seems to prevent creating resource groups with terraform and
@@ -93,7 +93,7 @@ provider "azurerm" {
 # --------------------------------------------------------------------------------
 # REQUIRED ROLE ASSIGNMENTS FOR THIS SCRIPT TO WORK:
 #
-# Subscription Level (assigned by step2_grant_permissions.sh):
+# Subscription Level (assigned by step2_grant_subscription_level_permissions.sh):
 #   - Reader
 #   - Storage Account Contributor
 #   - [BCGOV-MANAGED-LZ-LIVE] Network-Subnet-Contributor
@@ -103,14 +103,14 @@ provider "azurerm" {
 #
 # Resource Group Level (assigned by step6_create_resource_group.sh):
 #   - Storage Account Contributor
-#   - ag-pssg-azure-files-poc-dev-role-assignment-writer (custom role)
+#   - <project-name>-dev-role-assignment-writer (custom role)
 #
 # These assignments are required for the service principal to deploy and manage
 # resources in this environment. See onboarding scripts for details.
 # --------------------------------------------------------------------------------
 #ASSUMPTION:  This terraform script assumes the resource group exists
 data "azurerm_resource_group" "main" {
-  name = var.dev_resource_group
+  name = var.resource_group_name
 }
 
 #================================================================================
@@ -131,12 +131,12 @@ data "azurerm_resource_group" "main" {
 # --------------------------------------------------------------------------------
 # module "vnet" {
 #   source = "../../modules/networking/vnet"
-#   name                = var.dev_vnet_name
-#   address_space       = var.dev_vnet_address_space
+#   name                = var.vnet_name
+#   address_space       = var.vnet_address_space
 #   location            = var.azure_location
-#   resource_group_name = var.dev_resource_group
+#   resource_group_name = var.resource_group
 #   tags                = var.common_tags
-#   service_principal_id = var.dev_service_principal_id
+#   service_principal_id = var.service_principal_id
 # }
 
 # --------------------------------------------------------------------------------
@@ -145,10 +145,10 @@ data "azurerm_resource_group" "main" {
 # module "subnets" {
 #   source = "../../modules/networking/subnets"
 #   vnet_name           = module.vnet.name
-#   subnets             = var.dev_subnets
-#   resource_group_name = var.dev_resource_group
+#   subnets             = var.subnets
+#   resource_group_name = var.resource_group
 #   tags                = var.common_tags
-#   service_principal_id = var.dev_service_principal_id
+#   service_principal_id = var.service_principal_id
 # }
 
 # --------------------------------------------------------------------------------
@@ -156,12 +156,12 @@ data "azurerm_resource_group" "main" {
 # --------------------------------------------------------------------------------
 # module "nsg" {
 #   source = "../../modules/networking/nsg"
-#   nsg_name            = var.dev_nsg_name
-#   resource_group_name = var.dev_resource_group
+#   nsg_name            = var.nsg_name
+#   resource_group_name = var.resource_group
 #   location            = var.azure_location
-#   security_rules      = var.dev_nsg_rules
+#   security_rules      = var.nsg_rules
 #   tags                = var.common_tags
-#   service_principal_id = var.dev_service_principal_id
+#   service_principal_id = var.service_principal_id
 # }
 
 # --------------------------------------------------------------------------------
@@ -169,12 +169,12 @@ data "azurerm_resource_group" "main" {
 # --------------------------------------------------------------------------------
 # module "route_table" {
 #   source = "../../modules/networking/route-table"
-#   route_table_name    = var.dev_route_table_name
-#   resource_group_name = var.dev_resource_group
+#   route_table_name    = var.route_table_name
+#   resource_group_name = var.resource_group
 #   location            = var.azure_location
-#   routes              = var.dev_route_table_routes
+#   routes              = var.route_table_routes
 #   tags                = var.common_tags
-#   service_principal_id = var.dev_service_principal_id
+#   service_principal_id = var.service_principal_id
 # }
 
 # --------------------------------------------------------------------------------
@@ -182,11 +182,11 @@ data "azurerm_resource_group" "main" {
 # --------------------------------------------------------------------------------
 # module "firewall" {
 #   source = "../../modules/networking/firewall"
-#   firewall_name       = var.dev_firewall_name
-#   resource_group_name = var.dev_resource_group
+#   firewall_name       = var.firewall_name
+#   resource_group_name = var.resource_group
 #   location            = var.azure_location
 #   tags                = var.common_tags
-#   service_principal_id = var.dev_service_principal_id
+#   service_principal_id = var.service_principal_id
 # }
 
 # --------------------------------------------------------------------------------
@@ -195,13 +195,13 @@ data "azurerm_resource_group" "main" {
 # module "storage_private_endpoint" {
 #   source = "../../modules/networking/private-endpoint"
 #   name                         = "pe-${module.poc_storage_account.name}"
-#   resource_group_name          = var.dev_resource_group
+#   resource_group_name          = var.resource_group
 #   location                     = var.azure_location
 #   subnet_id                    = module.subnets.subnet_ids["private-endpoint"]
 #   private_connection_resource_id = module.poc_storage_account.id
 #   subresource_names            = ["file", "blob"]
 #   tags                         = var.common_tags
-#   service_principal_id         = var.dev_service_principal_id
+#   service_principal_id         = var.service_principal_id
 # }
 
 # --------------------------------------------------------------------------------
@@ -209,13 +209,13 @@ data "azurerm_resource_group" "main" {
 # --------------------------------------------------------------------------------
 # module "private_dns_zone" {
 #   source = "../../modules/networking/private-dns"
-#   dns_zone_name         = var.dev_private_dns_zone_name
-#   resource_group_name   = var.dev_resource_group
-#   vnet_link_name        = var.dev_private_dns_vnet_link_name
+#   dns_zone_name         = var.private_dns_zone_name
+#   resource_group_name   = var.resource_group
+#   vnet_link_name        = var.private_dns_vnet_link_name
 #   virtual_network_id    = module.vnet.id
 #   registration_enabled  = false
 #   tags                  = var.common_tags
-#   service_principal_id  = var.dev_service_principal_id
+#   service_principal_id  = var.service_principal_id
 # }
 
 # --------------------------------------------------------------------------------
@@ -223,15 +223,15 @@ data "azurerm_resource_group" "main" {
 # --------------------------------------------------------------------------------
 # module "vnet_gateway" {
 #   source = "../../modules/networking/vnet-gateway"
-#   vnet_gateway_name     = var.dev_vnet_gateway_name
-#   resource_group_name   = var.dev_resource_group
+#   vnet_gateway_name     = var.vnet_gateway_name
+#   resource_group_name   = var.resource_group
 #   location              = var.azure_location
-#   gateway_type          = var.dev_gateway_type
-#   vpn_type              = var.dev_vpn_type
-#   sku                   = var.dev_vnet_gateway_sku
-#   ip_configurations     = var.dev_vnet_gateway_ip_configurations
+#   gateway_type          = var.gateway_type
+#   vpn_type              = var.vpn_type
+#   sku                   = var.vnet_gateway_sku
+#   ip_configurations     = var.vnet_gateway_ip_configurations
 #   tags                  = var.common_tags
-#   service_principal_id  = var.dev_service_principal_id
+#   service_principal_id  = var.service_principal_id
 # }
 
 # --------------------------------------------------------------------------------
@@ -243,7 +243,7 @@ data "azurerm_resource_group" "main" {
 # 1. The resource group must already exist (see Section 1 for details).
 # 2. The service principal (or user) running Terraform must have the following role assignments:
 #
-#    Subscription Level (typically assigned by onboarding scripts, e.g., step2_grant_permissions.sh):
+#    Subscription Level (typically assigned by onboarding scripts, e.g., step2_grant_subscription_level_permissions.sh):
 #      - Reader
 #      - Storage Account Contributor
 #      - [BCGOV-MANAGED-LZ-LIVE] Network-Subnet-Contributor (if using private endpoints)
@@ -253,7 +253,7 @@ data "azurerm_resource_group" "main" {
 #
 #    Resource Group Level (typically assigned by step6_create_resource_group.sh):
 #      - Storage Account Contributor
-#      - ag-pssg-azure-files-poc-dev-role-assignment-writer (custom role, if required)
+#      - <project-name>-dev-role-assignment-writer (custom role, if required)
 #
 # 3. The storage account name must be globally unique and conform to Azure naming rules.
 # 4. Any required networking resources (e.g., VNet, subnets, NSGs) must exist if using advanced networking features.
@@ -272,11 +272,11 @@ data "azurerm_resource_group" "main" {
 module "poc_storage_account" {
   source = "../../modules/storage/account"
 
-  storage_account_name = var.dev_storage_account_name
+  storage_account_name = var.storage_account_name
   resource_group_name  = data.azurerm_resource_group.main.name
   location             = data.azurerm_resource_group.main.location
   tags                 = var.common_tags
-  service_principal_id = var.dev_service_principal_id
+  service_principal_id = var.service_principal_id
 
   # NOTE: The storage account module should be configured to allow public access
   # for this initial deployment step, otherwise the GitHub runner will be blocked
@@ -301,7 +301,7 @@ resource "azurerm_role_assignment" "storage_data_contributor_for_files" {
   scope = module.poc_storage_account.id
 
   # The principal is the Service Principal running this pipeline.
-  principal_id = var.dev_service_principal_id
+  principal_id = var.service_principal_id
 }
 
 # This resource creates an explicit dependency and forces a pause.
@@ -368,19 +368,19 @@ resource "time_sleep" "wait_for_role_propagation" {
 #   ]
 #
 #   # Required
-#   file_share_name      = var.dev_file_share_name
+#   file_share_name      = var.file_share_name
 #   storage_account_name = module.poc_storage_account.name
 #   quota_gb             = 10
-#   service_principal_id = var.dev_service_principal_id
+#   service_principal_id = var.service_principal_id
 #
 #   # Optional (file share–level only)
 #   enabled_protocol     = "SMB"
 #   access_tier          = "Hot"
 #   metadata = {
 #     env             = "dev"
-#     project         = "ag-pssg-azure-files-poc"
-#     owner           = "ag-pssg-teams"
-#     ministry_name   = "AG"
+#     project         = "<project-name>"
+#     owner           = "<project-owner>"
+#     ministry_name   = "<ministry-code>"
 #   }
 #   # acls = [...] # Only if you want to set custom ACLs
 # }
@@ -391,9 +391,9 @@ resource "time_sleep" "wait_for_role_propagation" {
 # module "poc_blob_container" {
 #   source = "../../modules/storage/blob-container"
 #   storage_account_name    = module.poc_storage_account.name
-#   container_name          = var.dev_blob_container_name
+#   container_name          = var.blob_container_name
 #   container_access_type   = "private"
-#   service_principal_id    = var.dev_service_principal_id
+#   service_principal_id    = var.service_principal_id
 # }
 
 # --------------------------------------------------------------------------------
@@ -402,8 +402,8 @@ resource "time_sleep" "wait_for_role_propagation" {
 # module "poc_storage_management_policy" {
 #   source = "../../modules/storage/management-policy"
 #   storage_account_id      = module.poc_storage_account.id
-#   policy                  = var.dev_storage_management_policy
-#   service_principal_id    = var.dev_service_principal_id
+#   policy                  = var.storage_management_policy
+#   service_principal_id    = var.service_principal_id
 # }
 
 #================================================================================
@@ -418,11 +418,11 @@ resource "time_sleep" "wait_for_role_propagation" {
 # --------------------------------------------------------------------------------
 # module "file_sync" {
 #   source = "../../modules/storage/file-sync"
-#   sync_service_name      = var.dev_file_sync_service_name
-#   resource_group_name    = var.dev_resource_group
+#   sync_service_name      = var.file_sync_service_name
+#   resource_group_name    = var.resource_group
 #   location               = var.azure_location
 #   tags                   = var.common_tags
-#   service_principal_id   = var.dev_service_principal_id
+#   service_principal_id   = var.service_principal_id
 #   # Add other required arguments for sync group, cloud endpoint, etc.
 # }
 
@@ -431,11 +431,11 @@ resource "time_sleep" "wait_for_role_propagation" {
 # --------------------------------------------------------------------------------
 # module "monitoring" {
 #   source = "../../modules/monitoring"
-#   log_analytics_workspace_name = var.dev_log_analytics_workspace_name
-#   resource_group_name          = var.dev_resource_group
+#   log_analytics_workspace_name = var.log_analytics_workspace_name
+#   resource_group_name          = var.resource_group
 #   location                    = var.azure_location
 #   tags                        = var.common_tags
-#   service_principal_id         = var.dev_service_principal_id
+#   service_principal_id         = var.service_principal_id
 #   # Add other required arguments for diagnostics, alerts, etc.
 # }
 
@@ -444,11 +444,11 @@ resource "time_sleep" "wait_for_role_propagation" {
 # --------------------------------------------------------------------------------
 # module "automation" {
 #   source = "../../modules/automation"
-#   automation_account_name = var.dev_automation_account_name
-#   resource_group_name     = var.dev_resource_group
+#   automation_account_name = var.automation_account_name
+#   resource_group_name     = var.resource_group
 #   location                = var.azure_location
 #   tags                    = var.common_tags
-#   service_principal_id    = var.dev_service_principal_id
+#   service_principal_id    = var.service_principal_id
 #   # Add other required arguments for runbooks, etc.
 # }
 
@@ -459,10 +459,10 @@ resource "time_sleep" "wait_for_role_propagation" {
 #   source = "../../modules/bastion"
 #   resource_group_name              = data.azurerm_resource_group.main.name
 #   location                        = data.azurerm_resource_group.main.location
-#   vnet_name                       = var.dev_vnet_name
-#   vnet_resource_group             = var.dev_vnet_resource_group
-#   bastion_name                    = var.dev_bastion_name
-#   public_ip_name                  = var.dev_bastion_public_ip_name
-#   address_prefix                  = var.dev_bastion_address_prefix[0]
-#   network_security_group          = var.dev_bastion_network_security_group
+#   vnet_name                       = var.vnet_name
+#   vnet_resource_group             = var.vnet_resource_group
+#   bastion_name                    = var.bastion_name
+#   public_ip_name                  = var.bastion_public_ip_name
+#   address_prefix                  = var.bastion_address_prefix[0]
+#   network_security_group          = var.bastion_network_security_group
 # }

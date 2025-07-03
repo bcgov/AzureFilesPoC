@@ -20,14 +20,14 @@ Before following this validation guide, ensure you have completed:
      - Unix/macOS: `RegisterApplicationInAzureAndOIDC/scripts/unix/step6_create_resource_group.sh <resource-group-name> [location]`
      - Windows: `RegisterApplicationInAzureAndOIDC/scripts/windows/step6_create_resource_group.ps1 -rgname <resource-group-name> [-location <location>]`
    - **Note:** Resource group tags are set in Azure only and are not written to the credentials JSON.
-   - Update your GitHub secret `DEV_RESOURCE_GROUP_NAME` to match your permanent resource group name.
+   - Update your GitHub secret `RESOURCE_GROUP_NAME` to match your permanent resource group name.
 4. **Run the Azure resource inventory automation:**
    - Use the provided inventory script for your platform to generate `.env/azure_full_inventory.json`:
      - Unix/macOS: `OneTimeActivities/GetAzureExistingResources/unix/azure_full_inventory.sh`
      - Windows: `OneTimeActivities/GetAzureExistingResources/windows/azure_full_inventory.ps1`
    - This file is required for onboarding, tfvars population, and validation automation.
 5. **Populate Terraform variable files using automation:**
-   - Use the population script to generate/update `terraform.tfvars` and `secrets.tfvars` from `.env/azure_full_inventory.json`:
+   - Use the population script to generate/update `/terraform/terraform.tfvars` and `secrets.tfvars` from `.env/azure_full_inventory.json`:
      - Unix/macOS: `OneTimeActivities/GetAzureExistingResources/unix/PopulateTfvarsFromDiscoveredResources.sh`
      - Windows: `OneTimeActivities/GetAzureExistingResources/windows/PopulateTfvarsFromDiscoveredResources.ps1`
    - This ensures all required variables (including new naming conventions) are set for validation.
@@ -47,13 +47,13 @@ This validation process follows BC Government best practices by ensuring all com
 ## Step 1: Validate Azure Authentication
 
 The first step is to validate basic authentication to Azure:
-1. open  https://github.com/bcgov/AzureFilesPoC/settings
-2. Navigate to the **Actions** tab in your GitHub repository https://github.com/bcgov/AzureFilesPoC/actions
+1. open  https://github.com/[YOUR-ORG]/[YOUR-REPO]/settings
+2. Navigate to the **Actions** tab in your GitHub repository https://github.com/[YOUR-ORG]/[YOUR-REPO]/actions
 2. Select the **Azure Login Validation** workflow
-https://github.com/bcgov/AzureFilesPoC/actions/workflows/azure-login-validation.yml
+https://github.com/[YOUR-ORG]/[YOUR-REPO]/actions/workflows/azure-login-validation.yml
 3. Click **Run workflow** and use the default settings (OIDC authentication)
 **note:** wait a few seconds you'll see something like
-Azure Login Validation #1: Manually run by richfrem (In progress)
+Azure Login Validation #1: Manually run by [USERNAME] (In progress)
 4. Wait for the workflow to complete and verify:
    - All steps show green checkmarks
    - The workflow output shows "Successfully authenticated with Azure!"
@@ -71,11 +71,7 @@ After confirming that Azure authentication works via GitHub Actions, the next ph
 
 > **Note:** All onboarding, inventory, and tfvars automation scripts are available and supported for both Unix/macOS (Bash) and Windows (PowerShell). Use the appropriate script for your platform when performing local validation. See the `OneTimeActivities/GetAzureExistingResources/unix` and `windows` folders for details.
 
-For detailed instructions and troubleshooting for Step 2A, see the [Local Validation README](/terraform/validation/localhost/README.md). This document covers prerequisites, environment setup, script usage, expected outputs, and common issues encountered during local validation. It provides step-by-step guidance for running the authentication and Terraform validation scripts, interpreting results, and resolving errors.
-
 **NOTE:**. this approach instead of running terraform scripts through github, it will be using azure CLI and azure login then running scripts locally to debug them before going to github. 
-
-For Step 2B, refer to the [GitHub Actions Validation README](/terraform/validation/github/README.md) for workflow-specific instructions. This includes details on configuring workflow inputs, understanding workflow logs, handling secrets, and troubleshooting CI/CD-specific issues. The README ensures you have all necessary context to validate Terraform automation in the GitHub Actions environment.
 
 Consulting these READMEs ensures you have access to comprehensive instructions and troubleshooting resources for both local and CI/CD validation steps.
 
@@ -90,34 +86,14 @@ Both validations are important: local validation gives you fast feedback and tro
 
 The local validation step ensures your development environment is correctly configured to authenticate with Azure and use Terraform. It validates that:
 
-- Your `.env/azure-credentials.json` file contains the required secrets
-- Azure CLI authentication works with your credentials
-- Terraform can initialize, plan, apply, and destroy resources locally
-- Resource creation and cleanup function as expected
+This step helps catch configuration or permission issues before running workflows in CI/CD.  Use the dev environment for this purpose.  start with just enabling uncommenting one resource creation like a network security group. 
 
-This step helps catch configuration or permission issues before running workflows in CI/CD.
+1. terraform init
+2. terraform validate
+3. terraform plan
+4. terraform apply
+5. terraform destroy
 
-
-First, test locally on your development machine using the [Terraform Validation Module](/terraform/validation):
-
-```shell
-# Run the authentication validation script (Bash or PowerShell, depending on your OS)
-./terraform/validation/localhost/validate_authentication.sh   # Unix/macOS
-./terraform/validation/localhost/validate_authentication.ps1  # Windows
-
-# Run the Terraform validation script
-./terraform/validation/localhost/validate_terraform.sh        # Unix/macOS
-./terraform/validation/localhost/validate_terraform.ps1       # Windows
-```
-
-The scripts above handle:
-1. Extracting credentials from your `.env/azure-credentials.json` file
-2. Authenticating with Azure CLI
-3. Running Terraform init, plan, apply
-4. Verifying resource creation
-5. Cleaning up resources
-
-For detailed instructions and troubleshooting, see the [Local Validation README](/terraform/validation/localhost/README.md).
 
 ### Step 2B: GitHub Actions Validation
 
@@ -131,10 +107,8 @@ The GitHub Actions validation step ensures your CI/CD pipeline can authenticate 
 
 This step confirms that your automation works as expected in the same environment used for production deployments.
 
-After successful local validation, proceed to validate the complete CI/CD pipeline using the same [Terraform Validation Module](/terraform/validation):
-
 1. Navigate to the **Actions** tab in your GitHub repository
-2. Select the **Terraform Validation Workflow**
+2. Select the **Azure Files PoC Deploy Infrastructure**
 3. Click **Run workflow** and use these settings:
    - **Environment**: dev (or your target environment)
    - **Cleanup**: true (to automatically clean up resources)
@@ -146,7 +120,7 @@ After successful local validation, proceed to validate the complete CI/CD pipeli
 
 This validation uses OIDC authentication with your GitHub secrets to authenticate with Azure.
 
-For detailed instructions and troubleshooting, see the [GitHub Actions Validation README](/terraform/validation/github/README.md).
+you can also run in isolation the workflow **`Azure Login Validation`**
 
 ## What This Validation Tests
 

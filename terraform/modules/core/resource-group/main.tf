@@ -13,7 +13,7 @@
 #==================================================================================
 resource "azurerm_resource_group" "main" {
   name     = var.resource_group_name
-  location = var.location
+  location = var.azure_location
   tags     = var.tags
 }
 
@@ -26,7 +26,7 @@ resource "azurerm_resource_group" "main" {
 #===================================================================================
 resource "azurerm_role_assignment" "role_assignment_writer" {
   scope                = azurerm_resource_group.main.id
-  role_definition_name = "ag-pssg-azure-files-poc-dev-role-assignment-writer"
+  role_definition_name = "<project-name>-dev-role-assignment-writer"
   principal_id         = var.service_principal_id
 }
 

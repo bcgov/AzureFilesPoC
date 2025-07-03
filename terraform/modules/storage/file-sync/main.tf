@@ -3,7 +3,7 @@
 resource "azurerm_storage_sync_service" "main" {
   name                = var.sync_service_name
   resource_group_name = var.resource_group_name
-  location            = var.location
+  location            = var.azure_location
   tags                = var.tags
 }
 

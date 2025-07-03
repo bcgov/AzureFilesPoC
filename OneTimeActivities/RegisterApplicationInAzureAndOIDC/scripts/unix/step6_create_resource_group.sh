@@ -6,18 +6,18 @@
 # Instead, use this script to create the resource group and update the inventory.
 
 #this script will be used to create multiple resource groups for different environments.
-# 1. Main resource group for the Azure Files PoC (e.g., "rg-ag-pssg-azure-poc-dev")
-# 2. Terraform state resource group (e.g., "rg-ag-pssg-tfstate-dev")
-# 3. CICD resource group (e.g., "rg-ag-pssg-cicd-tools-dev")
+# 1. Main resource group for the Azure Files PoC (e.g., "rg-<project-name>-dev")
+# 2. Terraform state resource group (e.g., "rg-<project-name>-tfstate-dev")
+# 3. CICD resource group (e.g., "rg-<project-name>-cicd-tools-dev")
 
 # example usage:
-# bash step6_create_resource_group.sh --rgname "rg-ag-pssg-azure-poc-dev" --location "canadacentral"
+# bash step6_create_resource_group.sh --rgname "rg-<project-name>-dev" --location "<azure-region>"
 set -euo pipefail
 
 # --- Resolve project root and config paths ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../../../" && pwd)"
-TFVARS_FILE="$PROJECT_ROOT/terraform/validation/terraform.tfvars"
+TFVARS_FILE="$PROJECT_ROOT/terraform/terraform.tfvars"
 CREDENTIALS_FILE="$PROJECT_ROOT/.env/azure-credentials.json"
 LOCATION=""
 RG_NAME=""
@@ -45,7 +45,7 @@ fi
 
 # --- LOAD LOCATION AND TAGS FROM TFVARS IF NOT PROVIDED ---
 if [[ -z "$LOCATION" && -f "$TFVARS_FILE" ]]; then
-  LOCATION=$(awk -F '="' '/^\s*dev_location\s*=\s*"/ {gsub(/"/,"",$2); gsub(/ /, "", $2); print $2}' "$TFVARS_FILE" | head -1)
+  LOCATION=$(awk -F '="' '/^\s*dlocation\s*=\s*"/ {gsub(/"/,"",$2); gsub(/ /, "", $2); print $2}' "$TFVARS_FILE" | head -1)
 fi
 if [[ -f "$TFVARS_FILE" ]]; then
   # Parse common_tags block robustly (handle whitespace, comments, etc.)
@@ -81,7 +81,7 @@ if [[ -f "$TFVARS_FILE" ]]; then
   TAGS_STRING_LITERALS=$(echo "$TAGS_STRING_LITERALS" | sed 's/ *$//')
 fi
 if [[ -z "$LOCATION" ]]; then
-  LOCATION="canadacentral"
+  LOCATION="<default-azure-region>"
 fi
 
 # --- CREATE RESOURCE GROUP ---
@@ -129,42 +129,42 @@ else
 fi
 
 # --- ASSIGN ROLES TO SERVICE PRINCIPAL OBJECT ID AT RESOURCE GROUP SCOPE ---
-# Parse dev_service_principal_id from tfvars if available
-DEV_SERVICE_PRINCIPAL_ID=""
+# Parse service_principal_id from tfvars if available
+SERVICE_PRINCIPAL_ID=""
 if [[ -f "$TFVARS_FILE" ]]; then
-  DEV_SERVICE_PRINCIPAL_ID=$(awk -F '="' '/^\s*dev_service_principal_id\s*=\s*"/ {gsub(/"/,"",$2); gsub(/ /, "", $2); print $2}' "$TFVARS_FILE" | head -1)
+  SERVICE_PRINCIPAL_ID=$(awk -F '="' '/^\s*service_principal_id\s*=\s*"/ {gsub(/"/,"",$2); gsub(/ /, "", $2); print $2}' "$TFVARS_FILE" | head -1)
 fi
 # If still empty, try to look up by display name
-if [[ -z "$DEV_SERVICE_PRINCIPAL_ID" ]]; then
-  DEV_SERVICE_PRINCIPAL_ID=$(az ad sp list --display-name "ag-pssg-azure-files-poc-ServicePrincipal" --query "[0].id" -o tsv)
+if [[ -z "$SERVICE_PRINCIPAL_ID" ]]; then
+  SERVICE_PRINCIPAL_ID=$(az ad sp list --display-name "<project-name>-ServicePrincipal" --query "[0].id" -o tsv)
 fi
 # If still empty, prompt the user
-if [[ -z "$DEV_SERVICE_PRINCIPAL_ID" ]]; then
-  read -rp "Enter the service principal (object) ID to assign roles to: " DEV_SERVICE_PRINCIPAL_ID
+if [[ -z "$SERVICE_PRINCIPAL_ID" ]]; then
+  read -rp "Enter the service principal (object) ID to assign roles to: " SERVICE_PRINCIPAL_ID
 fi
 
 SUBSCRIPTION_ID=$(az account show --query id -o tsv)
 SCOPE="/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RG_NAME"
 
 # Assign Storage Account Contributor role
-echo "Assigning 'Storage Account Contributor' role to $DEV_SERVICE_PRINCIPAL_ID at resource group $RG_NAME..."
-az role assignment create --assignee "$DEV_SERVICE_PRINCIPAL_ID" --role "Storage Account Contributor" --scope "$SCOPE"
+echo "Assigning 'Storage Account Contributor' role to $SERVICE_PRINCIPAL_ID at resource group $RG_NAME..."
+az role assignment create --assignee "$SERVICE_PRINCIPAL_ID" --role "Storage Account Contributor" --scope "$SCOPE"
 # syntax #
 #az role assignment create --assignee <service-principal-object-id> --role "Storage Account Contributor" --scope <ID of the resource group>
 #e.g. az role assignment create --assignee <service-principal-object-id> --role "Storage Account Contributor" --scope "/subscriptions/<subscription id>/resourceGroups/<resource group name>"
 
-# Assign custom role (ag-pssg-azure-files-poc-dev-role-assignment-writer)
-echo "Assigning 'ag-pssg-azure-files-poc-dev-role-assignment-writer' role to $DEV_SERVICE_PRINCIPAL_ID at resource group $RG_NAME..."
-az role assignment create --assignee "$DEV_SERVICE_PRINCIPAL_ID" --role "ag-pssg-azure-files-poc-dev-role-assignment-writer" --scope "$SCOPE"
+# Assign custom role (<project-name>-dev-role-assignment-writer)
+echo "Assigning '<project-name>-dev-role-assignment-writer' role to $SERVICE_PRINCIPAL_ID at resource group $RG_NAME..."
+az role assignment create --assignee "$SERVICE_PRINCIPAL_ID" --role "<project-name>-dev-role-assignment-writer" --scope "$SCOPE"
 
 echo "✅ Resource group '$RG_NAME' created and roles assigned."
 
 # --- OPTIONAL: LOOK UP SERVICE PRINCIPAL OBJECT ID BY NAME ---
 # If you do not know the object ID, you can look it up with:
-# az ad sp list --display-name "ag-pssg-azure-files-poc-ServicePrincipal" --query "[0].objectId" -o tsv
+# az ad sp list --display-name "<project-name>-ServicePrincipal" --query "[0].objectId" -o tsv
 # Or, if you know the appId:
 # az ad sp show --id <appId> --query objectId -o tsv
 #
 # Example usage:
-#   export DEV_SERVICE_PRINCIPAL_ID=$(az ad sp list --display-name "ag-pssg-azure-files-poc-ServicePrincipal" --query "[0].objectId" -o tsv)
-#   echo $DEV_SERVICE_PRINCIPAL_ID
+#   export SERVICE_PRINCIPAL_ID=$(az ad sp list --display-name "<project-name>-ServicePrincipal" --query "[0].objectId" -o tsv)
+#   echo $SERVICE_PRINCIPAL_ID

@@ -17,11 +17,11 @@
 #
 # Example Usage (from the root of the repository):
 # bash ./OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/step8_fix_terraform_state.sh \
-#   --tfstaterg rg-ag-pssg-tfstate-dev \
-#   --tfstatesa stagpssgtfstatedev01 \
-#   --tfstatecontainer sc-ag-pssg-tfstate-dev \
-#   --apprg rg-ag-pssg-azure-poc-dev-att2 \
-#   --appsa stagpssgazurepocdev01 \
+#   --tfstaterg rg-<project-name>-tfstate-dev \
+#   --tfstatesa st<projectname>tfstatedev01 \
+#   --tfstatecontainer sc-<project-name>-tfstate-dev \
+#   --apprg rg-<project-name>-dev \
+#   --appsa st<projectname>dev01 \
 #   --principalid <your-service-principal-object-id>
 
 set -euo pipefail

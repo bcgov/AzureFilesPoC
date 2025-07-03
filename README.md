@@ -23,10 +23,14 @@ The BC Government is exploring Azure Files as a solution to address several chal
 -   **[terraform/](terraform/)**: Infrastructure code and deployment configurations.
     -   **[README.md](terraform/README.md)**: Setup, usage instructions, and module documentation.
     -   **[environments/](terraform/environments/)**: Environment-specific configurations.
+        -   `cicd/`: CI/CD infrastructure (self-hosted runners, Bastion host).
         -   `dev/`: Development environment resources and variables.
         -   `test/`: Test environment resources and variables.
         -   `prod/`: Production environment resources and variables.
     -   **[modules/](terraform/modules/)**: Reusable BC Gov-compliant Terraform modules.
+        -   `bastion/`: Azure Bastion host with native SSH/RDP support.
+        -   `runner/`: GitHub Actions self-hosted runner infrastructure.
+        -   `vm/`: Virtual machine module for runner deployment.
         -   `networking/`: Network components (VNet, Subnet, NSG).
         -   `storage/`: Storage resources (Account, File Share, Blob).
         -   `security/`: Security components (NSG, Firewall).
@@ -36,7 +40,8 @@ The BC Government is exploring Azure Files as a solution to address several chal
 -   **[.github/workflows/](.github/workflows/)**:
     -   **[terraform-common.yml](.github/workflows/terraform-common.yml)**: Reusable Terraform workflow with OIDC authentication.
     -   **[main.yml](.github/workflows/main.yml)**: Environment-specific deployment workflow (e.g., orchestrates `terraform-common.yml`).
-    -   **[azure-login-test.yml](.github/workflows/azure-login-test.yml)**: Simple workflow for validating Azure authentication.
+    -   **[runner-infra.yml](.github/workflows/runner-infra.yml)**: Deploys CI/CD self-hosted runner infrastructure.
+    -   **[azure-login-validation.yml](.github/workflows/azure-login-validation.yml)**: Simple workflow for validating Azure authentication.
     -   **[terraform-validation.yml](.github/workflows/terraform-validation.yml)**: Workflow for validating end-to-end Terraform deployment.
 
 ### Resources and Best Practices
@@ -118,7 +123,7 @@ This project implements a secure, compliant infrastructure development process u
     -   Resource creation/update.
     -   Validation checks.
 
-> **Important**: All deployments must follow BC Government security requirements and use approved runners.
+> **Important**: All deployments must follow BC Government security requirements and use approved runners. For policy-compliant deployments, use the self-hosted runner infrastructure deployed via `terraform/environments/cicd/`.
 
 For detailed implementation guidance, see:
 -   [Terraform Resources Guide](Resources/TerraformResourcesForAzurePoC.md)
@@ -189,3 +194,61 @@ sequenceDiagram
         Runner-->>CommonFlow: 13. Workflow Results / Success/Failure
         CommonFlow-->>Git: 14. Update branch status (e.g., green checkmark)
     end
+````
+
+## CI/CD Infrastructure: Self-Hosted GitHub Actions Runner
+
+### Why Self-Hosted Runners Are Required
+
+BC Government Azure environments implement strict security policies that **forbid creating resources with public network access enabled**. This creates a challenge for CI/CD:
+
+- **Standard GitHub-hosted runners** operate from the public internet
+- When Terraform tries to create storage accounts or file shares, it requires network access
+- If public access is disabled (per policy), the firewall blocks the runner → **403 Forbidden errors**
+- If we try to enable public access, **Azure Policy blocks the action**
+
+### The Solution: Private Network Runner
+
+The **self-hosted GitHub Actions runner VM** is deployed **inside the private Azure Spoke VNet**:
+
+- **Network Location**: Runner operates from a private IP address within your VNet
+- **Policy Compliance**: Communicates with Azure resources over private network, bypassing public firewall
+- **Security**: Uses Azure Bastion for secure SSH access without public IPs
+- **Automation**: Fully automated deployment via Terraform in `terraform/environments/cicd/`
+
+### Key Components
+
+1. **Runner VM** (`Standard_B1s`): Lightweight Ubuntu VM for CI/CD workloads
+2. **Azure Bastion** (`Standard` SKU): Secure SSH/RDP access with native client support
+3. **Network Security Groups**: Policy-compliant subnet creation with required firewall rules
+4. **Private Networking**: Runner communicates with storage accounts via private endpoints
+
+### Quick Setup
+
+1. **Deploy the CI/CD infrastructure:**
+   ```bash
+   cd terraform/environments/cicd
+   terraform init && terraform apply
+   ```
+
+2. **Connect to the runner via Bastion:**
+   ```bash
+   az network bastion ssh \
+     --name <bastion-name> \
+     --resource-group <cicd-resource-group> \
+     --target-resource-id /subscriptions/<subscription-id>/resourceGroups/<cicd-resource-group>/providers/Microsoft.Compute/virtualMachines/<runner-vm-name> \
+     --auth-type SSHKey --username <admin-username>
+   ```
+
+   > **Note**: Replace placeholders with actual values from your `terraform.tfvars` file:
+   > - `<bastion-name>`: Value of `bastion_name`
+   > - `<cicd-resource-group>`: Value of `cicd_resource_group_name`  
+   > - `<subscription-id>`: Your Azure subscription ID
+   > - `<runner-vm-name>`: Value of `runner_vm_name`
+   > - `<admin-username>`: Value of `runner_vm_admin_username`
+
+3. **Update workflows** to use `runs-on: self-hosted`
+
+> **For complete setup instructions**, see [`terraform/environments/cicd/README.md`](terraform/environments/cicd/README.md)
+
+---

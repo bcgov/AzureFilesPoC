@@ -1,17 +1,30 @@
 #!/bin/bash
-
+# File: OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/step1_register_app.sh
+# Description: This script registers an Azure AD application and creates a service principal.
+# It initializes the credentials file from a template and ensures the user is logged in with the required permissions.
+## Usage:
+#   bash step1_register_app.sh [--app-name <app-name>]
+## Prerequisites:
+# - Azure CLI installed and configured
+# - jq installed for JSON processing
+# ------------------------------------------------------------
 # Manual Azure Login Required
 # ------------------------------------------------------------
-# Before running this script, you must be logged in to Azure CLI
-# with Microsoft Graph permissions. Run the following command:
+# - User must be logged in to Azure CLI with Microsoft Graph permissions
+#       **Before running this script, you must be logged in to Azure CLI
+#       with Microsoft Graph permissions. Run the following command:
+#       
+#      az login --scope https://graph.microsoft.com/.default
 #
-#   az login --scope https://graph.microsoft.com/.default
+#       This will open a browser window for you to authenticate.
+#       If you have multiple subscriptions, set the correct one:
+#       
+#az account set --subscription "<your-subscription-id>"
+# - The script must be run from the root of the project repository
 #
-# This will open a browser window for you to authenticate.
-# If you have multiple subscriptions, set the correct one:
-#   az account set --subscription "<your-subscription-id>"
-#
-# ------------------------------------------------------------
+#NOTE: This script is idempotent and can be safely run multiple times.
+#      It will not create duplicate Azure AD applications or service principals.
+
 
 # Function to resolve script location and set correct paths
 resolve_script_path() {
@@ -33,12 +46,26 @@ resolve_script_path() {
 resolve_script_path
 
 # Initialize variables
-APP_NAME="ag-pssg-azure-files-poc-ServicePrincipal"
+APP_NAME_DEFAULT="<project-name>-ServicePrincipal"
+APP_NAME="$APP_NAME_DEFAULT"
 ENV_DIR="$PROJECT_ROOT/.env"
 CREDS_FILE="$ENV_DIR/azure-credentials.json"
 TEMPLATE_FILE="$ENV_DIR/azure-credentials.template.json"
-GITHUB_ORG="bcgov"
-GITHUB_REPO="AzureFilesPoC"
+GITHUB_ORG="<github-org>"
+GITHUB_REPO="<github-repo>"
+
+# Parse arguments for app name
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --app-name)
+      APP_NAME="$2"
+      shift 2
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
 
 # Function to initialize credentials file from template
 initialize_credentials_file() {
@@ -285,8 +312,8 @@ echo "- Service Principal Object ID: $SP_ID"
 
 echo -e "\nNext Steps:"
 echo "1. Verify these values match your existing app registration"
-echo "2. Run step2_grant_permissions.sh to verify/set up role assignments"
-echo "3. Run step3_configure_oidc.sh to set up GitHub Actions authentication"
+echo "2. Run step2_grant_subscription_level_permissions.sh to verify/set up role assignments"
+echo "3. Run step3_configure_github_oidc_federation.sh to set up GitHub Actions authentication"
 if [ ! -f "$CREDS_FILE" ]; then
     echo "Error: Failed to create credentials file"
     exit 1
@@ -312,5 +339,5 @@ echo "- Service Principal Object ID: $SP_ID"
 
 echo -e "\nNext Steps:"
 echo "1. Verify these values match your existing app registration"
-echo "2. Run step2_grant_permissions.sh to verify/set up role assignments"
-echo "3. Run step3_configure_oidc.sh to set up GitHub Actions authentication"
+echo "2. Run step2_grant_subscription_level_permissions.sh to verify/set up role assignments"
+echo "3. Run step3_configure_github_oidc_federation.sh to set up GitHub Actions authentication"

@@ -1,51 +1,57 @@
 # --- terraform/environments/cicd/variables.tf ---
 
+variable "environment" {
+  type        = string
+  description = "The target environment (dev, cicd, prod, test)."
+  default     = "cicd"
+}
+
 variable "azure_location" {
   type        = string
   description = "The Azure region for deploying resources."
 }
 
-# --- Shared Networking Variables (using consistent 'dev_' prefix) ---
-variable "dev_vnet_name" {
+# --- Shared Networking Variables ---
+variable "vnet_name" {
   type        = string
   description = "The name of the existing Spoke VNet where the runner will be placed."
 }
 
-variable "dev_vnet_resource_group" {
+variable "vnet_resource_group" {
   type        = string
   description = "The name of the resource group containing the Spoke VNet."
 }
 
-# --- CICD-Specific Variables (now with 'dev_' prefix) ---
-variable "dev_cicd_resource_group_name" {
+# --- CICD-Specific Variables ---
+variable "cicd_resource_group_name" {
   type        = string
-  description = "The name of the resource group dedicated to the dev CI/CD infrastructure."
+  description = "The name of the resource group dedicated to the CI/CD infrastructure."
 }
 
-variable "dev_runner_subnet_name" {
+variable "runner_subnet_name" {
   type        = string
-  description = "The name of the subnet within the Spoke VNet dedicated to the dev GitHub Actions runners."
+  description = "The name of the subnet within the Spoke VNet dedicated to the GitHub Actions runners."
 }
 
-variable "dev_runner_vm_name" {
+variable "runner_vm_name" {
   type        = string
-  description = "The name for the dev self-hosted runner virtual machine."
-  default     = "gh-runner-dev-01"
+  description = "The name for the self-hosted runner virtual machine."
+  default     = "gh-runner-01"
 }
 
-variable "dev_my_home_ip_address" {
+variable "my_home_ip_address" {
   type        = string
-  description = "Your home/office public IP address for secure SSH access to the dev runner."
+  description = "Your home/office public IP address for secure SSH access to the runner."
   sensitive   = true
 }
 
-variable "dev_runner_network_security_group" {
+variable "runner_network_security_group" {
   type        = string
   description = "The name of the Network Security Group for the runner subnet."
   default       = "nsgrunners"
 }
 
-variable "dev_bastion_network_security_group" {
+variable "bastion_network_security_group" {
   description = "The name of the Network Security Group to associate with the Bastion subnet."
   type        = string
   default     = ""
@@ -63,173 +69,173 @@ variable "common_tags" {
   default     = {}
 }
 
-variable "dev_service_principal_id" {
+variable "service_principal_id" {
   type        = string
-  description = "Service principal ID for the dev environment."
+  description = "Service principal ID for the environment."
 }
 
-variable "dev_vnet_address_space" {
+variable "vnet_address_space" {
   type        = list(string)
-  description = "Address space for the dev VNet."
+  description = "Address space for the VNet."
 }
 
-variable "dev_vnet_dns_servers" {
+variable "vnet_dns_servers" {
   type        = list(string)
-  description = "DNS servers for the dev VNet."
+  description = "DNS servers for the VNet."
 }
 
-variable "dev_dns_servers" {
+variable "dns_servers" {
   type        = list(string)
-  description = "DNS servers for the dev environment."
+  description = "DNS servers for the environment."
 }
 
-variable "dev_runner_vnet_address_space" {
+variable "runner_vnet_address_space" {
   description = "Address space for the runner subnet (list, e.g., ['10.46.73.16/28']). Use the first element for subnet creation."
   type        = list(string)
 }
 
-variable "dev_runner_vm_ip_address" {
+variable "runner_vm_ip_address" {
   type        = string
   description = "IP address for the runner VM."
   default     = null
 }
 
-variable "dev_file_share_name" {
+variable "file_share_name" {
   type        = string
-  description = "Name of the Azure File Share for the dev environment."
+  description = "Name of the Azure File Share for the environment."
   default     = null
 }
 
-variable "dev_file_share_quota_gb" {
+variable "file_share_quota_gb" {
   type        = number
-  description = "Quota (in GB) for the dev file share."
+  description = "Quota (in GB) for the file share."
   default     = null
 }
 
-variable "dev_network_security_group" {
+variable "network_security_group" {
   type        = string
-  description = "Name of the network security group for the dev environment."
+  description = "Name of the network security group for the environment."
   default     = null
 }
 
-variable "dev_subnet_name" {
+variable "subnet_name" {
   type        = string
   description = "Name of the subnet for storage peering."
   default     = null
 }
 
-variable "dev_subnet_address_prefixes" {
+variable "subnet_address_prefixes" {
   type        = list(string)
   description = "Address prefixes for the storage peering subnet."
   default     = null
 }
 
-variable "dev_vnet_id" {
-  description = "The resource ID of the development virtual network."
+variable "vnet_id" {
+  description = "The resource ID of the virtual network."
   type        = string
 }
 
-variable "dev_resource_id" {
-  description = "The resource ID for a specific dev resource (please update description as needed)."
+variable "resource_id" {
+  description = "The resource ID for a specific resource (please update description as needed)."
   type        = string
 }
 
-variable "dev_resource_group" {
-  description = "The resource group for the dev environment (alternate to dev_vnet_resource_group)."
+variable "resource_group" {
+  description = "The resource group for the environment (alternate to vnet_resource_group)."
   type        = string
 }
 
-variable "dev_storage_account_name" {
-  description = "The name of the storage account for the dev environment."
+variable "storage_account_name" {
+  description = "The name of the storage account for the environment."
   type        = string
 }
 
-variable "dev_bastion_name" {
+variable "bastion_name" {
   description = "The name for the Bastion host."
   type        = string
 }
 
-variable "dev_bastion_public_ip_name" {
+variable "bastion_public_ip_name" {
   description = "The name for the Bastion public IP resource."
   type        = string
 }
 
-variable "dev_bastion_address_prefix" {
+variable "bastion_address_prefix" {
   description = "The address prefix for the AzureBastionSubnet (must be a /27 or larger)."
   type        = list(string)
 }
 
-variable "dev_tfstate_container" {
+variable "tfstate_container" {
   type        = string
   description = "The name of the container for Terraform state storage."
 }
 
-variable "dev_tfstate_rg" {
+variable "tfstate_rg" {
   type        = string
   description = "The resource group for the Terraform state storage account."
 }
 
-variable "dev_tfstate_sa" {
+variable "tfstate_sa" {
   type        = string
   description = "The storage account for Terraform state."
 }
 
-variable "dev_vng_name" {
+variable "vng_name" {
   type        = string
   description = "The name of the Virtual Network Gateway."
 }
 
-variable "dev_vng_public_ip_name" {
+variable "vng_public_ip_name" {
   type        = string
   description = "The name of the public IP for the Virtual Network Gateway."
 }
 
-variable "dev_vng_sku" {
+variable "vng_sku" {
   type        = string
   description = "The SKU for the Virtual Network Gateway."
 }
 
-variable "dev_vng_type" {
+variable "vng_type" {
   type        = string
   description = "The type of the Virtual Network Gateway."
 }
 
-variable "dev_vng_vpn_type" {
+variable "vng_vpn_type" {
   type        = string
   description = "The VPN type for the Virtual Network Gateway."
 }
 
-variable "dev_gateway_subnet_address_prefix" {
+variable "gateway_subnet_address_prefix" {
   type        = list(string)
   description = "Address prefix for the GatewaySubnet."
 }
 
-variable "dev_bastion_subnet_name" {
+variable "bastion_subnet_name" {
   type        = string
   description = "The name of the subnet for Azure Bastion."
 }
 
-variable "dev_common_tags" {
+variable "common_tags" {
   type        = map(string)
   description = "A map of common tags to apply to all resources."
 }
 
-variable "dev_github_actions_spn_object_id" {
+variable "my_github_actions_spn_object_id" {
   type        = string
   description = "The object ID of the GitHub Actions service principal."
 }
 
-variable "dev_runner_vm_admin_username" {
+variable "runner_vm_admin_username" {
   type        = string
   description = "The admin username for the runner VM."
 }
 
-variable "dev_gateway_subnet_name" {
+variable "gateway_subnet_name" {
   type        = string
   description = "The name of the GatewaySubnet."
 }
 
-variable "dev_runner_vm_size" {
+variable "runner_vm_size" {
   type        = string
   description = "The size (SKU) of the self-hosted runner virtual machine. Recommended: Standard_DS2_v2 or Standard_B2ms."
   default     = "Standard_B1s"

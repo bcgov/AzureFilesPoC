@@ -1,37 +1,27 @@
 # Terraform files
-**/.terraform/*
+**/.terraform/
 *.tfstate
 *.tfstate.*
+*.tfvars
+*.tfvars.bak
+*.tfvars.backup
+*.tfvars.organized
+**/backend.tfvars
+**/terraformbackend.tfvars
+**/secrets.tfvars
+*.tfvars.bak
+secrets.tfvars.bak
 crash.log
 crash.*.log
-
-# Sensitive variable files
-*.auto.tfvars
-*.auto.tfvars.json
-# Keep terraform.tfvars in version control for shared settings, but exclude any files with secrets
-# If you add secrets to terraform.tfvars, exclude it instead with: terraform.tfvars
-
-# Secret files - Add your specific secret files here
-#secrets.tfvars
-# Generic patterns to catch credential files
-**/*[cC]redential*.txt
-**/*[cC]redential*.json
-**/*[sS]ecret*.txt
-**/*[sS]ecret*.json
-**/*[aA]pp[rR]eg*.txt
-
-# CLI configuration files
-.terraformrc
-terraform.rc
-
-# Local .terraform directories
-**/.terraform/*
-
-# Terraform lock file
 .terraform.lock.hcl
 
 # Terraform plan output
 tfplan
+*.plan
+
+# CLI configuration files
+.terraformrc
+terraform.rc
 
 # Azure credentials - ignore the .env directory except for template files
 .azure/
@@ -64,15 +54,6 @@ WorkTracking/OneTimeActivities/AzureAppRegistrationDetails.txt
 # OS specific files
 .DS_Store
 Thumbs.db
-
-# Ignore Terraform variable files containing sensitive or environment-specific data
-terraform.tfvars
-terraform.tfvars.bak
-
-# Ignore Terraform secrets file
-terraform/secrets.tfvars
-secrets.tfvars
-secrets.tfvars.bak
 
 #ignore the packaged code as a bundle .txt
 llm_code_snapshot.txt

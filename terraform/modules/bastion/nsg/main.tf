@@ -21,7 +21,7 @@ terraform {
 #   module "bastion_nsg" {
 #     source              = "../bastion/nsg"
 #     resource_group_name = var.resource_group_name
-#     location            = var.location
+#     location            = var.azure_location
 #     nsg_name            = var.nsg_name
 #     tags                = var.tags
 #   }
@@ -56,7 +56,7 @@ variable "tags" { type = map(string) }
 
 resource "azurerm_network_security_group" "bastion" {
   name                = var.nsg_name
-  location            = var.location
+  location            = var.azure_location
   resource_group_name = var.resource_group_name
   tags                = var.tags
 

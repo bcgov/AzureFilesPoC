@@ -34,8 +34,8 @@ The onboarding process is automated and modularized into 11 robust, idempotent s
 **Example usage:**
 ```bash
 ./RegisterApplicationInAzureAndOIDC/scripts/unix/step1_register_app.sh
-./RegisterApplicationInAzureAndOIDC/scripts/unix/step2_grant_permissions.sh
-./RegisterApplicationInAzureAndOIDC/scripts/unix/step3_configure_oidc.sh
+./RegisterApplicationInAzureAndOIDC/scripts/unix/step2_grant_subscription_level_permissions.sh
+./RegisterApplicationInAzureAndOIDC/scripts/unix/step3_configure_github_oidc_federation.sh
 ./RegisterApplicationInAzureAndOIDC/scripts/unix/step4_prepare_github_secrets.sh
 ./RegisterApplicationInAzureAndOIDC/scripts/unix/step5_add_github_secrets_cli.sh
 ./RegisterApplicationInAzureAndOIDC/scripts/unix/step6_create_resource_group.sh <resource-group-name> [location]

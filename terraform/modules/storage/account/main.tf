@@ -3,7 +3,7 @@
 resource "azurerm_storage_account" "main" {
   name                = var.storage_account_name
   resource_group_name = var.resource_group_name
-  location            = var.location
+  location            = var.azure_location
   tags                = var.tags
 
   account_tier                      = "Standard"

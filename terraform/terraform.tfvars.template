@@ -1,59 +1,130 @@
-# --- terraform/environments/dev/terraform.tfvars ---
-#
-# This file provides the configuration values for the 'dev' environment.
-# DO NOT COMMIT THIS FILE TO GIT.  
+# Copy this file to terraform.tfvars and fill in your real values
+# Do NOT include secrets or sensitive values here
 
-# Names in this file now directly match variables.tf
-azure_location = "canadacentral"
+# =============================================================================
+# PLACEHOLDER MAPPING LEGEND (for reference when completing this template)
+# =============================================================================
+# Replace all placeholders below with your actual values:
+# 
+# <project-name>        = Your project name (e.g., "my-azure-files-poc")
+# <team-name>           = Your team/organization name
+# <azure-region>        = Azure region (e.g., "canadacentral", "eastus2")
+# <subscription-id>     = Your Azure subscription ID
+# <ministry-code>       = Your ministry/organization code (BC Gov specific)
+# <service-principal-object-id> = Object ID of your service principal
+# <environment>         = Target environment (cicd, dev, test, prod)
+# <vm-admin-username>   = VM administrator username
+# <ssh-public-key>      = Your SSH public key for VM access
+# <your-public-ip>      = Your public IP address for security rules
+# <account-coding>      = Your account coding for billing
+# <ministry-name>       = Full ministry name for tagging
+# =============================================================================
 
-# PREPROVISIONED by LANDING ZONE BC Government
-dev_service_principal_id = ""
-dev_vnet_name             = ""
-dev_vnet_resource_group   = ""
-dev_vnet_address_space     = [""]
-dev_vnet_dns_servers       = [""]
-dev_vnet_id               = ""
+# =============================================================================
+# ENVIRONMENT AND LOCATION CONFIGURATION
+# =============================================================================
+environment     = "cicd"
+azure_location  = "<azure-region>"
 
-# CREATED BY USER IDENTITY in AZURE policy won't allow by terraform
-dev_resource_group       = ""
-dev_resource_id          = ""
+# =============================================================================
+# AZURE LANDING ZONE RESOURCES (PRE-PROVISIONED BY BC GOV)
+# =============================================================================
+# These resources are created and managed by the BC Government Azure Landing Zone
+# Reference them but do not attempt to create/modify them via Terraform
 
-## CREATED BY TERRAFORM
-dev_storage_account_name = ""
+# Service Principal
+service_principal_id = "<service-principal-object-id>"
 
-# --- Provide values for the CICD-specific resources ---
-dev_cicd_resource_group_name = ""
-dev_runner_subnet_name       = ""
-dev_runner_vnet_address_space = [""]
-dev_runner_vm_ip_address = ""
-dev_runner_network_security_group = ""
-dev_runner_vm_name = ""
-dev_my_home_ip_address = ""
+# Existing VNet and Networking (Landing Zone)
+vnet_name             = "<ministry-code>-dev-vwan-spoke"
+vnet_resource_group   = "<ministry-code>-dev-networking"
+vnet_address_space    = ["<vnet-address-space>"]
+vnet_dns_servers      = ["<dns-server-ip>"]
+vnet_id               = "/subscriptions/<subscription-id>/resourceGroups/<ministry-code>-dev-networking/providers/Microsoft.Network/virtualNetworks/<ministry-code>-dev-vwan-spoke"
+dns_servers           = ["<dns-server-ip>"]
 
-#BASTION CICD resources
-dev_bastion_name           = ""
-dev_bastion_public_ip_name = ""
-dev_bastion_address_prefix = [""] # Or your chosen prefix
-dev_bastion_network_security_group = ""
+# =============================================================================
+# PROJECT RESOURCE GROUPS (CREATED BY USER IDENTITY - NOT TERRAFORM)
+# =============================================================================
+# Resource groups are created manually via onboarding scripts due to Azure policies
+# See: OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/step6_create_resource_group.sh
 
-dev_github_actions_spn_object_id = ""
+# Main CICD Resource Group
+resource_group       = "<resource-group-name>" 
+resource_id          = "/subscriptions/<subscription-id>/resourceGroups/<resource-group-name>"
 
-dev_file_share_name = ""
-dev_file_share_quota_gb = 10
+# CICD Tools Resource Group
+cicd_resource_group_name = "<cicd-tools-resource-group-name>"
 
-dev_network_security_group = ""
+# =============================================================================
+# TERRAFORM STATE STORAGE CONFIGURATION  
+# =============================================================================
+tfstate_container = "<tfstate-container-name>"
+tfstate_rg        = "<tfstate-resource-group-name>"
+tfstate_sa        = "<tfstate-storage-account-name>"
 
-dev_subnet_name             = ""
-dev_subnet_address_prefixes = [""]
+# =============================================================================
+# STORAGE AND FILE SERVICES
+# =============================================================================
+storage_account_name = "<storage-account-name>"
+file_share_name      = "<file-share-name>"
+file_share_quota_gb  = 10
 
-dev_dns_servers = [""]
+# =============================================================================
+# NETWORKING CONFIGURATION
+# =============================================================================
 
-dev_vnet_dns_servers = [""]
+# Network Security Groups
+network_security_group         = "<network-security-group-name>"
+bastion_network_security_group = "<bastion-nsg-name>"
+runner_network_security_group  = "<runner-nsg-name>"
 
+# Subnets
+subnet_name             = "<subnet-name>"
+subnet_address_prefixes = ["<subnet-address-prefix>"]
+bastion_subnet_name     = "AzureBastionSubnet"
+bastion_address_prefix  = ["<bastion-subnet-cidr>"]
+runner_subnet_name      = "<runner-subnet-name>"
+runner_vnet_address_space = ["<runner-subnet-cidr>"]
+
+# Gateway Configuration
+gateway_subnet_name            = "GatewaySubnet"
+gateway_subnet_address_prefix = ["<gateway-subnet-cidr>"]
+vng_name                      = "<virtual-network-gateway-name>"
+vng_public_ip_name            = "<gateway-public-ip-name>"
+vng_sku                       = "<vnet-gateway-sku>"
+vng_type                      = "<gateway-type>"
+vng_vpn_type                  = "<vpn-type>"
+
+# =============================================================================
+# BASTION HOST CONFIGURATION
+# =============================================================================
+bastion_name           = "<bastion-host-name>"
+bastion_public_ip_name = "<bastion-public-ip-name>"
+
+# =============================================================================
+# GITHUB RUNNER VM CONFIGURATION
+# =============================================================================
+runner_vm_name           = "<runner-vm-name>"
+runner_vm_ip_address     = "<runner-vm-ip>"
+runner_vm_admin_username = "<vm-admin-username>"
+
+# =============================================================================
+# SECURITY AND ACCESS CONFIGURATION
+# =============================================================================
+github_actions_spn_object_id = "<github-actions-service-principal-object-id>"
+my_home_ip_address           = "<your-public-ip>"
+
+# SSH Public Key for VM Access
+admin_ssh_key_public = "<ssh-public-key>"
+
+# =============================================================================
+# RESOURCE TAGGING
+# =============================================================================
 common_tags = {
-  project        = ""
-  owner          = ""
-  account_coding = ""
-  billing_group  = ""
-  ministry_name  = ""
+  project        = "<project-name>"
+  owner          = "<team-name>-teams"
+  account_coding = "<account-coding>"
+  billing_group  = "<ministry-code>"
+  ministry_name  = "<ministry-name>"
 }

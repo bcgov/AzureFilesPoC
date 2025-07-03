@@ -1,6 +1,11 @@
 #!/bin/bash
-# step2_grant_permissions.sh
-#
+# step2_grant_subscription_level_permissions.sh
+# This script grants the necessary subscription-level roles to a service principal or user in Azure.
+# usage: bash step2_grant_subscription_level_permissions.sh --app-id <application-id> --principal-id <service-principal-object-id> [--subscription-id <subscription-id>]
+#        --app-id <application-id>       : The Application (client) ID of the service principal
+#        --principal-id <service-principal-object-id> : The Object ID of the service principal
+#        --subscription-id <subscription-id> : (Optional) The subscription ID to target. If not provided, uses the current subscription.
+# Note:  you can consult secrets and variables to know how to call this
 # This script grants the following roles to the service principal at the **subscription level**:
 #   - Reader
 #   - Storage Account Contributor
@@ -14,6 +19,10 @@
 # This script does NOT assign resource-group-level or inherited roles. Those should be managed by their respective scripts.
 #
 # Update the REQUIRED_ROLES array below if you add or remove subscription-level roles.
+#
+#NOTE: This script is idempotent and can be safely run multiple times.
+#      It will not create duplicate Azure AD applications or service principals.
+
 
 # Function to resolve script location and set correct paths
 resolve_script_path() {
@@ -337,9 +346,8 @@ else
         
         for role in "${MISSING_ROLES[@]}"; do
             echo -n "Assigning role: $role... "
-            
-            # Attempt to assign the role
-            ROLE_RESULT=$(execute_az_command "az role assignment create --assignee \"$APP_ID\" --role \"$role\" --subscription \"$SUBSCRIPTION_ID\"")
+            # Use --scope instead of --subscription for all roles
+            ROLE_RESULT=$(execute_az_command "az role assignment create --assignee \"$APP_ID\" --role \"$role\" --scope /subscriptions/$SUBSCRIPTION_ID")
             if [ $? -eq 0 ]; then
                 ROLE_ID=$(echo "$ROLE_RESULT" | jq -r '.id')
                 update_role_assignments "$role" "$ROLE_ID"
@@ -404,4 +412,4 @@ fi
 
 echo -e "\nNext Steps:"
 echo "1. Verify all required roles are assigned correctly"
-echo "2. Run step3_configure_oidc.sh to set up GitHub Actions authentication"
+echo "2. Run step3_configure_github_oidc_federation.sh to set up GitHub Actions authentication"

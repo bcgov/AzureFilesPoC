@@ -66,7 +66,7 @@ resource "azurerm_private_endpoint" "example" {
 # Example: Private Endpoint Resource with Variables and Local State
 
 # This example assumes you are using variables for resource names and IDs, as defined in your tfvars files.
-# The Terraform state is managed locally in `terraform/validation/terraform.tfstate`.
+# The Terraform state is managed locally in `terraform/*.tfstate`.
 
 ```terraform
 # Variable declarations (typically in variables.tf):
@@ -78,16 +78,16 @@ resource "azurerm_private_endpoint" "example" {
 resource "azurerm_private_endpoint" "example" {
   name                = local.pe_name
         # Use a name that follows your AzureObjectsNamingConventions.md, e.g.:
-        # local.pe_name = "ag-pssg-azure-poc-pe-dev-01"
+        # local.pe_name = "<project-name>-pe-dev-01"
         # Construct this using locals and variables for project prefix, resource type, environment, and sequence.
-  location            = var.location
+  location            = var.azure_location
   resource_group_name = var.resource_group
   subnet_id           = var.subnet_id
 
   private_service_connection {
     name                           = local.pe_connection_name
     # Use a name that follows your AzureObjectsNamingConventions.md, e.g.:
-    # local.pe_connection_name = "ag-pssg-azure-poc-pe-conn-dev-01"
+    # local.pe_connection_name = "<project-name>-pe-conn-dev-01"
     # Construct this using locals and variables for project prefix, resource type, environment, and sequence.
     private_connection_resource_id = var.storage_account_id
     subresource_names              = ["blob"]
@@ -102,9 +102,6 @@ resource "azurerm_private_endpoint" "example" {
   }
 }
 ```
-
-# Be sure to provide values for these variables in your terraform.tfvars file or via environment discovery scripts.
-# The local state file (terraform/validation/terraform.tfstate) will track resource state for this module.
 
 ---
 

@@ -7,7 +7,7 @@
 #   bash step6.1_assign_roles_to_resource_group.sh --rgname <resource-group-name> --assignee <object-id> --role "Role1" [--role "Role2" ...] [--subscription-id <id>]
 #
 # Example:
-#   bash step6.1_assign_roles_to_resource_group.sh --rgname rg-ag-pssg-cicd-tools-dev --assignee e72f42f8-d9a1-4181-a0b9-5c8644a28aee --role "Virtual Machine Contributor" --role "Network Contributor" --role "Managed Identity Operator"
+#   bash step6.1_assign_roles_to_resource_group.sh --rgname rg-<project-name>-cicd-tools-dev --assignee <service-principal-object-id> --role "Virtual Machine Contributor" --role "Network Contributor" --role "Managed Identity Operator"
 #
 # This script will update the inventory file (.env/azure_full_inventory.json) with the current role assignments for the resource group.
 #
@@ -17,19 +17,19 @@
 # Update this section if you add or remove roles in the script logic or if assignments change in Azure.
 # # INVENTORY:
 # Role assignments applied (as of 2025-06-29):
-#   Resource Group: rg-ag-pssg-azure-poc-dev
-#     - ag-pssg-azure-files-poc-ServicePrincipal (ace4c5df-cd88-44cb-90d5-77dac445f2ee):
+#   Resource Group: rg-<project-name>-dev
+#     - <project-name>-ServicePrincipal (<client-id>):
 #         * Storage Account Contributor
-#         * ag-pssg-azure-files-poc-dev-role-assignment-writer
-#   Resource Group: rg-ag-pssg-tfstate-dev
+#         * <project-name>-dev-role-assignment-writer
+#   Resource Group: rg-<project-name>-tfstate-dev
 #     - No direct role assignments
-#   Resource Group: rg-ag-pssg-cicd-tools-dev
-#    - ag-pssg-azure-files-poc-ServicePrincipal (ace4c5df-cd88-44cb-90d5-77dac445f2ee):
+#   Resource Group: rg-<project-name>-cicd-tools-dev
+#    - <project-name>-ServicePrincipal (<client-id>):
 #         * Managed Identity Operator
 #         * Network Contributor
 #         * Virtual Machine Contributor
-#         * ag-pssg-azure-files-poc-dev-role-assignment-writer
-# Inherited subscription-level roles for ag-pssg-azure-files-poc-ServicePrincipal (ace4c5df-cd88-44cb-90d5-77dac445f2ee):
+#         * <project-name>-dev-role-assignment-writer
+# Inherited subscription-level roles for <project-name>-ServicePrincipal (<client-id>):
 #   * Reader
 #   * [BCGOV-MANAGED-LZ-LIVE] Network-Subnet-Contributor
 #   * Monitoring Contributor

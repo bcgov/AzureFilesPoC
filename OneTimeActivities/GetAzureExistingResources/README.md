@@ -81,8 +81,8 @@ After generating `.env/azure_full_inventory.json`, you must manually update your
    - Use the example and required variable names from `terraform/terraform.tfvars.template` and `terraform/secrets.tfvars.template`.
    - Copy values (such as resource group name, VNet name, etc.) from `.env/azure_full_inventory.json` into the appropriate fields in your tfvars files.
 
-2. **Update environment-specific tfvars:**
-   - Edit `terraform/environments/dev/terraform.tfvars` (and any other environment-specific tfvars files) as needed, using the same approach and referencing the templates for required variables.
+2. **Update environment-specific tfvars:** (not initially using just 1 terraform)
+   - **future**:  Edit `terraform/environments/dev/terraform.tfvars` (and any other environment-specific tfvars files) as needed, using the same approach and referencing the templates for required variables.
 
 3. **Update environment variables if used:**
    - If your workflow uses environment variables for Terraform, ensure these are set to match the discovered values in `.env/azure_full_inventory.json`.

@@ -14,7 +14,7 @@ data "azurerm_virtual_network" "parent" {
 # Create a dedicated Network Security Group for this subnet.
 resource "azurerm_network_security_group" "main" {
   name                = local.nsg_name
-  location            = var.location
+  location            = var.azure_location
   resource_group_name = var.resource_group_name
   tags                = var.tags
 }
@@ -42,8 +42,8 @@ resource "azapi_resource" "subnet" {
 # Creates a Subnet within a Virtual Network.
 
 resource "azurerm_subnet" "main" {
-  name                 = var.dev_subnet_name
-  resource_group_name  = var.dev_vnet_resource_group
-  virtual_network_name = var.dev_vnet_name
-  address_prefixes     = var.dev_subnet_address_prefixes
+  name                 = var.subnet_name
+  resource_group_name  = var.vnet_resource_group
+  virtual_network_name = var.vnet_name
+  address_prefixes     = var.subnet_address_prefixes
 }

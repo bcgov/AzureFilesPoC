@@ -96,6 +96,20 @@ graph TD
     C -->|references| F[terraform/modules/**/main.tf]
     D -->|references| F
     E -->|references| F
+    C -->|uses vars from| G[terraform/terraform.tfvars]
+    D -->|uses vars from| H[terraform/terraform.tfvars]
+    E -->|uses vars from| I[terraform/terraform.tfvars]
+```
+#### Future after have multiple environments in azure
+```mermaid
+graph TD
+    A[main.yml] -->|calls| B[terraform-common.yml]
+    B -->|uses| C[terraform/environments/dev/main.tf]
+    B -->|uses| D[terraform/environments/test/main.tf]
+    B -->|uses| E[terraform/environments/prod/main.tf]
+    C -->|references| F[terraform/modules/**/main.tf]
+    D -->|references| F
+    E -->|references| F
     C -->|uses vars from| G[terraform/environments/dev/terraform.tfvars]
     D -->|uses vars from| H[terraform/environments/test/terraform.tfvars]
     E -->|uses vars from| I[terraform/environments/prod/terraform.tfvars]

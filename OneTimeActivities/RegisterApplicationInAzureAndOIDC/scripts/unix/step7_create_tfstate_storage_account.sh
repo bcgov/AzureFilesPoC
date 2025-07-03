@@ -6,7 +6,7 @@
 # with a remote backend.
 #
 # Preconditions:
-# 1. The Terraform resource group (e.g., 'rg-ag-pssg-tfstate-dev') must already exist in Azure.
+# 1. The Terraform resource group (e.g., 'rg-<project-name>-tfstate-dev') must already exist in Azure.
 #    - This resource group should be created using script 6: step6_create_resource_group.sh
 # 2. Azure CLI must be installed and authenticated to the target subscription.
 # 3. The authenticated Azure account must have permissions to create Storage Accounts
@@ -17,10 +17,10 @@
 #
 # Example Usage:
 # bash ./step7_create_tfstate_storage_account.sh \
-#   --rgname rg-ag-pssg-tfstate-dev \
-#   --saname stagpssgtfstatedev01 \
-#   --containername sc-ag-pssg-tfstate-dev \
-#   --location canadacentral
+#   --rgname rg-<project-name>-tfstate-dev \
+#   --saname st<projectname>tfstatedev01 \
+#   --containername sc-<project-name>-tfstate-dev \
+#   --location <azure-region>
 
 set -euo pipefail
 
@@ -45,7 +45,7 @@ while [[ $# -gt 0 ]]; do
       LOCATION="$2"; shift 2;;
     -h|--help)
       echo "Usage: $0 --rgname <resource-group-name> --saname <storage-account-name> --containername <container-name> [--location <location>]"
-      echo "Example: $0 --rgname rg-ag-pssg-tfstate-dev --saname stagpssgtfstatedev01 --containername sc-ag-pssg-tfstate-dev --location canadacentral"
+      echo "Example: $0 --rgname rg-<project-name>-tfstate-dev --saname st<projectname>tfstatedev01 --containername sc-<project-name>-tfstate-dev --location <azure-region>"
       exit 0;;
     *)
       echo "Unknown argument: $1"; exit 1;;
@@ -60,7 +60,7 @@ fi
 
 # Set a default location if not provided
 if [[ -z "$LOCATION" ]]; then
-  LOCATION="canadacentral"
+  LOCATION="<default-azure-region>"
   echo "No location provided, defaulting to: $LOCATION"
 fi
 

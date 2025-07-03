@@ -1,19 +1,19 @@
-variable "dev_vnet_name" {
+variable "vnet_name" {
   description = "The name of the Virtual Network."
   type        = string
 }
 
-variable "dev_location" {
+variable "location" {
   description = "The Azure region for the VNet."
   type        = string
 }
 
-variable "dev_vnet_resource_group" {
+variable "vnet_resource_group" {
   description = "The resource group for the VNet."
   type        = string
 }
 
-variable "dev_vnet_address_space" {
+variable "vnet_address_space" {
   description = "The address space for the VNet."
   type        = list(string)
 }

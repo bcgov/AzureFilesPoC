@@ -12,19 +12,19 @@
 # It is reusable for creating additional subnets as needed.
 #
 # Example usage:
-# bash step9_create_subnet.sh --vnetname d5007d-dev-vwan-spoke --vnetrg d5007d-dev-networking --subnetname AzureBastionSubnet --addressprefix 10.46.73.64/26 --nsg nsg-bastion-vm-ag-pssg-azure-poc-dev-01
+# bash step9_create_subnet.sh --vnetname <spoke-vnet-name> --vnetrg <spoke-vnet-resource-group> --subnetname <subnet-name> --addressprefix <address-prefix> --nsg <nsg-name>
 #
 # Parameters:
 #   --vnetname      Name of the existing VNet
 #   --vnetrg        Resource group of the VNet
-#   --subnetname    Name for the new subnet (e.g., AzureBastionSubnet)
-#   --addressprefix Address prefix for the subnet (e.g., 10.46.73.64/26)
-#   [--nsg]         (Optional, but required by policy for Bastion) NSG to associate (e.g., nsg-bastion-vm-ag-pssg-azure-poc-dev-01)
+#   --subnetname    Name for the new subnet (e.g., <subnet-name>)
+#   --addressprefix Address prefix for the subnet (e.g., <address-prefix>)
+#   [--nsg]         (Optional, but required by policy for Bastion) NSG to associate (e.g., <nsg-name>)
 #   [--route-table] (Optional) Route table to associate
 #
 # Subnets created by script:
-#  1. Bastion subnet ("AzureBastionSubnet") 10.46.73.64/26
-#  2. GitHub runners subnet (e.g., "snet-github-runners") 10.46.73.16/28
+#  1. Bastion subnet (e.g., "AzureBastionSubnet") <bastion-address-prefix>
+#  2. GitHub runners subnet (e.g., "<runner-subnet-name>") <runner-address-prefix>
 set -euo pipefail
 
 # --- ARGUMENT PARSING ---

@@ -2,7 +2,7 @@
 
 resource "azurerm_virtual_network_gateway" "main" {
   name                = var.vnet_gateway_name
-  location            = var.location
+  location            = var.azure_location
   resource_group_name = var.resource_group_name
   type                = var.gateway_type
   vpn_type            = var.vpn_type

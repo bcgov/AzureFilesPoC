@@ -1,32 +1,21 @@
 # Summary: Troubleshooting 403 Errors When Creating Azure File Shares via GitHub Actions CI/CD with Terraform
 
+> **Note:** This document contains placeholder values for service principal names and resource identifiers. Actual values are defined in your Azure environment and GitHub secrets.
+
 ## TICKET:  https://citz-do.atlassian.net/servicedesk/customer/portal/3/PCS-813
 
 ## Initial Problem:
 Consistently receiving `403 This request is not authorized to perform this operation.` errors when attempting to create an `azurerm_storage_share` resource (a **data plane** operation) within an Azure Storage Account using a Terraform script deployed via a GitHub Actions CI/CD pipeline. This occurred despite the Service Principal (SPN) used by GitHub Actions appearing to have sufficient permissions for **control plane** operations (managing the storage account resource itself).
 
 ## Initial Assumption:
-The problem was likely due to insufficient Azure RBAC (Role-Based Access Control) permissions (e.g., missing "Contributor" type roles for data plane access) or restrictive Azure Policies impacting the SPYes, absolutelyN's ability to act on the data plane.
+The problem was likely due to insufficient Azure RBAC (Role-Based Access Control) permissions (e.g., missing "Contributor" type roles for data plane access) or restrictive Azure Policies impacting the SPN's ability to act on the data plane.
 
 ## Key Distinction: Control Plane vs. Data Plane Operations
-A. Here's your excellent summary augmented with the Control Plane vs. Data Plane analysis integrated critical factor in this troubleshooting is the difference between:
-*   **Control Plane Operations:** Actions managing Azure resources themselves (e.g into the "Current State of Understanding" and "Key Learnings" sections.
+A critical factor in this troubleshooting is the difference between:
+*   **Control Plane Operations:** Actions managing Azure resources themselves (e.g., creating/modifying the storage account, role assignments via Azure Resource Manager - ARM). Your SPN largely succeeded here after initial permission fixes.
+*   **Data Plane Operations:** Actions interacting with data *inside* a resource (e.g., creating/deleting file shares, reading/writing files via the File Service endpoint like `<storage-account-name>.file.core.windows.net`). The `403` error specifically occurs during these operations.
 
-```markdown
-# Summary: Troubleshooting 403 Errors When Creating Azure File Shares via GitHub Actions CI/CD with Terraform
-
-## Initial Problem:
-Consistently., creating/modifying the storage account, role assignments via Azure Resource Manager - ARM). Your SPN largely succeeded here receiving `403 This request is not authorized to perform this operation.` errors when attempting to create an `azur after initial permission fixes.
-*   **Data Plane Operations:** Actions interacting with data *inside* a resource (e.erm_storage_share` resource (a data plane operation) within an Azure Storage Account using a Terraform script deployed via a GitHub Actions CI/CD pipeline. This occurred despite the Service Principal (SPN) used by GitHub Actions appearing tog., creating/deleting file shares, reading/writing files via the File Service endpoint like `youraccount.file.core. have sufficient permissions and control plane operations (like managing the storage account resource itself) generally succeeding.
-
-## Initial Assumption:
-The problem was likely due to insufficient Azure RBAC (Role-Based Access Control) permissions (e.g., missing "Contributor"windows.net`). The `403` error specifically occurs during these operations.
-Data plane access is subject to Azure type roles for data plane access) or restrictive Azure Policies impacting the SPN's ability to act on the data plane.
-
-## RBAC for data actions, storage account network settings (firewall, public access), Azure Policy, and Azure AD Conditional Access Policies Troubleshooting Journey & Key Learnings:
-
-1.  **Terraform Code & Module Structure:**
-    *   **Learned:** Initial errors indicated problems with module structure (legacy provider blocks conflicting with `depends_on`) and mismatches, often with stricter scrutiny than control plane access.
+Data plane access is subject to Azure RBAC for data actions, storage account network settings (firewall, public access), Azure Policy, and Azure AD Conditional Access Policies, often with stricter scrutiny than control plane access.
 
 ## Troubleshooting Journey & Key Learnings:
 
@@ -42,10 +31,10 @@ Data plane access is subject to Azure type roles for data plane access) or restr
 
 2.  **Azure RBAC Permissions for the Service Principal:**
     *   **Tried:**
- a custom role (`ag-pssg-azure-poc-role-assignment-writer`) with `Microsoft.Authorization        *   Ensured the SPN had `Storage Account Contributor` (which grants both control and data plane permissions at/roleAssignments/read, write, delete` permissions for managing control plane role assignments.
+ a custom role (`<project-name>-role-assignment-writer`) with `Microsoft.Authorization        *   Ensured the SPN had `Storage Account Contributor` (which grants both control and data plane permissions at/roleAssignments/read, write, delete` permissions for managing control plane role assignments.
     *   **Lear a high level).
-        *   Created and assigned a custom role (`ag-pssg-azure-poc-rolened:** The SPN (`ag-pssg-azure-files-poc-ServicePrincipal`) was significantly over-privileged.-assignment-writer`) with `Microsoft.Authorization/roleAssignments/read, write, delete` permissions for control plane role management.
-    *   **Learned:** The SPN (`ag-pssg-azure-files-poc **The 403 error during file share creation (a data plane operation) was NOT due to a lack of-ServicePrincipal`) was, in fact, significantly over-privileged. **The 403 error during file share creation ( Azure RBAC permissions on the storage account itself.** Control plane operations related to RBAC were also eventually resolved.
+        *   Created and assigned a custom role (`<project-name>-rolened:** The SPN (`<project-name>-ServicePrincipal`) was significantly over-privileged.-assignment-writer`) with `Microsoft.Authorization/roleAssignments/read, write, delete` permissions for control plane role management.
+    *   **Learned:** The SPN (`<project-name> **The 403 error during file share creation (a data plane operation) was NOT due to a lack of-ServicePrincipal`) was, in fact, significantly over-privileged. **The 403 error during file share creation ( Azure RBAC permissions on the storage account itself.** Control plane operations related to RBAC were also eventually resolved.
 
 **(data plane) was NOT due to a lack of Azure RBAC permissions on the storage account resource itself.**
 
@@ -97,7 +86,7 @@ A critical factor in understanding this troubleshooting journey is the differenc
 *   **How they're managed:** Primarily through Azure Resource Manager (ARM). When Terraform runs `azurerm_storage_account` or `azurerm_role_assignment`, it's making ARM API calls to the `management.azure.com` endpoint.
 *   **Authentication/Authorization:**
     *   Authentication is typically against Azure Active Directory (Azure AD).
-    *   Authorization is primarily governed by Azure RBAC (Role-Based Access Control) roles assigned on the resource or its scope (e.g., `Storage Account Contributor`, `Owner`, your custom role `ag-pssg-azure-poc-role-assignment-writer`).
+    *   Authorization is primarily governed by Azure RBAC (Role-Based Access Control) roles assigned on the resource or its scope (e.g., `Storage Account Contributor`, `Owner`, your custom role `<project-name>-role-assignment-writer`).
 *   **Your Successes (Eventually):** Your pipeline is generally succeeding with control plane operations:
     *   It can plan and apply changes to the `azurerm_storage_account` resource (like modifying its network settings, even if that later caused issues for data plane access).
     *   It can now manage `azurerm_role_assignment` resources after the Service Principal was granted the necessary permissions (including `delete`) and existing assignments were imported into Terraform state.
@@ -146,7 +135,7 @@ This strongly suggests the issue is not a direct network block *on the storage t
 
 ## Remaining Options & Path Forward:
 
-in logs for the Service Principal** (`ag-pssg-azure-files-poc-ServicePrincipal`) around the time of pipeline failure. The "Conditional Access" tab in a failed sign-in log is key.
+in logs for the Service Principal** (`<project-name>-ServicePrincipal`) around the time of pipeline failure. The "Conditional Access" tab in a failed sign-in log is key.
 
 
 ### 🔍 Check Azure Policy Assignments
@@ -156,7 +145,7 @@ in logs for the Service Principal** (`ag-pssg-azure-files-poc-ServicePrincipal`)
 1.  **Check1.  **Investigate Azure Policy (Focus on Data Plane Restrictions):**
     *   Examine Azure Policy assignments for " Azure AD Application Registration API Permissions (Lower Priority):**
     *   Go to **Azure Active Directory -> App registrationsDeny" effects related to Storage Account **data access**, not just general networking or resource management.
-    *   Check Activity Log -> Your App (`ag-pssg-azure-files-poc-ServicePrincipal`) -> API permissions**.
+    *   Check Activity Log -> Your App (`<project-name>-ServicePrincipal`) -> API permissions**.
      and Policy compliance for the storage account for data plane related blocks.
 
 2.  **Investigate Conditional Access Policies** (Verify if any specific Azure Storage data plane or Microsoft Graph permissions are unexpectedly required or misconfigured.)
@@ -186,7 +175,7 @@ in logs for the Service Principal** (`ag-pssg-azure-files-poc-ServicePrincipal`)
 
 ### 🤝 Engage Platform Security Teams
 - Especially if you're in a managed environment like BC Gov, they can confirm or exempt policies.
-*    logs for the Service Principal** (`ag-pssg-azure-files-poc-ServicePrincipal`) for the *specific failed data plane access attempt*. The "Conditional Access" tab is key.
+*    logs for the Service Principal** (`<project-name>-ServicePrincipal`) for the *specific failed data plane access attempt*. The "Conditional Access" tab is key.
 
 The current evidence strongly points towards these higher-level Azure AD or Azure Policy enforcement mechanisms as the root cause of the data plane ` API Permissions (Lower Likelihood for this specific SPN/RBAC scenario but a check):**
     *   Review403` error.
@@ -198,8 +187,8 @@ The current evidence strongly points towards these higher-level Azure AD or Azur
 
 Challenges:
 1. Failing when I try to add role assignments to my resource group or storage account (403 errors). Role assignment errors. 
-   - Example error: `authorization.RoleAssignmentsClient#Create: Failure responding to request: StatusCode=403 -- Original Error: autorest/azure: Service returned an error. Status=403 Code="AuthorizationFailed" Message="The client 'e72f42f8-d9a1-4181-a0b9-5c8644a28aee' with object id 'e72f42f8-d9a1-4181-a0b9-5c8644a28aee' does not have authorization to perform action 'Microsoft.Authorization/roleAssignments/write' over scope '/subscriptions/***/resourceGroups/rg-ag-pssg-azure-poc-dev-b/providers/Microsoft.Authorization/roleAssignments/c49dfbe1-98b4-291f-e10a-d8454d10f5c3' or the scope is invalid. If access was recently granted, please refresh your credentials."`
+   - Example error: `authorization.RoleAssignmentsClient#Create: Failure responding to request: StatusCode=403 -- Original Error: autorest/azure: Service returned an error. Status=403 Code="AuthorizationFailed" Message="The client '[YOUR-SP-OBJECT-ID]' with object id '[YOUR-SP-OBJECT-ID]' does not have authorization to perform action 'Microsoft.Authorization/roleAssignments/write' over scope '/subscriptions/***/resourceGroups/rg-[PROJECT-PREFIX]-dev-b/providers/Microsoft.Authorization/roleAssignments/[ROLE-ASSIGNMENT-ID]' or the scope is invalid. If access was recently granted, please refresh your credentials."`
    - This occurs even when attempting to assign built-in roles (e.g., Storage Account Contributor) or custom roles to the resource group or storage account.
    - I understand from documentation and Copilot that my service principal needs either the "User Access Administrator" or "Owner" role at the subscription level to automate these assignments, but I do not currently have these roles.
-2. Failing when I try to perform data plane operations, like creating a file share. I believe I need to assign roles such as “Storage File Data SMB Share Contributor” to my service principal (ag-pssg-azure-files-poc-ServicePrincipal). I tried adding this and similar roles at the subscription level, but my workflow still returns 403 errors.
+2. Failing when I try to perform data plane operations, like creating a file share. I believe I need to assign roles such as “Storage File Data SMB Share Contributor” to my service principal (<project-name>-ServicePrincipal). I tried adding this and similar roles at the subscription level, but my workflow still returns 403 errors.
 3. I have not been able to create file shares from the pipeline.

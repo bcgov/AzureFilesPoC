@@ -1,6 +1,6 @@
-# Custom Role: ag-pssg-azure-poc-role-assignment-writer
+# Custom Role: [PROJECT-PREFIX]-role-assignment-writer
 
-As part of the onboarding process, we created a custom Azure role named `ag-pssg-azure-poc-role-assignment-writer` through the Azure Portal. This role grants only the minimum permissions required for the pipeline's service principal to create and read role assignments (specifically, `Microsoft.Authorization/roleAssignments/write` and `read`) at the resource group scope. 
+As part of the onboarding process, we created a custom Azure role named `<project-name>-role-assignment-writer` through the Azure Portal. This role grants only the minimum permissions required for the pipeline's service principal to create and read role assignments (specifically, `Microsoft.Authorization/roleAssignments/write` and `read`) at the resource group scope. 
 
 **Why this is needed:**
 - Azure policy and BC Gov security standards require least-privilege access for automation.
@@ -8,7 +8,7 @@ As part of the onboarding process, we created a custom Azure role named `ag-pssg
 - This custom role enables the GitHub Actions pipeline to automate Azure File Share creation and related RBAC assignments, while preventing broader or unnecessary access.
 - The custom role name follows BC Gov naming conventions for clarity and auditability.
 
-The custom role definition is stored at `scripts/ag-pssg-azure-poc-role-assignment-writer.json` for reference and re-use.
+The custom role definition is stored at `scripts/<project-name>-role-assignment-writer.json` for reference and re-use.
 
 ---
 
@@ -32,25 +32,25 @@ This separation enforces the Principle of Least Privilege and aligns with BC Gov
 
 1. **Register Application in Azure**  
    _User Identity_  
-   - `./scripts/unix/step1_register_app.sh` or `./scripts/windows/step1_register_app.ps1`
+   - `./scripts/unix/step1_register_app.sh`
 2. **Grant Required Permissions**  
    _User Identity_  
-   - `./scripts/unix/step2_grant_permissions.sh` or `./scripts/windows/step2_grant_permissions.ps1`
+   - `./scripts/unix/step2_grant_subscription_level_permissions.sh` 
    - **Note:** Only essential roles are assigned at the subscription level (see script comments for exact list). Storage/data plane roles must be assigned at the storage account or resource group level for least privilege. The onboarding scripts have been updated to enforce this best practice.
 3. **Configure OIDC Federated Credentials**  
    _User Identity_  
-   - `./scripts/unix/step3_configure_oidc.sh` or `./scripts/windows/step3_configure_oidc.ps1`
+   - `./scripts/unix/step3_configure_github_oidc_federation.sh` 
 4. **Prepare GitHub Secrets**  
    _User Identity_  
-   - `./scripts/unix/step4_prepare_github_secrets.sh` or `./scripts/windows/step4_prepare_github_secrets.ps1`
+   - `./scripts/unix/step4_prepare_github_secrets.sh` 
 5. **Add GitHub Secrets (Automated or Manual)**  
    _User Identity_  
-   - `./scripts/unix/step5_add_github_secrets_cli.sh` or `./scripts/windows/step5_add_github_secrets_cli.ps1`
+   - `./scripts/unix/step5_add_github_secrets_cli.sh`
 6. **Create Permanent Resource Group**  
    _User Identity_  
    - **As of June 2025, resource group creation is now managed by Terraform.**
    - The previous scripts (`step6_create_resource_group.sh` and `step6_create_resource_group.ps1`) have been deleted and replaced with a notice. Resource group creation should be defined in your Terraform code and applied by a user with sufficient permissions.
-   - Update your GitHub secret `DEV_RESOURCE_GROUP_NAME` to match the resource group defined in Terraform.
+   - Update your GitHub secret `RESOURCE_GROUP_NAME` to match the resource group defined in Terraform.
 7. **Create Terraform State Storage Account and Container**  
    _User Identity_  
    - `./scripts/unix/step7_create_tfstate_storage_account.sh --rgname <resource-group-name> --saname <storage-account-name> --containername <container-name> [--location <location>]`
@@ -72,7 +72,7 @@ Before running any Terraform pipeline, you must create these three resources and
 1. **Resource Group**
    - **Terraform:** Define your resource group in your Terraform configuration. Do not use the deleted step6 scripts.
    - **GitHub Variable:**
-     `DEV_TFSTATE_RG` (e.g., `rg-ag-pssg-tfstate-dev`)
+     `TFSTATE_RG` (e.g., `rg-<project-name>-tfstate-dev`)
 
 2. **Storage Account**
    - **Script:**
@@ -81,10 +81,10 @@ Before running any Terraform pipeline, you must create these three resources and
      ```
    - **Example:**
      ```sh
-     ./scripts/unix/step7_create_tfstate_storage_account.sh --rgname rg-ag-pssg-tfstate-dev --saname stagpssgtfstatedev01 --location canadacentral
+     ./scripts/unix/step7_create_tfstate_storage_account.sh --rgname rg-<project-name>-tfstate-dev --saname st<projectname>tfstatedev01 --location <azure-region>
      ```
    - **GitHub Variable:**
-     `DEV_TFSTATE_SA` (e.g., `stagpssgtfstatedev01`)
+     `TFSTATE_SA` (e.g., `st<projectname>tfstatedev01`)
 
 3. **Blob Container**
    - **Script:**
@@ -98,23 +98,23 @@ Before running any Terraform pipeline, you must create these three resources and
    - **Example:**
      ```sh
      az storage container create \
-       --name sc-ag-pssg-tfstate-dev \
+       --name sc-<project-name>-tfstate-dev \
        --account-name stagpssgtfstatedev01 \
        --auth-mode login
      ```
    - **GitHub Variable:**
-     `DEV_TFSTATE_CONTAINER` (e.g., `sc-ag-pssg-tfstate-dev`)
+     `TFSTATE_CONTAINER` (e.g., `sc-<project-name>-tfstate-dev`)
 
    - **Verification Note:**
-     > Blob containers do not appear as top-level Azure resources in the Azure Portal. To verify creation, navigate to your resource group, open the storage account (e.g., `stagpssgtfstatedev01`), and select the **Containers** blade. Your container (e.g., `sc-ag-pssg-tfstate-dev`) should be listed there.
+     > Blob containers do not appear as top-level Azure resources in the Azure Portal. To verify creation, navigate to your resource group, open the storage account (e.g., `st<project-name>tfstatedev01`), and select the **Containers** blade. Your container (e.g., `sc-<project-name>-tfstate-dev`) should be listed there.
 
 **Summary Table:**
 
 | Resource         | Script/Command                                                                 | GitHub Variable         | Example Value                |
 |------------------|-------------------------------------------------------------------------------|-------------------------|------------------------------|
-| Resource Group   | `step6_create_resource_group.sh`                                              | `DEV_TFSTATE_RG`        | `rg-ag-pssg-tfstate-dev`     |
-| Storage Account  | `step7_create_tfstate_storage_account.sh`                                     | `DEV_TFSTATE_SA`        | `stagpssgtfstatedev01`       |
-| Blob Container   | `az storage container create ...` (if not created by script 7)                | `DEV_TFSTATE_CONTAINER` | `sc-ag-pssg-tfstate-dev`     |
+| Resource Group   | `step6_create_resource_group.sh`                                              | `TFSTATE_RG`        | `rg-<project-name>-tfstate-dev`     |
+| Storage Account  | `step7_create_tfstate_storage_account.sh`                                     | `TFSTATE_SA`        | `stagpssgtfstatedev01`       |
+| Blob Container   | `az storage container create ...` (if not created by script 7)                | `TFSTATE_CONTAINER` | `sc-<project-name>-tfstate-dev`     |
 
 > **All three must exist and be referenced by the correct GitHub variables before `terraform init` or any pipeline run.**
 
@@ -141,18 +141,11 @@ RegisterApplicationInAzureAndOIDC/
 └── scripts/
     ├── unix/
     │   ├── step1_register_app.sh
-    │   ├── step2_grant_permissions.sh
-    │   ├── step3_configure_oidc.sh
+    │   ├── step2_grant_subscription_level_permissions.sh
+    │   ├── step3_configure_github_oidc_federation.sh
     │   ├── step4_prepare_github_secrets.sh
     │   ├── step5_add_github_secrets_cli.sh
     │   └── step6_create_resource_group.sh (deleted, see above)
-    └── windows/
-        ├── step1_register_app.ps1
-        ├── step2_grant_permissions.ps1
-        ├── step3_configure_oidc.ps1
-        ├── step4_prepare_github_secrets.ps1
-        ├── step5_add_github_secrets_cli.ps1
-        └── step6_create_resource_group.ps1 (deleted, see above)
 ```
 
 ---
@@ -276,17 +269,14 @@ These steps create the low-privilege identity for the GitHub Actions pipeline an
 #### Step 1: Register Application in Azure
 Creates the Application Registration and its corresponding Service Principal.
 *   **Unix/macOS:** `./scripts/unix/step1_register_app.sh`
-*   **Windows:** `.\scripts\windows\step1_register_app.ps1`
 
 #### Step 2: Grant Required Permissions to the Service Principal
 Assigns a specific, limited set of roles to the Service Principal. These roles **do not** include permission to create resource groups.
-*   **Unix/macOS:** `./scripts/unix/step2_grant_permissions.sh`
-*   **Windows:** `.\scripts\windows\step2_grant_permissions.ps1`
+*   **Unix/macOS:** `./scripts/unix/step2_grant_subscription_level_permissions.sh`
 
 #### Step 3: Configure Federated Credentials (OIDC)
 This step establishes the secure, passwordless trust between Azure and your GitHub repository.
-*   **Unix/macOS:** `./scripts/unix/step3_configure_oidc.sh`
-*   **Windows:** `.\scripts\windows\step3_configure_oidc.ps1`
+*   **Unix/macOS:** `./scripts/unix/step3_configure_github_oidc_federation.sh`
 
 ##### In-Depth: OIDC Federated Credentials Overview
 OpenID Connect (OIDC) federation enables secure, passwordless authentication between GitHub Actions and Azure. Instead of storing long-lived secrets, you create a federated credential in your Azure AD application that establishes a trust relationship with GitHub. This credential specifies which GitHub repository, branch, or environment is allowed to request tokens for your Azure app.
@@ -384,7 +374,7 @@ The pipeline's Service Principal cannot create resource groups. This is a delibe
     # Usage: ./script -rgname <resource-group-name> [-location <location>]
     ./scripts/windows/step6_create_resource_group.ps1 -rgname your-permanent-rg-name -location canadacentral
     ```
-*   **After running this script, you must update the `DEV_RESOURCE_GROUP_NAME` secret in your GitHub repository settings to match `your-permanent-rg-name`.**
+*   **After running this script, you must update the `RESOURCE_GROUP_NAME` secret in your GitHub repository settings to match `your-permanent-rg-name`.**
 
 This completes the foundational setup. The pipeline now has an identity and a place to deploy resources.
 
@@ -571,7 +561,7 @@ After creating the custom role, you must assign it to your pipeline's service pr
 ```sh
 az role assignment create \
   --assignee <service principal object id> \
-  --role "ag-pssg-azure-poc-role-assignment-writer" \
+  --role "<project-name>-role-assignment-writer" \
   --scope /subscriptions/<subscription id>/resourceGroups/<resource group name>
 ```
 

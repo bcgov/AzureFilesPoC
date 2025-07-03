@@ -1,4 +1,43 @@
 #!/bin/bash
+# step3_configure_github_oidc_federation.sh
+#
+# This script configures OpenID Connect (OIDC) federated credentials in Azure AD for your GitHub repository.
+# It enables secure, passwordless authentication from GitHub Actions workflows to Azure by:
+#   - Creating federated credentials in your Azure AD application for specific GitHub repo/branch/environment combinations.
+#   - Synchronizing these credentials into your local azure-credentials.json for reference and GitHub secret setup.
+#   - Ensuring only trusted GitHub workflows (from your repo/branch/env) can request Azure access tokens for this app.
+#
+# This is a critical step for secure CI/CD: it establishes the trust relationship that allows GitHub Actions to authenticate to Azure
+# without storing long-lived secrets, following BC Gov and Microsoft best practices.
+#
+# For more details, see the onboarding README and the OIDC sections within it.
+# Usage:
+#   bash step3_configure_github_oidc_federation.sh
+# Prerequisites:
+#   - Azure CLI installed and configured
+#   - jq installed for JSON processing
+#   - azure-credentials.json file created by step1_register_app.sh
+#   - Ensure you have the necessary permissions to create federated credentials in Azure AD 
+#   - Ensure you are logged in to Azure CLI with sufficient permissions
+#
+# ---
+# Federated Credential Verification Table (expected in Azure AD after running this script):
+#
+# | Name                                    | Subject                                         |
+# |------------------------------------------|-------------------------------------------------|
+# | github-federated-identity-main-branch    | repo:bcgov/AzureFilesPoC:ref:refs/heads/main    |
+# | github-federated-identity-pull-requests  | repo:bcgov/AzureFilesPoC:pull_request           |
+# | github-federated-identity-dev-environment| repo:bcgov/AzureFilesPoC:environment:dev        |
+#
+# You can verify these in the Azure Portal:
+#   1. Go to Microsoft Entra ID > App registrations
+#   2. Find your app registration
+#   3. Check Certificates & secrets > Federated credentials
+#
+# Next step (ultimate test): Run the GitHub Actions workflow `.github/workflows/azure-login-validation.yml`
+# This will confirm that OIDC authentication from GitHub Actions to Azure is working as expected.
+# https://github.com/bcgov/AzureFilesPoC/actions/workflows/azure-login-validation.yml
+# ---
 
 # Initialize variables
 SCRIPT_DIR=""
