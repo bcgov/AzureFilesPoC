@@ -97,6 +97,14 @@ resource "azurerm_role_assignment" "github_actions_network_contributor" {
   principal_id         = var.dev_github_actions_spn_object_id
 }
 
+resource "azurerm_role_assignment" "github_actions_nsg_contributor" {
+  # Scope: Assigns the Network Security Group Contributor role at the resource group level.
+  # This allows management of NSGs without broader network permissions.
+  scope                = data.azurerm_resource_group.main.id
+  role_definition_name = "Network Security Group Contributor"
+  principal_id         = var.dev_github_actions_spn_object_id
+}
+
 # ===============================================================================
 # SECTION 3: CORE NETWORKING (DATA SOURCES)
 # -------------------------------------------------------------------------------
