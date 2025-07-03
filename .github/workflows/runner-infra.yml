@@ -145,14 +145,14 @@ jobs:
           my_github_actions_spn_object_id = "${{ vars.MY_GITHUB_ACTIONS_SPN_OBJECT_ID }}"
           my_home_ip_address           = "${{ vars.MY_HOME_IP_ADDRESS }}"
           
-          # SSH Public Key for VM Access
-          admin_ssh_key_public = "${{ vars.ADMIN_SSH_KEY_PUBLIC }}"
-          
           # =============================================================================
           # RESOURCE TAGGING
           # =============================================================================
           common_tags = ${{ vars.COMMON_TAGS }}
           EOF
+          
+          # Add SSH key separately to avoid quote issues
+          echo 'admin_ssh_key_public = "${{ vars.ADMIN_SSH_KEY_PUBLIC }}"' >> terraform/terraform.tfvars
           
           echo "✅ Generated terraform.tfvars from GitHub secrets and variables"
           echo "File size: $(wc -l < terraform/terraform.tfvars) lines"
