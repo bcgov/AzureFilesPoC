@@ -10,7 +10,7 @@
 #     - Update the local azure_full_inventory.json for tracking
 #     - Assign required roles to the service principal at the resource group scope
 #
-#   Typical resource groups created:
+# RESOURCE GROUPS TO CREATE: 
 #     1. resource_group = Main resource group for the Azure Files PoC (e.g., "rg-<project-name>-dev")
 #     2. tfstate_rg  = Terraform state resource group (e.g., "rg-<project-name>-tfstate-dev")
 #     3. cicd_resource_group_name =  CICD resource group (e.g., "rg-<project-name>-cicd-tools-dev")
@@ -108,6 +108,11 @@ if [[ -z "$LOCATION" ]]; then
   LOCATION="<default-azure-region>"
 fi
 
+# --- LIST EXISTING RESOURCE GROUPS BEFORE CREATION ---
+echo "========== Current Resource Groups (Before Creation) =========="
+az group list --query "[].{Name:name, Location:location, Status:properties.provisioningState}" --output table
+echo ""
+
 # --- CREATE RESOURCE GROUP ---
 echo "Creating resource group: $RG_NAME in $LOCATION..."
 if [[ -n "$TAGS_STRING_LITERALS" ]]; then
@@ -134,6 +139,12 @@ jq --arg name "$RG_NAME" --arg id "$RG_ID" --arg location "$RG_LOCATION" '
 ' "$INVENTORY_FILE" > "$TMP_FILE" && mv "$TMP_FILE" "$INVENTORY_FILE"
 echo "✅ Resource group '$RG_NAME' recorded in azure_full_inventory.json."
 
+# --- LIST RESOURCE GROUPS AFTER CREATION ---
+echo ""
+echo "========== Current Resource Groups (After Creation) =========="
+az group list --query "[].{Name:name, Location:location, Status:properties.provisioningState}" --output table
+echo ""
+
 # --- FETCH TAGS FROM AZURE ---
 TAGS_JSON=$(az group show --name "$RG_NAME" --query tags -o json)
 
@@ -152,43 +163,9 @@ else
   echo "Warning: Credentials file $CREDENTIALS_FILE not found. Skipping JSON update."
 fi
 
-# --- ASSIGN ROLES TO SERVICE PRINCIPAL OBJECT ID AT RESOURCE GROUP SCOPE ---
-# Parse service_principal_id from tfvars if available
-SERVICE_PRINCIPAL_ID=""
-if [[ -f "$TFVARS_FILE" ]]; then
-  SERVICE_PRINCIPAL_ID=$(awk -F '="' '/^\s*service_principal_id\s*=\s*"/ {gsub(/"/,"",$2); gsub(/ /, "", $2); print $2}' "$TFVARS_FILE" | head -1)
-fi
-# If still empty, try to look up by display name
-if [[ -z "$SERVICE_PRINCIPAL_ID" ]]; then
-  SERVICE_PRINCIPAL_ID=$(az ad sp list --display-name "<project-name>-ServicePrincipal" --query "[0].id" -o tsv)
-fi
-# If still empty, prompt the user
-if [[ -z "$SERVICE_PRINCIPAL_ID" ]]; then
-  read -rp "Enter the service principal (object) ID to assign roles to: " SERVICE_PRINCIPAL_ID
-fi
-
-SUBSCRIPTION_ID=$(az account show --query id -o tsv)
-SCOPE="/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RG_NAME"
-
-# Assign Storage Account Contributor role
-echo "Assigning 'Storage Account Contributor' role to $SERVICE_PRINCIPAL_ID at resource group $RG_NAME..."
-az role assignment create --assignee "$SERVICE_PRINCIPAL_ID" --role "Storage Account Contributor" --scope "$SCOPE"
-# syntax #
-#az role assignment create --assignee <service-principal-object-id> --role "Storage Account Contributor" --scope <ID of the resource group>
-#e.g. az role assignment create --assignee <service-principal-object-id> --role "Storage Account Contributor" --scope "/subscriptions/<subscription id>/resourceGroups/<resource group name>"
-
-# Assign custom role (<project-name>-dev-role-assignment-writer)
-echo "Assigning '<project-name>-dev-role-assignment-writer' role to $SERVICE_PRINCIPAL_ID at resource group $RG_NAME..."
-az role assignment create --assignee "$SERVICE_PRINCIPAL_ID" --role "<project-name>-dev-role-assignment-writer" --scope "$SCOPE"
-
-echo "✅ Resource group '$RG_NAME' created and roles assigned."
-
-# --- OPTIONAL: LOOK UP SERVICE PRINCIPAL OBJECT ID BY NAME ---
-# If you do not know the object ID, you can look it up with:
-# az ad sp list --display-name "<project-name>-ServicePrincipal" --query "[0].objectId" -o tsv
-# Or, if you know the appId:
-# az ad sp show --id <appId> --query objectId -o tsv
-#
-# Example usage:
-#   export SERVICE_PRINCIPAL_ID=$(az ad sp list --display-name "<project-name>-ServicePrincipal" --query "[0].objectId" -o tsv)
-#   echo $SERVICE_PRINCIPAL_ID
+echo "✅ Resource group '$RG_NAME' created successfully."
+echo ""
+echo "Next Steps:"
+echo "1. Use step6.2_assign_roles_to_resource_group.sh to assign roles to the service principal"
+echo "2. Verify the resource group in the Azure Portal"
+echo "3. Continue with the next resource group or proceed to validation"
