@@ -54,18 +54,43 @@ az role definition list --custom-role-only true --query "[].{Name:roleName, Id:i
 
 for ROLE_DEF in "$@"; do
   if [[ ! -f "$ROLE_DEF" ]]; then
-    echo "Error: File not found: $ROLE_DEF"
+    echo "❌ Error: File not found: $ROLE_DEF"
     continue
   fi
-  ROLE_NAME=$(jq -r '.properties.roleName' "$ROLE_DEF")
+  
+  # Validate JSON and extract role name
+  if ! jq empty "$ROLE_DEF" 2>/dev/null; then
+    echo "❌ Error: Invalid JSON in file: $ROLE_DEF"
+    continue
+  fi
+  
+  # Try both JSON formats: direct format and properties format
+  ROLE_NAME=$(jq -r '.Name // .properties.roleName // empty' "$ROLE_DEF")
+  if [[ -z "$ROLE_NAME" ]]; then
+    echo "❌ Error: Role name not found in file: $ROLE_DEF"
+    echo "   Expected: .Name or .properties.roleName"
+    continue
+  fi
+  
   echo "Processing custom role: $ROLE_NAME from $ROLE_DEF"
-  # Try to create the role, if it exists, update it
-  if az role definition create --role-definition "$ROLE_DEF" 2>&1 | grep -q 'The role definition already exists'; then
-    echo "Role $ROLE_NAME already exists. Attempting to update..."
-    az role definition update --role-definition "$ROLE_DEF"
-    echo "Role $ROLE_NAME updated."
+  
+  # Check if role already exists
+  EXISTING_ROLE=$(az role definition list --name "$ROLE_NAME" --query "[0].id" -o tsv 2>/dev/null || echo "")
+  
+  if [[ -n "$EXISTING_ROLE" ]]; then
+    echo "🔄 Role '$ROLE_NAME' already exists. Updating..."
+    if az role definition update --role-definition "$ROLE_DEF"; then
+      echo "✅ Role '$ROLE_NAME' updated successfully."
+    else
+      echo "❌ Failed to update role '$ROLE_NAME'"
+    fi
   else
-    echo "Role $ROLE_NAME created."
+    echo "🆕 Creating new role '$ROLE_NAME'..."
+    if az role definition create --role-definition "$ROLE_DEF"; then
+      echo "✅ Role '$ROLE_NAME' created successfully."
+    else
+      echo "❌ Failed to create role '$ROLE_NAME'"
+    fi
   fi
   echo "---"
 done

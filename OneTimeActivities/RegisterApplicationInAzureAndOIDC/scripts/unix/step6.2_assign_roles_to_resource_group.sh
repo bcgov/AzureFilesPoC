@@ -21,7 +21,7 @@
 #   - The target resource group(s) already exist in Azure.
 #   - The assignee object ID (service principal or user) is known.
 #   - all resource groups must already exist in Azure, created by step6_create_resource_group.sh.
-#   - custom roles were already created in Azure, as specified in the inventory. with  step6.2_assign_roles_to_resource_group.sh
+#   - custom roles were already created in Azure, as specified in the inventory. with  step6.1_CreateCustomRole.sh
 #       - OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/ag-pssg-azure-files-poc-dev-resource-group-contributor.json
 #       - OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/ag-pssg-azure-files-poc-dev-role-assignment-writer.json
 #
@@ -45,7 +45,7 @@
 #   Resource Group: rg-<project-name>-dev
 #     - <project-name>-ServicePrincipal (<client-id>):
 #         * Storage Account Contributor
-#         * <project-name>-dev-role-assignment-writer
+#         * [AG-PSSG-AZURE-FILES-POC-MANAGED]-dev-role-assignment-writer
 #   Resource Group: rg-<project-name>-tfstate-dev
 #     - No direct role assignments
 #   Resource Group: rg-<project-name>-cicd-tools-dev
@@ -53,7 +53,7 @@
 #         * Managed Identity Operator
 #         * Network Contributor
 #         * Virtual Machine Contributor
-#         * <project-name>-dev-role-assignment-writer
+#         * [AG-PSSG-AZURE-FILES-POC-MANAGED]-dev-role-assignment-writer
 # Inherited subscription-level roles for <project-name>-ServicePrincipal (<client-id>):
 #   those are assigned by step2_grant_subscription_level_permissions.sh
 #   * Reader
@@ -64,6 +64,55 @@
 #================================================================
 
 set -euo pipefail
+
+# --- HELPER FUNCTIONS ---
+show_resource_group_role_assignments() {
+    local title="$1"
+    local assignee="$2"
+    local subscription_id="$3"
+    
+    echo "========== $title =========="
+    echo "Resource Group | Role Name"
+    echo "-------------- | ---------"
+    
+    # List all three target resource groups
+    local resource_groups=(
+        "rg-ag-pssg-azure-files-poc-dev"
+        "rg-ag-pssg-azure-files-poc-tfstate-dev"
+        "rg-ag-pssg-azure-files-poc-dev-tools"
+    )
+    
+    for rg in "${resource_groups[@]}"; do
+        local scope="/subscriptions/$subscription_id/resourceGroups/$rg"
+        
+        # Check if resource group exists first
+        if ! az group show --name "$rg" &>/dev/null; then
+            echo "$rg | (Resource group not found)"
+            continue
+        fi
+        
+        # Get role assignments for this assignee at this resource group scope
+        local roles=$(az role assignment list --assignee "$assignee" --scope "$scope" --query "[].roleDefinitionName" -o tsv 2>/dev/null | sort || echo "")
+        
+        if [[ -z "$roles" ]]; then
+            echo "$rg | (No role assignments)"
+        else
+            # Print each role on a separate line
+            local first=true
+            while IFS= read -r role; do
+                if [[ -n "$role" ]]; then
+                    if $first; then
+                        echo "$rg | $role"
+                        first=false
+                    else
+                        echo "$(printf "%*s" ${#rg} "") | $role"
+                    fi
+                fi
+            done <<< "$roles"
+        fi
+    done
+    echo ""
+}
 
 # --- ARGUMENT PARSING ---
 RG_NAME=""
@@ -99,12 +148,18 @@ fi
 
 SCOPE="/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RG_NAME"
 
+# --- SHOW ROLE ASSIGNMENTS BEFORE CHANGES ---
+show_resource_group_role_assignments "Role Assignments BEFORE Changes" "$ASSIGNEE" "$SUBSCRIPTION_ID"
+
 for ROLE in "${ROLES[@]}"; do
   echo "Assigning role '$ROLE' to $ASSIGNEE at $SCOPE..."
   az role assignment create --assignee "$ASSIGNEE" --role "$ROLE" --scope "$SCOPE" || true
  done
 
 echo "✅ Roles assigned to $ASSIGNEE at $RG_NAME."
+
+# --- SHOW ROLE ASSIGNMENTS AFTER CHANGES ---
+show_resource_group_role_assignments "Role Assignments AFTER Changes" "$ASSIGNEE" "$SUBSCRIPTION_ID"
 
 # --- UPDATE FULL INVENTORY JSON ---
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../../" && pwd)"

@@ -1,21 +1,15 @@
 {
-    "properties": {
-        "roleName": "[AG-PSSG-AZURE-FILES-POC-MANAGED]-dev-role-assignment-writer",
-        "description": "Allows writing and reading role assignments for automation.",
-        "assignableScopes": [
-            "/subscriptions/d321bcbe-c5e8-4830-901c-dab5fab3a834"
-        ],
-        "permissions": [
-            {
-                "actions": [
-                    "Microsoft.Authorization/roleAssignments/read",
-                    "Microsoft.Authorization/roleAssignments/write",
-                    "Microsoft.Authorization/roleAssignments/delete"
-                ],
-                "notActions": [],
-                "dataActions": [],
-                "notDataActions": []
-            }
-        ]
-    }
+    "Name": "[AG-PSSG-AZURE-FILES-POC-MANAGED]-dev-role-assignment-writer",
+    "Description": "Allows writing and reading role assignments for automation.",
+    "AssignableScopes": [
+        "/subscriptions/d321bcbe-c5e8-4830-901c-dab5fab3a834"
+    ],
+    "Actions": [
+        "Microsoft.Authorization/roleAssignments/read",
+        "Microsoft.Authorization/roleAssignments/write",
+        "Microsoft.Authorization/roleAssignments/delete"
+    ],
+    "NotActions": [],
+    "DataActions": [],
+    "NotDataActions": []
 }
