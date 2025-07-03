@@ -11,6 +11,11 @@ variable "azure_location" {
   description = "The Azure region for deploying resources."
 }
 
+variable "azure_subscription_id" {
+  type        = string
+  description = "The Azure subscription ID for resource deployment."
+}
+
 # --- Shared Networking Variables ---
 variable "vnet_name" {
   type        = string

@@ -33,8 +33,7 @@ jobs:
       ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       ARM_USE_OIDC: true
-      TF_VAR_service_principal_id: ${{ secrets.SERVICE_PRINCIPAL_ID }}
-      TF_VAR_admin_ssh_key_public: ${{ secrets.ADMIN_SSH_KEY_PUBLIC }}
+      # Note: TF_VAR environment variables are not needed since we generate terraform.tfvars dynamically
 
     steps:
       - name: Checkout repository
@@ -53,57 +52,128 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           enable-AzPSSession: false
 
-      - name: Generate terraform.tfvars for cicd
+      - name: Create terraform.tfvars from secrets and variables
         run: |
-          cat <<EOF > terraform/environments/cicd/terraform.tfvars
-          admin_ssh_key_public = "${{ secrets.ADMIN_SSH_KEY_PUBLIC }}"
-          azure_location = "${{ vars.AZURE_LOCATION }}"
-          bastion_address_prefix = ${{ vars.BASTION_ADDRESS_PREFIX }}
-          bastion_name = "${{ vars.BASTION_NAME }}"
-          bastion_network_security_group = "${{ vars.BASTION_NETWORK_SECURITY_GROUP }}"
-          bastion_public_ip_name = "${{ vars.BASTION_PUBLIC_IP_NAME }}"
-          bastion_subnet_name = "${{ vars.BASTION_SUBNET_NAME }}"
+          cat > terraform/terraform.tfvars << 'EOF'
+          # =============================================================================
+          # ENVIRONMENT AND LOCATION CONFIGURATION
+          # =============================================================================
+          environment     = "${{ vars.ENVIRONMENT }}"
+          azure_location  = "${{ vars.AZURE_LOCATION }}"
+          azure_subscription_id = "${{ vars.AZURE_SUBSCRIPTION_ID }}"
+          
+          # =============================================================================
+          # AZURE LANDING ZONE RESOURCES (PRE-PROVISIONED BY BC GOV)
+          # =============================================================================
+          # Service Principal
+          service_principal_id = "${{ vars.SERVICE_PRINCIPAL_ID }}"
+          
+          # Existing VNet and Networking (Landing Zone)
+          vnet_name             = "${{ vars.VNET_NAME }}"
+          vnet_resource_group   = "${{ vars.VNET_RESOURCE_GROUP }}"
+          vnet_address_space    = ${{ vars.VNET_ADDRESS_SPACE }}
+          vnet_dns_servers      = ${{ vars.VNET_DNS_SERVERS }}
+          vnet_id               = "${{ vars.VNET_ID }}"
+          dns_servers           = ${{ vars.DNS_SERVERS }}
+          
+          # =============================================================================
+          # PROJECT RESOURCE GROUPS (CREATED BY USER IDENTITY - NOT TERRAFORM)
+          # =============================================================================
+          # Main DEV Resource Group
+          resource_group       = "${{ vars.RESOURCE_GROUP }}"
+          resource_id          = "${{ vars.RESOURCE_ID }}"
+          
+          # DEV Tools Resource Group
           cicd_resource_group_name = "${{ vars.CICD_RESOURCE_GROUP_NAME }}"
-          common_tags = ${{ vars.COMMON_TAGS }}
-          dns_servers = ${{ vars.DNS_SERVERS }}
-          file_share_name = "${{ vars.FILE_SHARE_NAME }}"
-          file_share_quota_gb = ${{ vars.FILE_SHARE_QUOTA_GB }}
-          my_github_actions_spn_object_id = "${{ vars.MY_GITHUB_ACTIONS_SPN_OBJECT_ID }}"
-          gateway_subnet_address_prefix = ${{ vars.GATEWAY_SUBNET_ADDRESS_PREFIX }}
-          gateway_subnet_name = "${{ vars.GATEWAY_SUBNET_NAME }}"
-          my_home_ip_address = "${{ vars.MY_HOME_IP_ADDRESS }}"
-          network_security_group = "${{ vars.NETWORK_SECURITY_GROUP }}"
-          resource_group = "${{ vars.RESOURCE_GROUP }}"
-          resource_id = "${{ vars.RESOURCE_ID }}"
-          runner_network_security_group = "${{ vars.RUNNER_NETWORK_SECURITY_GROUP }}"
-          runner_subnet_name = "${{ vars.RUNNER_SUBNET_NAME }}"
-          runner_vnet_address_space = ${{ vars.RUNNER_VNET_ADDRESS_SPACE }}
-          runner_vm_admin_username = "${{ vars.RUNNER_VM_ADMIN_USERNAME }}"
-          runner_vm_ip_address = "${{ vars.RUNNER_VM_IP_ADDRESS }}"
-          runner_vm_name = "${{ vars.RUNNER_VM_NAME }}"
-          service_principal_id = "${{ secrets.SERVICE_PRINCIPAL_ID }}"
-          storage_account_name = "${{ vars.STORAGE_ACCOUNT_NAME }}"
-          subnet_address_prefixes = ${{ vars.SUBNET_ADDRESS_PREFIXES }}
-          subnet_name = "${{ vars.SUBNET_NAME }}"
+          
+          # =============================================================================
+          # TERRAFORM STATE STORAGE CONFIGURATION  
+          # =============================================================================
           tfstate_container = "${{ vars.TFSTATE_CONTAINER }}"
-          tfstate_rg = "${{ vars.TFSTATE_RG }}"
-          tfstate_sa = "${{ vars.TFSTATE_SA }}"
-          vnet_address_space = ${{ vars.VNET_ADDRESS_SPACE }}
-          vnet_dns_servers = ${{ vars.VNET_DNS_SERVERS }}
-          vnet_id = "${{ vars.VNET_ID }}"
-          vnet_name = "${{ vars.VNET_NAME }}"
-          vnet_resource_group = "${{ vars.VNET_RESOURCE_GROUP }}"
-          vng_name = "${{ vars.VNG_NAME }}"
-          vng_public_ip_name = "${{ vars.VNG_PUBLIC_IP_NAME }}"
-          vng_sku = "${{ vars.VNG_SKU }}"
-          vng_type = "${{ vars.VNG_TYPE }}"
-          vng_vpn_type = "${{ vars.VNG_VPN_TYPE }}"
+          tfstate_rg        = "${{ vars.TFSTATE_RG }}"
+          tfstate_sa        = "${{ vars.TFSTATE_SA }}"
+          
+          # =============================================================================
+          # STORAGE AND FILE SERVICES
+          # =============================================================================
+          storage_account_name = "${{ vars.STORAGE_ACCOUNT_NAME }}"
+          file_share_name      = "${{ vars.FILE_SHARE_NAME }}"
+          file_share_quota_gb  = ${{ vars.FILE_SHARE_QUOTA_GB }}
+          
+          # =============================================================================
+          # NETWORKING CONFIGURATION
+          # =============================================================================
+          # Network Security Groups
+          network_security_group         = "${{ vars.NETWORK_SECURITY_GROUP }}"
+          bastion_network_security_group = "${{ vars.BASTION_NETWORK_SECURITY_GROUP }}"
+          runner_network_security_group  = "${{ vars.RUNNER_NETWORK_SECURITY_GROUP }}"
+          
+          # Subnets
+          subnet_name             = "${{ vars.SUBNET_NAME }}"
+          subnet_address_prefixes = ${{ vars.SUBNET_ADDRESS_PREFIXES }}
+          bastion_subnet_name     = "${{ vars.BASTION_SUBNET_NAME }}"
+          bastion_address_prefix  = ${{ vars.BASTION_ADDRESS_PREFIX }}
+          runner_subnet_name      = "${{ vars.RUNNER_SUBNET_NAME }}"
+          runner_vnet_address_space = ${{ vars.RUNNER_VNET_ADDRESS_SPACE }}
+          
+          # Gateway Configuration
+          gateway_subnet_name            = "${{ vars.GATEWAY_SUBNET_NAME }}"
+          gateway_subnet_address_prefix = ${{ vars.GATEWAY_SUBNET_ADDRESS_PREFIX }}
+          vng_name                      = "${{ vars.VNG_NAME }}"
+          vng_public_ip_name            = "${{ vars.VNG_PUBLIC_IP_NAME }}"
+          vng_sku                       = "${{ vars.VNG_SKU }}"
+          vng_type                      = "${{ vars.VNG_TYPE }}"
+          vng_vpn_type                  = "${{ vars.VNG_VPN_TYPE }}"
+          
+          # =============================================================================
+          # BASTION HOST CONFIGURATION
+          # =============================================================================
+          bastion_name           = "${{ vars.BASTION_NAME }}"
+          bastion_public_ip_name = "${{ vars.BASTION_PUBLIC_IP_NAME }}"
+          
+          # =============================================================================
+          # GITHUB RUNNER VM CONFIGURATION
+          # =============================================================================
+          runner_vm_name           = "${{ vars.RUNNER_VM_NAME }}"
+          runner_vm_ip_address     = "${{ vars.RUNNER_VM_IP_ADDRESS }}"
+          runner_vm_admin_username = "${{ vars.RUNNER_VM_ADMIN_USERNAME }}"
+          runner_vm_size           = "${{ vars.RUNNER_VM_SIZE }}"
+          
+          # =============================================================================
+          # SECURITY AND ACCESS CONFIGURATION
+          # =============================================================================
+          my_github_actions_spn_object_id = "${{ vars.MY_GITHUB_ACTIONS_SPN_OBJECT_ID }}"
+          my_home_ip_address           = "${{ vars.MY_HOME_IP_ADDRESS }}"
+          
+          # SSH Public Key for VM Access
+          admin_ssh_key_public = "${{ vars.ADMIN_SSH_KEY_PUBLIC }}"
+          
+          # =============================================================================
+          # RESOURCE TAGGING
+          # =============================================================================
+          common_tags = ${{ vars.COMMON_TAGS }}
           EOF
+          
+          echo "✅ Generated terraform.tfvars from GitHub secrets and variables"
+          echo "File size: $(wc -l < terraform/terraform.tfvars) lines"
 
-      - name: Display Generated terraform.tfvars (Debug Step)
+      - name: Verify terraform.tfvars exists
         run: |
-          echo "Content of the generated terraform/environments/cicd/terraform.tfvars:"
-          cat terraform/environments/cicd/terraform.tfvars || echo "File not found or empty."
+          if [ ! -f terraform/terraform.tfvars ]; then
+            echo "❌ ERROR: terraform/terraform.tfvars not found!"
+            echo "This file should have been generated from GitHub secrets and variables."
+            exit 1
+          else
+            echo "✅ Found terraform/terraform.tfvars"
+            echo "File size: $(wc -l < terraform/terraform.tfvars) lines"
+          fi
+
+      - name: Display terraform.tfvars content (Debug Step)
+        run: |
+          echo "Content of terraform/terraform.tfvars (first 20 lines):"
+          head -20 terraform/terraform.tfvars
+          echo "..."
+          echo "Total lines: $(wc -l < terraform/terraform.tfvars)"
 
       - name: Terraform Init
         working-directory: terraform/environments/cicd
@@ -116,7 +186,7 @@ jobs:
       - name: Terraform Plan
         id: plan
         working-directory: terraform/environments/cicd
-        run: terraform plan -var-file=terraform.tfvars -out=tfplan
+        run: terraform plan -var-file="../../terraform.tfvars" -out=tfplan
 
       - name: Terraform Apply
         if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && github.event.inputs.plan_only == 'false')
