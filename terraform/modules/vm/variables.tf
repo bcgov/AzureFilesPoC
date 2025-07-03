@@ -23,7 +23,7 @@ variable "subnet_id" {
 variable "vm_size" {
   type        = string
   description = "The size (SKU) of the virtual machine."
-  default     = "Standard_B2s"
+  default     = "Standard_B1s"
 }
 
 variable "admin_username" {
