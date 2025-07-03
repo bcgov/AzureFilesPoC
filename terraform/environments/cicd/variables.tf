@@ -228,3 +228,9 @@ variable "dev_gateway_subnet_name" {
   type        = string
   description = "The name of the GatewaySubnet."
 }
+
+variable "dev_runner_vm_size" {
+  type        = string
+  description = "The size (SKU) of the self-hosted runner virtual machine. Recommended: Standard_DS2_v2 or Standard_B2ms."
+  default     = "Standard_DS2_v2"
+}

@@ -159,19 +159,17 @@ module "bastion" {
 # 6.1 Deploy the Self-Hosted Runner VM using your existing module
 #    - Uncomment this section after confirming previous steps.
 # -------------------------------------------------------------------------------
-# module "self_hosted_runner_vm" {
-#   source = "../../modules/vm"
-#
-#   vm_name               = var.dev_runner_vm_name
-#   resource_group_name   = data.azurerm_resource_group.main.name
-#   location              = data.azurerm_resource_group.main.location
-#   subnet_id             = data.azurerm_subnet.runner_subnet.id
-#   admin_ssh_key_public  = var.admin_ssh_key_public
-#   tags                  = var.common_tags
-#   depends_on = [
-#     azurerm_subnet_network_security_group_association.runner_nsg_assoc
-#   ]
-# }
+module "self_hosted_runner_vm" {
+  source                = "../../modules/vm"
+  vm_name               = var.dev_runner_vm_name
+  resource_group_name   = data.azurerm_resource_group.main.name
+  location              = data.azurerm_resource_group.main.location
+  subnet_id             = module.runner_nsg.runner_subnet_id
+  admin_ssh_key_public  = var.admin_ssh_key_public
+  tags                  = var.dev_common_tags
+  vm_size               = var.dev_runner_vm_size
+  # Add other required variables as needed
+}
 # ===============================================================================
 # SECTION 7: OUTPUTS (RECOMMENDED)
 # -------------------------------------------------------------------------------
