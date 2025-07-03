@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # step10_create_nsg.sh
+# *****NOTE:*****  Confirmed not required created NSG with terraform and github actions CI/CD pipeline
 # This script creates a Network Security Group (NSG) in a specified resource group and location.
 #
 # POLICY & PERMISSION LIMITATIONS:

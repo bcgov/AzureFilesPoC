@@ -125,6 +125,8 @@ data "azurerm_virtual_network" "spoke_vnet" {
 # -------------------------------------------------------------------------------
 # 4.1 Runner NSG: Pre-created and referenced as a data source above
 # 4.2 Bastion NSG: Created and managed by bastion/nsg module
+#                  Confirmed working with github actions.  don't need to run 
+#                  shell script. 
 # -------------------------------------------------------------------------------
 module "bastion_nsg" {
   source                = "../../modules/bastion/nsg"
@@ -132,7 +134,11 @@ module "bastion_nsg" {
   location              = data.azurerm_resource_group.main.location
   nsg_name              = var.dev_bastion_network_security_group
   tags                  = var.dev_common_tags
+  vnet_id               = var.dev_vnet_id
+  address_prefix        = var.dev_bastion_address_prefix[0]
+  subnet_name           = var.dev_bastion_subnet_name
 }
+
 
 # ===============================================================================
 # SECTION 5: BASTION SUBNET AND HOST

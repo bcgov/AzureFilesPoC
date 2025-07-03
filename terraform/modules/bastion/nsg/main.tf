@@ -157,33 +157,35 @@ output "bastion_nsg_id" {
   value = azurerm_network_security_group.bastion.id
 }
 
-# Uncomment the following resource block if your service principal is granted permissions
-# to create subnets with NSG association via Terraform.
+variable "vnet_id" {
+  description = "The ID of the Virtual Network where the Bastion subnet will be created."
+  type        = string
+}
 
-# variable "vnet_id" {
-#   description = "The ID of the Virtual Network where the Bastion subnet will be created."
-#   type        = string
-# }
-#
-# variable "address_prefix" {
-#   description = "The address prefix to use for the AzureBastionSubnet."
-#   type        = string
-# }
-#
-# resource "azapi_resource" "bastion_subnet" {
-#   type      = "Microsoft.Network/virtualNetworks/subnets@2023-04-01"
-#   name      = "AzureBastionSubnet"
-#   parent_id = var.vnet_id
-#   body = jsonencode({
-#     properties = {
-#       addressPrefix = var.address_prefix
-#       networkSecurityGroup = {
-#         id = azurerm_network_security_group.bastion.id
-#       }
-#     }
-#   })
-# }
-#
-# output "bastion_subnet_id" {
-#   value = azapi_resource.bastion_subnet.id
-# }
+variable "address_prefix" {
+  description = "The address prefix to use for the AzureBastionSubnet."
+  type        = string
+}
+
+variable "subnet_name" {
+  description = "The name to use for the Bastion subnet."
+  type        = string
+}
+
+resource "azapi_resource" "bastion_subnet" {
+  type      = "Microsoft.Network/virtualNetworks/subnets@2023-04-01"
+  name      = var.subnet_name
+  parent_id = var.vnet_id
+  body = jsonencode({
+    properties = {
+      addressPrefix = var.address_prefix
+      networkSecurityGroup = {
+        id = azurerm_network_security_group.bastion.id
+      }
+    }
+  })
+}
+
+output "bastion_subnet_id" {
+  value = azapi_resource.bastion_subnet.id
+}
