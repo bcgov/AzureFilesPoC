@@ -1,7 +1,39 @@
 #!/bin/bash
-
-# Script to add GitHub secrets using the GitHub CLI
-# This script automates the process outlined in Step 5 Alternative A
+# step5_add_github_secrets_cli.sh
+# -----------------------------------------------------------------------------
+# SUMMARY:
+#   This script automates the process of adding Azure credentials as GitHub repository secrets
+#   using the GitHub CLI (`gh`). It is an alternative to manual entry and is intended for onboarding
+#   automation and repeatable CI/CD setup.
+#
+#   The secrets added are:
+#     - AZURE_CLIENT_ID
+#     - AZURE_TENANT_ID
+#     - AZURE_SUBSCRIPTION_ID
+#
+#   These are required for GitHub Actions workflows to authenticate to Azure using federated OIDC credentials.
+#
+# USAGE:
+#   bash step5_add_github_secrets_cli.sh
+#
+# PREREQUISITES:
+#   - GitHub CLI (`gh`) installed and authenticated (run `gh auth login` if needed)
+#   - jq installed for JSON processing
+#   - azure-credentials.json file created by step1_register_app.sh
+#   - Sufficient permissions to add secrets to the target GitHub repository
+#
+# IMPLEMENTATION NOTES:
+#   - Idempotent: running this script multiple times will not create duplicate secrets; existing ones are updated in-place.
+#   - All CLI and jq commands are checked for prerequisites and errors.
+#   - The script never stores actual secret values in the repository; only in the local .env/azure-credentials.json for reference.
+#   - For troubleshooting, check the output and the state of the credentials file after running.
+#   - If you add new secrets or change the onboarding flow, update both the script and the documentation above.
+#
+# NEXT STEPS:
+#   1. Verify the secrets in GitHub by visiting the repository settings.
+#   2. Mark this step as complete in the onboarding checklist or README.md.
+#   3. Continue with the next onboarding script as per your workflow.
+# -----------------------------------------------------------------------------
 
 # Function to resolve script location and set correct paths
 resolve_script_path() {

@@ -93,7 +93,7 @@ provider "azurerm" {
 # --------------------------------------------------------------------------------
 # REQUIRED ROLE ASSIGNMENTS FOR THIS SCRIPT TO WORK:
 #
-# Subscription Level (assigned by step2_grant_subscription_level_permissions.sh):
+# Subscription Level (assigned by step2_grant_permissions.sh):
 #   - Reader
 #   - Storage Account Contributor
 #   - [BCGOV-MANAGED-LZ-LIVE] Network-Subnet-Contributor
@@ -243,7 +243,7 @@ data "azurerm_resource_group" "main" {
 # 1. The resource group must already exist (see Section 1 for details).
 # 2. The service principal (or user) running Terraform must have the following role assignments:
 #
-#    Subscription Level (typically assigned by onboarding scripts, e.g., step2_grant_subscription_level_permissions.sh):
+#    Subscription Level (typically assigned by onboarding scripts, e.g., step2_grant_permissions.sh):
 #      - Reader
 #      - Storage Account Contributor
 #      - [BCGOV-MANAGED-LZ-LIVE] Network-Subnet-Contributor (if using private endpoints)

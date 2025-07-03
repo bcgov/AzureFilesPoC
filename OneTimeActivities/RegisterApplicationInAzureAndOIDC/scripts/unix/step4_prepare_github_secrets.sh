@@ -1,4 +1,40 @@
 #!/bin/bash
+# step4_prepare_github_secrets.sh
+# -----------------------------------------------------------------------------
+# SUMMARY:
+#   This script prepares and displays the Azure credentials required as GitHub repository secrets
+#   for secure OIDC-based authentication from GitHub Actions to Azure.
+#   It guides the user to copy the correct values and add them as repository secrets in GitHub,
+#   and records the configuration in the local azure-credentials.json for traceability.
+#
+#   The secrets are:
+#     - AZURE_CLIENT_ID
+#     - AZURE_TENANT_ID
+#     - AZURE_SUBSCRIPTION_ID
+#
+#   These are required for GitHub Actions workflows to authenticate to Azure using federated OIDC credentials.
+#
+# USAGE:
+#   bash step4_prepare_github_secrets.sh
+#
+# PREREQUISITES:
+#   - Azure CLI installed and configured
+#   - jq installed for JSON processing
+#   - azure-credentials.json file created by step1_register_app.sh
+#   - Sufficient permissions to read credentials from Azure AD
+#
+# IMPLEMENTATION NOTES:
+#   - Idempotent: running this script multiple times will not overwrite or leak secrets, only update timestamps and configuration.
+#   - All Azure CLI and jq commands are checked for prerequisites and errors.
+#   - The script never stores actual secret values in the repository; only in the local .env/azure-credentials.json for reference.
+#   - For troubleshooting, check the output and the state of the credentials file after running.
+#   - If you add new secrets or change the onboarding flow, update both the script and the documentation above.
+#
+# NEXT STEPS:
+#   1. Add the displayed values as GitHub repository secrets in your repo settings.
+#   2. Mark this step as complete in the onboarding checklist or README.md.
+#   3. Continue with the next onboarding script as per your workflow.
+# -----------------------------------------------------------------------------
 
 # Function to check if running on macOS
 is_macos() {

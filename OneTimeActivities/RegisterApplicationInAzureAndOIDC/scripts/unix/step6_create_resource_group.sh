@@ -1,18 +1,42 @@
 #!/usr/bin/env bash
 # step6_create_resource_group.sh
+# -----------------------------------------------------------------------------
+# SUMMARY:
+#   This script creates an Azure resource group for the project, as required by policy
+#   (service principals and CI/CD pipelines are not permitted to create resource groups directly).
+#   It is intended to be run by a human with sufficient permissions, and will:
+#     - Create the resource group in the specified or default region
+#     - Parse and apply tags from terraform.tfvars (if present)
+#     - Update the local azure_full_inventory.json for tracking
+#     - Assign required roles to the service principal at the resource group scope
 #
-# run this script because policy prevents resource group creation by service principals.
-# CI/CD pipelines and automation scripts should not create resource groups directly.
-# Instead, use this script to create the resource group and update the inventory.
-
-#this script will be used to create multiple resource groups for different environments.
-# 1. Main resource group for the Azure Files PoC (e.g., "rg-<project-name>-dev")
-# 2. Terraform state resource group (e.g., "rg-<project-name>-tfstate-dev")
-# 3. CICD resource group (e.g., "rg-<project-name>-cicd-tools-dev")
-
-# example usage:
-# bash step6_create_resource_group.sh --rgname "rg-<project-name>-dev" --location "<azure-region>"
-set -euo pipefail
+#   Typical resource groups created:
+#     1. resource_group = Main resource group for the Azure Files PoC (e.g., "rg-<project-name>-dev")
+#     2. tfstate_rg  = Terraform state resource group (e.g., "rg-<project-name>-tfstate-dev")
+#     3. cicd_resource_group_name =  CICD resource group (e.g., "rg-<project-name>-cicd-tools-dev")
+#
+# USAGE:
+#   bash step6_create_resource_group.sh --rgname "rg-<project-name>-dev" --location "<azure-region>"
+#
+# PREREQUISITES:
+#   - Azure CLI installed and authenticated
+#   - jq installed for JSON processing
+#   - terraform.tfvars and .env/azure-credentials.json present and up to date
+#   - Sufficient permissions to create resource groups and assign roles
+#
+# IMPLEMENTATION NOTES:
+#   - Idempotent: re-running will not create duplicate resource groups or role assignments
+#   - Tags are parsed from terraform.tfvars for consistency with infrastructure as code
+#   - All changes to inventory and credentials files are atomic (using temp files and mv)
+#   - The script will prompt for missing service principal object ID if not found automatically
+#   - For troubleshooting, check the output and the state of the inventory/credentials files after running
+#   - If you add new tags or change the onboarding flow, update both the script and the documentation above
+#
+# NEXT STEPS:
+#   1. Verify the resource group and role assignments in the Azure Portal
+#   2. Mark this step as complete in the onboarding checklist or README.md
+#   3. Continue with resource provisioning or validation as per your workflow
+# -----------------------------------------------------------------------------
 
 # --- Resolve project root and config paths ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

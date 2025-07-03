@@ -1,9 +1,9 @@
 {
     "properties": {
-        "roleName": "<project-name>-poc-dev-role-assignment-writer",
+        "roleName": "[AG-PSSG-AZURE-FILES-POC-MANAGED]-dev-role-assignment-writer",
         "description": "Allows writing and reading role assignments for automation.",
         "assignableScopes": [
-            "/subscriptions/<subscription_id>"
+            "/subscriptions/d321bcbe-c5e8-4830-901c-dab5fab3a834"
         ],
         "permissions": [
             {

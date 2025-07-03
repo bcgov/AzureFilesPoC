@@ -53,7 +53,7 @@
 │   │   │       ├── step4_prepare_github_secrets.sh
 │   │   │       ├── step5_add_github_secrets_cli.sh
 │   │   │       ├── step6_create_resource_group.sh
-│   │   │       ├── step6.1_assign_roles_to_resource_group.sh
+│   │   │       ├── step6.2_assign_roles_to_resource_group.sh
 │   │   │       ├── step7_create_tfstate_storage_account.sh
 │   │   │       ├── step8_fix_terraform_state.sh
 │   │   │       └── step9_create_subnet.sh

@@ -1,17 +1,18 @@
 #!/bin/bash
 # step2_grant_subscription_level_permissions.sh
-# This script grants the necessary subscription-level roles to a service principal or user in Azure.
-# usage: bash step2_grant_subscription_level_permissions.sh --app-id <application-id> --principal-id <service-principal-object-id> [--subscription-id <subscription-id>]
-#        --app-id <application-id>       : The Application (client) ID of the service principal
-#        --principal-id <service-principal-object-id> : The Object ID of the service principal
-#        --subscription-id <subscription-id> : (Optional) The subscription ID to target. If not provided, uses the current subscription.
-# Note:  you can consult secrets and variables to know how to call this
-# This script grants the following roles to the service principal at the **subscription level**:
-#   - Reader
-#   - Storage Account Contributor
-#   - [BCGOV-MANAGED-LZ-LIVE] Network-Subnet-Contributor
-#   - Private DNS Zone Contributor
-#   - Monitoring Contributor
+# =====================================================================================================
+# SUMMARY:
+#   Grants required Azure subscription-level roles to a service principal (or user) for onboarding and
+#   automation scenarios. Ensures only the minimum set of roles are assigned for least-privilege access.
+#   Idempotent: can be safely re-run; will not duplicate assignments or create unnecessary changes.
+#
+# WHAT THIS SCRIPT DOES:
+#   - Assigns the following roles to the service principal at the **subscription level**:
+#       * Reader
+#       * Storage Account Contributor
+#       * [BCGOV-MANAGED-LZ-LIVE] Network-Subnet-Contributor
+#       * Private DNS Zone Contributor
+#       * Monitoring Contributor
 #
 # ⚠️ For least privilege, data-plane roles such as Storage Blob Data Contributor or Storage File Data SMB Share Contributor
 # should be assigned at the storage account or resource group level, NOT at the subscription level.
@@ -20,9 +21,42 @@
 #
 # Update the REQUIRED_ROLES array below if you add or remove subscription-level roles.
 #
-#NOTE: This script is idempotent and can be safely run multiple times.
-#      It will not create duplicate Azure AD applications or service principals.
-
+# NOTE: This script is idempotent and can be safely run multiple times.
+#       It will not create duplicate Azure AD applications or service principals.
+#
+# -----------------------------------------------------------------------------
+# Implementation notes:
+# - This script is designed to be idempotent: it checks for existing role assignments and only adds missing ones.
+# - It will also remove any extra roles at the subscription level that are not in the REQUIRED_ROLES array.
+# - All Azure CLI commands are wrapped with error handling and retry logic for reliability.
+# - All changes to credentials and inventory files are atomic (using temp files and mv).
+# - The script will prompt before making changes, and will not proceed without user confirmation.
+# - If you encounter errors related to authentication or expired tokens, the script will attempt to refresh your login.
+# - For troubleshooting, check the output of each command and the state of the credentials/inventory files after running.
+# - If you add new roles, update both the REQUIRED_ROLES array and the documentation above.
+# - For custom roles, ensure they are created before running this script, and use the exact role name as it appears in Azure.
+#
+# -----------------------------------------------------------------------------
+#
+# Example usage:
+#   bash step2_grant_subscription_level_permissions.sh --app-id <application-id> --principal-id <service-principal-object-id> --subscription-id <subscription-id>
+#   bash step2_grant_subscription_level_permissions.sh --app-id <application-id> --principal-id <service-principal-object-id>
+#   bash step2_grant_subscription_level_permissions.sh --app-id <application-id>
+#   bash step2_grant_subscription_level_permissions.sh
+#
+# Arguments:
+#   --app-id <application-id>                # Azure AD Application (client) ID
+#   --principal-id <service-principal-id>    # Service Principal Object ID
+#   --subscription-id <subscription-id>      # Azure Subscription ID (optional, will use from credentials if omitted)
+#
+# If arguments are omitted, values will be read from the credentials file.
+#
+# Next steps after running this script:
+#   1. Verify all required roles are assigned correctly in the Azure Portal or via CLI.
+#   2. Run step3_configure_oidc.sh to set up GitHub Actions authentication.
+#   3. If you need to assign data-plane roles, use the appropriate resource group or storage account scripts.
+#
+# -----------------------------------------------------------------------------
 
 # Function to resolve script location and set correct paths
 resolve_script_path() {
@@ -165,13 +199,17 @@ update_role_assignments() {
     assigned_on=$(date '+%Y-%m-%dT%H:%M:%SZ')
     local temp_file
     temp_file=$(mktemp)
-    # Add the new role assignment under azure.subscription.roleAssignments
-    jq --arg principal_id "$PRINCIPAL_ID" \
+    # Add the new role assignment under azure.subscription.roleAssignments, including all fields
+    jq --arg role_name "$role_name" \
+       --arg id "$role_id" \
+       --arg principal_id "$PRINCIPAL_ID" \
        --arg role_definition_id "$role_definition_id" \
        --arg scope "$scope" \
        --arg assigned_on "$assigned_on" \
        '
        .azure.subscription.roleAssignments += [{
+           "roleName": $role_name,
+           "id": $id,
            "principalId": $principal_id,
            "roleDefinitionId": $role_definition_id,
            "scope": $scope,
@@ -272,6 +310,39 @@ update_inventory_role_assignments() {
     echo "Inventory file updated with current role assignments and resource info."
 }
 
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --app-id)
+            OVERRIDE_APP_ID="$2"
+            shift 2
+            ;;
+        --principal-id)
+            OVERRIDE_PRINCIPAL_ID="$2"
+            shift 2
+            ;;
+        --subscription-id)
+            OVERRIDE_SUBSCRIPTION_ID="$2"
+            shift 2
+            ;;
+        -h|--help)
+            echo "Usage: $0 [--app-id <app-id>] [--principal-id <principal-id>] [--subscription-id <subscription-id>]"
+            echo ""
+            echo "Arguments:"
+            echo "  --app-id <app-id>                    Azure AD Application (client) ID"
+            echo "  --principal-id <principal-id>        Service Principal Object ID"
+            echo "  --subscription-id <subscription-id>  Azure Subscription ID"
+            echo ""
+            echo "If not provided, values will be read from the credentials file."
+            exit 0
+            ;;
+        *)
+            echo "Unknown option $1"
+            exit 1
+            ;;
+    esac
+done
+
 # Verify prerequisites
 verify_prerequisites
 
@@ -282,10 +353,15 @@ if [ ! -f "$CREDS_FILE" ]; then
     exit 1
 fi
 
-# Read credentials from correct paths
-APP_ID=$(jq -r '.azure.ad.application.clientId' "$CREDS_FILE")
-SUBSCRIPTION_ID=$(jq -r '.azure.subscription.id' "$CREDS_FILE")
-PRINCIPAL_ID=$(jq -r '.azure.ad.application.servicePrincipalObjectId' "$CREDS_FILE")
+# Read credentials from correct paths, with command line overrides
+APP_ID="${OVERRIDE_APP_ID:-$(jq -r '.azure.ad.application.clientId' "$CREDS_FILE")}"
+SUBSCRIPTION_ID="${OVERRIDE_SUBSCRIPTION_ID:-$(jq -r '.azure.subscription.id' "$CREDS_FILE")}"
+PRINCIPAL_ID="${OVERRIDE_PRINCIPAL_ID:-$(jq -r '.azure.ad.application.servicePrincipalObjectId' "$CREDS_FILE")}"
+
+echo "Using values:"
+echo "  App ID: $APP_ID"
+echo "  Principal ID: $PRINCIPAL_ID"
+echo "  Subscription ID: $SUBSCRIPTION_ID"
 
 # Remove any duplicate roleAssignments array at azure root level
 jq 'del(.azure.roleAssignments) |
@@ -346,14 +422,18 @@ else
         
         for role in "${MISSING_ROLES[@]}"; do
             echo -n "Assigning role: $role... "
-            # Use --scope instead of --subscription for all roles
-            ROLE_RESULT=$(execute_az_command "az role assignment create --assignee \"$APP_ID\" --role \"$role\" --scope /subscriptions/$SUBSCRIPTION_ID")
+            # Attempt to assign the role with explicit scope
+            ROLE_RESULT=$(execute_az_command "az role assignment create --assignee \"$PRINCIPAL_ID\" --role \"$role\" --scope /subscriptions/$SUBSCRIPTION_ID")
             if [ $? -eq 0 ]; then
                 ROLE_ID=$(echo "$ROLE_RESULT" | jq -r '.id')
-                update_role_assignments "$role" "$ROLE_ID"
+                ROLE_DEFINITION_ID=$(echo "$ROLE_RESULT" | jq -r '.roleDefinitionId')
+                ROLE_SCOPE=$(echo "$ROLE_RESULT" | jq -r '.scope')
+                update_role_assignments "$role" "$ROLE_ID" "$ROLE_DEFINITION_ID" "$ROLE_SCOPE"
                 echo "Done"
             else
                 echo "Failed"
+                echo "Error details: $ROLE_RESULT"
+                echo "Command was: az role assignment create --assignee \"$PRINCIPAL_ID\" --role \"$role\" --scope /subscriptions/$SUBSCRIPTION_ID"
             fi
         done
     else
@@ -408,8 +488,18 @@ else
     update_inventory_role_assignments
 fi
 
-# (Continue with missing role assignment logic as before)
+# Example direct call to update_role_assignments for documentation/testing:
+# update_role_assignments "Reader" \
+#     "/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Authorization/roleAssignments/11111111-1111-1111-1111-111111111111" \
+#     "/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Authorization/roleDefinitions/acdd72a7-3385-48ef-bd42-f606fba81ae7" \
+#     "/subscriptions/00000000-0000-0000-0000-000000000000"
+#
+# Arguments:
+#   1. roleName (e.g., "Reader")
+#   2. id (role assignment id)
+#   3. roleDefinitionId (role definition id)
+#   4. scope (e.g., "/subscriptions/<id>")
 
 echo -e "\nNext Steps:"
 echo "1. Verify all required roles are assigned correctly"
-echo "2. Run step3_configure_github_oidc_federation.sh to set up GitHub Actions authentication"
+echo "2. Run step3_configure_oidc.sh to set up GitHub Actions authentication"

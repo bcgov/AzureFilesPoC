@@ -1,21 +1,46 @@
 #!/usr/bin/env bash
-# step6.1_assign_roles_to_resource_group.sh
-# DONT DELETE COMMENTS PLEASE
-# This script assigns one or more specified roles to a service principal or user at the resource group scope.
+# ================================================================
+# step6.2_assign_roles_to_resource_group.sh
 #
-# Usage:
-#   bash step6.1_assign_roles_to_resource_group.sh --rgname <resource-group-name> --assignee <object-id> --role "Role1" [--role "Role2" ...] [--subscription-id <id>]
+# SUMMARY:
+#   This script assigns one or more specified roles to a service principal or user at the resource group scope in Azure.
+#   It is intended to be run after resource groups are created, to grant the necessary permissions for automation and operations.
 #
-# Example:
-#   bash step6.1_assign_roles_to_resource_group.sh --rgname rg-<project-name>-cicd-tools-dev --assignee <service-principal-object-id> --role "Virtual Machine Contributor" --role "Network Contributor" --role "Managed Identity Operator"
+# WHAT IT DOES:
+#   - Accepts resource group name, assignee object ID, and one or more roles as arguments.
+#   - Assigns each specified role to the assignee at the resource group scope using the Azure CLI.
+#   - Updates the .env/azure_full_inventory.json file with the current role assignments for the resource group.
+#   - Prints status and next steps.
 #
-# This script will update the inventory file (.env/azure_full_inventory.json) with the current role assignments for the resource group.
+# USAGE:
+#      bash step6.2_assign_roles_to_resource_group.sh --rgname <resource-group-name> --assignee <object-id> --role "Role1" [--role "Role2" ...] [--subscription-id <id>]
 #
-# Note: The service principal may also inherit additional roles at the subscription level (e.g., Reader, Monitoring Contributor, Private DNS Zone Contributor, etc.).
-# These are not assigned by this script but may affect effective permissions.
+# PRECONDITIONS:
+#   - Azure CLI and jq are installed.
+#   - You are logged in to Azure with sufficient permissions to assign roles (run 'az login' if needed).
+#   - The target resource group(s) already exist in Azure.
+#   - The assignee object ID (service principal or user) is known.
+#   - all resource groups must already exist in Azure, created by step6_create_resource_group.sh.
+#   - custom roles were already created in Azure, as specified in the inventory. with  step6.2_assign_roles_to_resource_group.sh
+#       - OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/ag-pssg-azure-files-poc-dev-resource-group-contributor.json
+#       - OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/ag-pssg-azure-files-poc-dev-role-assignment-writer.json
 #
-# Update this section if you add or remove roles in the script logic or if assignments change in Azure.
-# # INVENTORY:
+# INPUTS:
+#   - Resource group name (via --rgname)
+#   - Assignee object ID (via --assignee)
+#   - One or more role names (via --role)
+#   - Optional: subscription ID (via --subscription-id)
+#
+# OUTPUTS:
+#   - Assigns the specified roles to the assignee at the resource group scope in Azure.
+#   - Updates .env/azure_full_inventory.json with the new role assignments.
+#   - Prints status and next steps for verification.
+#
+# NOTES:
+#   -this script does not assign inherited subscription-level roles. It only manages resource group-level assignments.
+#   - This script assigns one or more specified roles to a service principal or user at the resource group scope.
+#   
+# INVENTORY:
 # Role assignments applied (as of 2025-06-29):
 #   Resource Group: rg-<project-name>-dev
 #     - <project-name>-ServicePrincipal (<client-id>):
@@ -30,12 +55,13 @@
 #         * Virtual Machine Contributor
 #         * <project-name>-dev-role-assignment-writer
 # Inherited subscription-level roles for <project-name>-ServicePrincipal (<client-id>):
+#   those are assigned by step2_grant_subscription_level_permissions.sh
 #   * Reader
 #   * [BCGOV-MANAGED-LZ-LIVE] Network-Subnet-Contributor
 #   * Monitoring Contributor
 #   * Private DNS Zone Contributor
 #   * Storage Account Contributor
-#
+#================================================================
 
 set -euo pipefail
 
