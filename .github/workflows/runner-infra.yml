@@ -151,8 +151,8 @@ jobs:
           common_tags = ${{ vars.COMMON_TAGS }}
           EOF
           
-          # Add SSH key separately to avoid quote issues
-          echo 'admin_ssh_key_public = "${{ vars.ADMIN_SSH_KEY_PUBLIC }}"' >> terraform/terraform.tfvars
+          # Add SSH key separately to avoid quote issues (handle potential line breaks)
+          printf 'admin_ssh_key_public = "%s"\n' "${{ vars.ADMIN_SSH_KEY_PUBLIC }}" >> terraform/terraform.tfvars
           
           echo "✅ Generated terraform.tfvars from GitHub secrets and variables"
           echo "File size: $(wc -l < terraform/terraform.tfvars) lines"
