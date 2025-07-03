@@ -18,7 +18,7 @@ variable "subnet_id" { type = string }
 
 resource "azurerm_public_ip" "bastion" {
   name                = var.public_ip_name
-  location            = var.azure_location
+  location            = var.location
   resource_group_name = var.resource_group_name
   allocation_method   = "Static"
   sku                 = "Standard"
@@ -26,7 +26,7 @@ resource "azurerm_public_ip" "bastion" {
 
 resource "azurerm_bastion_host" "main" {
   name                = var.bastion_name
-  location            = var.azure_location
+  location            = var.location
   resource_group_name = var.resource_group_name
   dns_name            = null
   sku                 = "Standard"

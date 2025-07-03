@@ -14,6 +14,12 @@ The custom role definition is stored at `scripts/<project-name>-role-assignment-
 
 # Register Azure Application & Configure OIDC for GitHub Actions
 
+## 📚 Documentation Quick Links
+
+- **[TROUBLESHOOTING_GUIDE.md](./TROUBLESHOOTING_GUIDE.md)** - Comprehensive troubleshooting for all onboarding issues
+- **[SSH_KEY_REFERENCE.md](./SSH_KEY_REFERENCE.md)** - Complete SSH key management and Bastion connection guide
+- **[scripts/unix/](./scripts/unix/)** - All automated onboarding scripts with detailed inline documentation
+
 ## ⚠️ Security Model: Two Identities, Two Phases
 
 - **Your User Identity (High Privilege):** Used for one-time setup (registering app, creating resource group). Has Contributor/Owner rights.
@@ -30,106 +36,131 @@ This separation enforces the Principle of Least Privilege and aligns with BC Gov
 
 ## Onboarding Steps (What To Do)
 
+**All scripts are fully automated, idempotent, and safe to re-run. Run each script in order, verifying each step before proceeding.**
+
+### Phase 1: Core Identity and Authentication Setup
+
 1. **Register Application in Azure**  
-   _User Identity_  
+   _User Identity Required_  
    - `./scripts/unix/step1_register_app.sh`
-2. **Grant Required Permissions**  
-   _User Identity_  
+   - Creates Azure AD application and service principal for GitHub Actions
+
+2. **Grant Subscription-Level Permissions**  
+   _User Identity Required_  
    - `./scripts/unix/step2_grant_subscription_level_permissions.sh` 
-   - **Note:** Only essential roles are assigned at the subscription level (see script comments for exact list). Storage/data plane roles must be assigned at the storage account or resource group level for least privilege. The onboarding scripts have been updated to enforce this best practice.
+   - Assigns only essential roles at subscription level (Reader, Network-Subnet-Contributor)
+   - **Note:** Storage/data plane roles are assigned at resource group level in step 6.2
+
 3. **Configure OIDC Federated Credentials**  
-   _User Identity_  
+   _User Identity Required_  
    - `./scripts/unix/step3_configure_github_oidc_federation.sh` 
+   - Enables secure, passwordless authentication between GitHub Actions and Azure
+
 4. **Prepare GitHub Secrets**  
-   _User Identity_  
+   _User Identity Required_  
    - `./scripts/unix/step4_prepare_github_secrets.sh` 
-5. **Add GitHub Secrets (Automated or Manual)**  
-   _User Identity_  
+   - Displays values needed for GitHub repository secrets
+
+5. **Add GitHub Secrets (Automated)**  
+   _User Identity Required_  
    - `./scripts/unix/step5_add_github_secrets_cli.sh`
-6. **Create Permanent Resource Group**  
-   _User Identity_  
-   - **As of June 2025, resource group creation is now managed by Terraform.**
-   - The previous scripts (`step6_create_resource_group.sh` and `step6_create_resource_group.ps1`) have been deleted and replaced with a notice. Resource group creation should be defined in your Terraform code and applied by a user with sufficient permissions.
-   - Update your GitHub secret `RESOURCE_GROUP_NAME` to match the resource group defined in Terraform.
-7. **Create Terraform State Storage Account and Container**  
-   _User Identity_  
-   - `./scripts/unix/step7_create_tfstate_storage_account.sh --rgname <resource-group-name> --saname <storage-account-name> --containername <container-name> [--location <location>]`
-   - This step is required before running any Terraform CI/CD pipeline that uses a remote backend in Azure.
-   - The resource group, storage account, and blob container must all exist before `terraform init` can succeed with a remote backend.
-   - See script comments for required arguments and Azure Policy compliance (e.g., minimum TLS version).
-8. **Run Validation Workflow**  
-   - See `ValidationProcess.md` for instructions.
+   - Automatically adds all required secrets to GitHub repository
+
+### Phase 2: Resource Group and Role Setup
+
+6. **Create Permanent Resource Groups**  
+   _User Identity Required_  
+   - `./scripts/unix/step6_create_resource_group.sh`
+   - Creates all required resource groups with proper tags and policy compliance
+   - **Restored and enhanced** - contrary to previous notes, this script is active and working
+
+6.1. **Create Custom Roles**  
+   _User Identity Required_  
+   - `./scripts/unix/step6.1_CreateCustomRole.sh`
+   - Creates custom Azure roles with minimal required permissions
+   - Handles both role creation and updates idempotently
+
+6.2. **Assign Roles to Resource Groups**  
+   _User Identity Required_  
+   - `./scripts/unix/step6.2_assign_roles_to_resource_group.sh`
+   - Assigns service principal and custom roles to specific resource groups
+   - Shows before/after role assignment tables for verification
+
+### Phase 3: Infrastructure Backend Setup
+
+7. **Create Terraform State Storage Account**  
+   _User Identity Required_  
+   - `./scripts/unix/step7_create_tfstate_storage_account.sh`
+   - Creates storage account and blob container for Terraform remote state
+   - Fully idempotent with proper Azure Policy compliance
+
+8. **Fix Terraform State Issues (Troubleshooting Utility)**  
+   _As Needed_  
+   - `./scripts/unix/step8_fix_terraform_state.sh`
+   - Utility script for resolving state conflicts, 409 errors, and drift issues
+   - Only run when experiencing Terraform state problems
+
+### Phase 4: VM Access Setup
+
+11. **Generate SSH Keys for VM Access**  
+    _User Identity Required_  
+    - `./scripts/unix/step11_create_ssh_key.sh`
+    - Generates SSH key pair for Azure VM and Bastion access
+    - Displays public key for GitHub secrets and terraform.tfvars
+
+### Phase 5: Validation
+
+12. **Run Validation Workflow**  
+    - See `ValidationProcess.md` for end-to-end pipeline testing
+
+## 🔧 Script Features and Best Practices
+
+- **Idempotent Design**: All scripts can be safely re-run multiple times without adverse effects
+- **Comprehensive Error Handling**: Scripts validate prerequisites and provide clear error messages
+- **Incremental Progress**: Each script builds on the previous step's credentials file
+- **Least Privilege Enforcement**: Only assigns minimum required permissions at appropriate scopes
+- **Audit Trail**: Before/after comparisons for verification and compliance
+- **BC Gov Policy Compliance**: Follows Azure landing zone requirements and naming conventions
+
+## ⚠️ Important: Terraform Backend Prerequisites
+
+Before running any Terraform pipeline, ensure these resources exist:
+
+1. **Resource Groups**
+   - **Script:** `./scripts/unix/step6_create_resource_group.sh`
+   - Creates all required resource groups with proper tags and compliance
+   - **GitHub Variables:** Resource group names are automatically added to GitHub secrets
+
+2. **Custom Roles**
+   - **Script:** `./scripts/unix/step6.1_CreateCustomRole.sh`
+   - Creates custom Azure roles with minimal required permissions
+   - Handles both creation and updates idempotently
+
+3. **Role Assignments**
+   - **Script:** `./scripts/unix/step6.2_assign_roles_to_resource_group.sh`
+   - Assigns service principal to resource groups with appropriate roles
+   - Shows before/after verification tables
+
+4. **Terraform State Storage**
+   - **Script:** `./scripts/unix/step7_create_tfstate_storage_account.sh`
+   - Creates storage account and blob container for Terraform remote state
+   - **GitHub Variables:** Automatically sets `TFSTATE_SA`, `TFSTATE_CONTAINER`, etc.
+
+**Verification:**
+All scripts provide before/after comparisons and verification steps. Check the output carefully and ensure all resources are created successfully before proceeding to Terraform deployment.
 
 ---
 
-> **Note (June 2025):**
-> Resource group creation is now managed by Terraform. The previous step 6 scripts have been deleted. If you have created and assigned a custom role with sufficient permissions (such as Contributor or a custom role allowing resource group creation), you may automate resource group creation with Terraform. This is the recommended approach for least privilege and full infrastructure-as-code management.
+## Key Features & Improvements (July 2025)
 
-## ⚠️ Important: Pre-create All Terraform Backend Resources
-
-Before running any Terraform pipeline, you must create these three resources and set the corresponding GitHub variables:
-
-1. **Resource Group**
-   - **Terraform:** Define your resource group in your Terraform configuration. Do not use the deleted step6 scripts.
-   - **GitHub Variable:**
-     `TFSTATE_RG` (e.g., `rg-<project-name>-tfstate-dev`)
-
-2. **Storage Account**
-   - **Script:**
-     ```sh
-     ./scripts/unix/step7_create_tfstate_storage_account.sh --rgname <resource-group-name> --saname <storage-account-name> [--location <location>]
-     ```
-   - **Example:**
-     ```sh
-     ./scripts/unix/step7_create_tfstate_storage_account.sh --rgname rg-<project-name>-tfstate-dev --saname st<projectname>tfstatedev01 --location <azure-region>
-     ```
-   - **GitHub Variable:**
-     `TFSTATE_SA` (e.g., `st<projectname>tfstatedev01`)
-
-3. **Blob Container**
-   - **Script:**
-     The step7 script attempts to create the container, but if it does not exist, create it manually:
-     ```sh
-     az storage container create \
-       --name <container-name> \
-       --account-name <storage-account-name> \
-       --auth-mode login
-     ```
-   - **Example:**
-     ```sh
-     az storage container create \
-       --name sc-<project-name>-tfstate-dev \
-       --account-name stagpssgtfstatedev01 \
-       --auth-mode login
-     ```
-   - **GitHub Variable:**
-     `TFSTATE_CONTAINER` (e.g., `sc-<project-name>-tfstate-dev`)
-
-   - **Verification Note:**
-     > Blob containers do not appear as top-level Azure resources in the Azure Portal. To verify creation, navigate to your resource group, open the storage account (e.g., `st<project-name>tfstatedev01`), and select the **Containers** blade. Your container (e.g., `sc-<project-name>-tfstate-dev`) should be listed there.
-
-**Summary Table:**
-
-| Resource         | Script/Command                                                                 | GitHub Variable         | Example Value                |
-|------------------|-------------------------------------------------------------------------------|-------------------------|------------------------------|
-| Resource Group   | `step6_create_resource_group.sh`                                              | `TFSTATE_RG`        | `rg-<project-name>-tfstate-dev`     |
-| Storage Account  | `step7_create_tfstate_storage_account.sh`                                     | `TFSTATE_SA`        | `stagpssgtfstatedev01`       |
-| Blob Container   | `az storage container create ...` (if not created by script 7)                | `TFSTATE_CONTAINER` | `sc-<project-name>-tfstate-dev`     |
-
-> **All three must exist and be referenced by the correct GitHub variables before `terraform init` or any pipeline run.**
-
----
-
-## Key Changes & Automation Notes
-
-- **Resource group creation is now managed by Terraform.** The onboarding scripts for manual resource group creation (step6) have been deleted.
-- **Only essential roles are assigned at the subscription level.** Storage/data plane roles must be assigned at the storage account or resource group level for least privilege. See onboarding scripts for examples and comments.
-- **Resource group tags** are set in Azure at creation time (via CLI/PowerShell or Terraform), but are no longer written to `.env/azure-credentials.json`.
-- **All onboarding scripts** (Unix and Windows) have been updated for robust, idempotent automation and to align with the new security and RBAC model.
-- **Credentials JSON** is only used for identity and role assignment tracking, not for resource group tags.
-- **Manual edits** to the credentials JSON are supported, but tags are not required or tracked there.
-- **Variable and secret handling** is secure and consistent for both local and CI/CD runs.
-- **No secrets or sensitive variables** are ever written to documentation or tracked in version control.
+- **Fully Automated**: All onboarding steps use robust, idempotent scripts
+- **Resource Group Management**: Step6 scripts are restored and enhanced for complete automation
+- **Custom Role Creation**: Automated creation and assignment of minimal-privilege custom roles
+- **Enhanced Security**: Proper role scoping with subscription vs. resource group level assignments
+- **Comprehensive Documentation**: Detailed inline comments and troubleshooting guides
+- **SSH Key Management**: Automated SSH key generation for VM and Bastion access
+- **Validation Tools**: Before/after comparisons and verification steps in all scripts
+- **Error Recovery**: Troubleshooting utilities for state drift and common issues
 
 ---
 
@@ -138,6 +169,8 @@ Before running any Terraform pipeline, you must create these three resources and
 ```
 RegisterApplicationInAzureAndOIDC/
 ├── README.md
+├── TROUBLESHOOTING_GUIDE.md
+├── SSH_KEY_REFERENCE.md
 └── scripts/
     ├── unix/
     │   ├── step1_register_app.sh
@@ -145,38 +178,36 @@ RegisterApplicationInAzureAndOIDC/
     │   ├── step3_configure_github_oidc_federation.sh
     │   ├── step4_prepare_github_secrets.sh
     │   ├── step5_add_github_secrets_cli.sh
-    │   └── step6_create_resource_group.sh (deleted, see above)
+    │   ├── step6_create_resource_group.sh
+    │   ├── step6.1_CreateCustomRole.sh
+    │   ├── step6.2_assign_roles_to_resource_group.sh
+    │   ├── step7_create_tfstate_storage_account.sh
+    │   ├── step8_fix_terraform_state.sh
+    │   ├── step11_create_ssh_key.sh
+    │   └── step12_import_existing_resources.sh
+    └── ag-pssg-azure-files-poc-dev-resource-group-contributor.json
+    └── ag-pssg-azure-files-poc-dev-role-assignment-writer.json
 ```
 
 ---
 
 ## Prerequisites
 
-- Azure account with permissions to create app registrations, assign roles, and create resource groups.
-- Access to the GitHub repository.
-- Local dev environment with Azure CLI, Git, and Bash or PowerShell.
+- Azure account with permissions to create app registrations, assign roles, and create resource groups
+- Access to the GitHub repository with admin permissions for secrets management
+- Local development environment with Azure CLI, Git, and Bash
+- GitHub CLI (`gh`) installed for automated secret management (optional but recommended)
 
 ---
 
-## Additional Required One-Time Steps (June 2025)
+## Quick Start Summary
 
-### 1. Generate and Register SSH Key for VM Admin Access
-- Run the provided script to generate an SSH key pair for VM admin access:
-  ```sh
-  ./scripts/unix/step11_create_ssh_key.sh
-  ```
-- Copy the entire contents of the generated public key (`id_rsa.pub`, including the `ssh-rsa` prefix) into your GitHub repository secret (e.g., `ADMIN_SSH_KEY_PUBLIC`).
-- This is only required in GitHub secrets for CI/CD workflows. You do not need to add it to `secrets.tfvars` unless you want to use it for local automation.
+1. **Run all scripts in order** (steps 1-7, 6.1, 6.2, 11)
+2. **Verify each step** using the before/after output provided by scripts
+3. **Check troubleshooting guides** if any issues arise
+4. **Proceed to Terraform validation** after all scripts complete successfully
 
-### 2. Remove Obsolete Windows Scripts
-- The `windows` folder and all PowerShell onboarding scripts have been deleted. Only the Unix onboarding scripts are maintained going forward.
-
-### 3. Update Project Tree Structure
-- Use the following command to generate a clean directory tree (excluding build, library, and sensitive files):
-  ```sh
-  tree -I 'node_modules|.terraform|.vscode|.idea|.git|*.zip|*.tar|*.gz|*.swp|*.swo|*.DS_Store|Thumbs.db|*.tfstate*|*.auto.tfvars*|*.bak|*.lock.hcl|llm_code_snapshot.txt|package-lock.json|.azure|.env|*.plan|LICENSE.txt|*.log' -a -F > TreeStructure.txt
-  ```
-- This will help you keep your `TreeStructure.txt` up to date and clean.
+For detailed troubleshooting and SSH key management, see the comprehensive guides linked at the top of this document.
 
 ---
 
@@ -393,13 +424,17 @@ Use this table to track your progress through the steps.
 | Step | Description | Status | Completed By | Date |
 |:---|:---|:---|:---|:---|
 | 1 | Register Application in Azure AD | Not Started | | |
-| 2 | Grant Permissions to Service Principal | Not Started | | |
-| 3 | Configure OIDC Credentials | Not Started | | |
+| 2 | Grant Subscription-Level Permissions | Not Started | | |
+| 3 | Configure OIDC Federation | Not Started | | |
 | 4 | Prepare GitHub Secrets | Not Started | | |
-| 5 | Add GitHub Secrets (CLI or Manual) | Not Started | | |
-| **6** | **Create Permanent Resource Group (Manual)** | **Not Started** | | |
-| 7 | Create Terraform State Storage Account and Container | Not Started | | |
-| 8 | Go to ValidationProcess.md for validation | Not Started | | |
+| 5 | Add GitHub Secrets (Automated) | Not Started | | |
+| 6 | Create Resource Groups | Not Started | | |
+| 6.1 | Create Custom Roles | Not Started | | |
+| 6.2 | Assign Roles to Resource Groups | Not Started | | |
+| 7 | Create Terraform State Storage | Not Started | | |
+| 8 | Test Terraform State (if needed) | Not Started | | |
+| 11 | Generate SSH Keys for VM Access | Not Started | | |
+| 12 | Run Validation Process | Not Started | | |
 
 ## Appendix
 
@@ -552,20 +587,11 @@ sequenceDiagram
 
 ---
 
-## Assign the Custom Role to the Service Principal
+## Automated Role Assignment
 
-After creating the custom role, you must assign it to your pipeline's service principal at the resource group scope. This is required for the pipeline to perform role assignments as part of automation.
+Role assignment is now fully automated through the onboarding scripts:
 
-**Azure CLI Command:**
+- **Custom Role Creation**: `step6.1_CreateCustomRole.sh` handles creation and updates of custom roles
+- **Role Assignment**: `step6.2_assign_roles_to_resource_group.sh` assigns all necessary roles to the service principal
 
-```sh
-az role assignment create \
-  --assignee <service principal object id> \
-  --role "<project-name>-role-assignment-writer" \
-  --scope /subscriptions/<subscription id>/resourceGroups/<resource group name>
-```
-
-- Replace `<service principal object id>` with your service principal's object ID.
-- Replace `<subscription id>` and `<resource group name>` with your values.
-
-You must have Owner or User Access Administrator rights at the specified scope to run this command.
+These scripts provide before/after comparisons and handle all the complex role assignment logic automatically. Manual role assignment commands are no longer required.

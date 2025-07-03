@@ -2,6 +2,12 @@
 
 This directory contains documentation and scripts for one-time onboarding activities required for the Azure Files Proof of Concept project.
 
+## 📚 Key Documentation
+
+- **[TROUBLESHOOTING_GUIDE.md](RegisterApplicationInAzureAndOIDC/TROUBLESHOOTING_GUIDE.md)** - Comprehensive troubleshooting for all onboarding issues
+- **[SSH_KEY_REFERENCE.md](RegisterApplicationInAzureAndOIDC/SSH_KEY_REFERENCE.md)** - Complete SSH key management and Bastion connection guide
+- **[Validation Process](ValidationProcess.md)** - End-to-end validation after onboarding
+
 ## Contents
 
 - [RegisterApplicationInAzureAndOIDC/README.md](RegisterApplicationInAzureAndOIDC/README.md) – Main onboarding and OIDC setup guide

@@ -215,11 +215,6 @@ variable "bastion_subnet_name" {
   description = "The name of the subnet for Azure Bastion."
 }
 
-variable "common_tags" {
-  type        = map(string)
-  description = "A map of common tags to apply to all resources."
-}
-
 variable "my_github_actions_spn_object_id" {
   type        = string
   description = "The object ID of the GitHub Actions service principal."

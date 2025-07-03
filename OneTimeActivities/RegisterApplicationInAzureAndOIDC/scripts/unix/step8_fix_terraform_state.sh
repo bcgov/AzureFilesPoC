@@ -1,28 +1,55 @@
 #!/usr/bin/env bash
 # step8_fix_terraform_state.sh
-# This script is a one-time utility to fix a common "state drift" issue where a
-# resource (specifically a role assignment) exists in Azure but not in the
-# Terraform state file. This typically happens after a failed pipeline run.
-# run script if you  encounter a 409 RoleAssignmentExists error 
-# This script will:
-# 1. Navigate to the correct Terraform environment directory.
-# 2. Find the Azure Resource ID of the pre-existing role assignment.
-# 3. If it exists, it will initialize Terraform and import that resource into the state.
-# 4. Run a 'terraform plan' to confirm the state is now clean.
+# -----------------------------------------------------------------------------
+# SUMMARY:
+#   This is a utility/troubleshooting script for fixing Terraform state drift issues.
+#   It resolves conflicts when Azure resources exist but are missing from Terraform state,
+#   typically after a failed pipeline run or partial deployment.
 #
-# Preconditions:
-# 1. You must run this script from the root of your Git repository.
-# 2. You must have run the previous setup scripts (step1-step7).
-# 3. You must be authenticated to Azure with permissions to read role assignments.
+# WHEN TO USE THIS SCRIPT:
+#   - You encounter a "409 RoleAssignmentExists" error during Terraform deployment
+#   - GitHub Actions pipeline fails with "resource already exists" errors
+#   - Terraform thinks a resource doesn't exist, but Azure shows it does
+#   - You need to recover from a failed/interrupted pipeline run
 #
-# Example Usage (from the root of the repository):
-# bash ./OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/step8_fix_terraform_state.sh \
-#   --tfstaterg rg-<project-name>-tfstate-dev \
-#   --tfstatesa st<projectname>tfstatedev01 \
-#   --tfstatecontainer sc-<project-name>-tfstate-dev \
-#   --apprg rg-<project-name>-dev \
-#   --appsa st<projectname>dev01 \
-#   --principalid <your-service-principal-object-id>
+# WHAT IT DOES:
+#   1. Searches for existing role assignments in Azure that conflict with Terraform
+#   2. Imports those existing resources into the Terraform state file
+#   3. Synchronizes the state so Terraform recognizes the existing resources
+#   4. Verifies the fix with 'terraform plan' to ensure no conflicts remain
+#
+# TYPICAL ERROR SYMPTOMS:
+#   Error: A resource with the ID "/subscriptions/.../roleAssignments/..." already exists
+#   StatusCode: 409
+#   RoleAssignmentExists: The role assignment already exists.
+#
+# USAGE:
+#   bash step8_fix_terraform_state.sh \
+#     --tfstaterg "rg-<project-name>-tfstate-dev" \
+#     --tfstatesa "st<projectname>tfstatedev01" \
+#     --tfstatecontainer "sc-<project-name>-tfstate-dev" \
+#     --apprg "rg-<project-name>-dev" \
+#     --appsa "st<projectname>dev01" \
+#     --principalid "<your-service-principal-object-id>"
+#
+# PREREQUISITES:
+#   - Must be run from the root of your Git repository
+#   - Steps 1-7 of the onboarding process must be completed
+#   - Azure CLI authenticated with permissions to read role assignments
+#   - Terraform installed and accessible in PATH
+#
+# IMPLEMENTATION NOTES:
+#   - This is NOT part of normal onboarding (steps 1-7 are sufficient for most setups)
+#   - Only run this if you encounter Terraform state conflicts
+#   - Script is idempotent - safe to run multiple times
+#   - Focuses specifically on "Network Contributor" role assignment conflicts
+#   - Uses terraform import to synchronize existing Azure resources with state
+#
+# NEXT STEPS AFTER RUNNING:
+#   1. Verify 'terraform plan' shows no changes needed
+#   2. Re-run your failed GitHub Actions pipeline
+#   3. Monitor subsequent deployments for similar issues
+# -----------------------------------------------------------------------------
 
 set -euo pipefail
 

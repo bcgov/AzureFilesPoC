@@ -38,7 +38,7 @@
 
 resource "azurerm_network_interface" "main" {
   name                = "${var.vm_name}-nic"
-  location            = var.azure_location
+  location            = var.location
   resource_group_name = var.resource_group_name
   tags                = var.tags
 
@@ -54,7 +54,7 @@ resource "azurerm_network_interface" "main" {
 resource "azurerm_linux_virtual_machine" "main" {
   name                  = var.vm_name
   resource_group_name   = var.resource_group_name
-  location              = var.azure_location
+  location              = var.location
   size                  = var.vm_size
   admin_username        = var.admin_username
   network_interface_ids = [azurerm_network_interface.main.id]

@@ -7,39 +7,126 @@
 # ==============================================================================
 # SETUP STEPS FOR CI/CD ENVIRONMENT (REQUIRED MANUAL AND AUTOMATED STEPS)
 # ------------------------------------------------------------------------------
-# Preconditions / Assumptions:
-#   1. Resource group for CI/CD (e.g., rg-<project-name>-cicd-tools-dev) is pre-created. (done)
+# Preconditions / Assumptions (MUST BE COMPLETED BEFORE RUNNING TERRAFORM):
+#   1. Complete Azure onboarding process (steps 1-7, 6.1, 6.2, 11):
+#      - Azure AD application registration (step1_register_app.sh)
+#      - Service principal permissions (step2_grant_subscription_level_permissions.sh)
+#      - OIDC federation setup (step3_configure_github_oidc_federation.sh)
+#      - GitHub secrets configuration (step4_prepare_github_secrets.sh, step5_add_github_secrets_cli.sh)
+#      - Resource groups creation (step6_create_resource_group.sh)
+#      - Custom roles creation (step6.1_CreateCustomRole.sh)
+#      - Role assignments (step6.2_assign_roles_to_resource_group.sh)
+#      - Terraform state storage (step7_create_tfstate_storage_account.sh)
+#      - SSH key generation (step11_create_ssh_key.sh)
+#
+#   2. Resource group for CI/CD (e.g., rg-<project-name>-cicd-tools-dev) is pre-created. (✅ done)
 #      - Created using: OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/step6_create_resource_group.sh
-#   2. Network Security Group for runner subnet (e.g., nsg-github-runners) is created by Terraform pipeline (automated, policy-compliant)
-#      - Created by: module.runner_nsg (see below)
-#   3. Subnet for runner (e.g., snet-github-runners) is created and associated with the NSG by Terraform pipeline (automated, policy-compliant)
-#      - Created by: module.runner_nsg (see below)
-#   4. SSH key pair for VM admin access is generated and public key is registered as a GitHub secret.
+#
+#   3. SSH key pair for VM admin access is generated and public key is registered as a GitHub secret. (✅ done)
 #      - Created using: OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/step11_create_ssh_key.sh
-#   5. All names and address spaces are set in terraform.tfvars. (done)
-#   6. All names and address spaces are set in github variables. (done)
+#      - Public key stored in GitHub secret: ADMIN_SSH_KEY_PUBLIC
+#      - Private key stored locally: ~/.ssh/id_rsa (for Bastion access)
 #
-# Step 1. (Manual, One-Time): Create the CI/CD Resource Group
-#   - Use your user identity and the onboarding script:
-#     bash OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/step6_create_resource_group.sh --rgname "<cicd-resource-group-name>" --location "<location>"
-#   - This is required due to policy: resource groups cannot be created by Terraform or service principals.
-#   - Reference the created resource group in your variables (var.cicd_resource_group_name).
-#   STATUS:  created
+#   4. Service principal has required permissions on subscription and resource groups. (✅ done)
+#      - Subscription-level: Reader, Network Contributor (limited scope)
+#      - Resource group-level: Contributor, custom role assignments
+#      - Created by: step2, step6.1, step6.2 scripts
+#
+#   5. GitHub repository configured with secrets and OIDC federation. (✅ done)
+#      - AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID
+#      - ADMIN_SSH_KEY_PUBLIC, resource group names, state storage details
+#      - OIDC federated credentials configured in Azure AD
+#
+#   6. Terraform backend storage account and containers exist. (✅ done)
+#      - Storage account: stagpssgtfstatedev01
+#      - Container for CICD: sc-ag-pssg-azure-files-poc-tfstate-cicd
+#      - Created by: step7_create_tfstate_storage_account.sh + manual container creation
+#
+#   7. All names and address spaces are set in terraform.tfvars. (✅ done)
+#      - CICD resource group name, networking configuration, VM settings
+#
+#   8. BC Gov Azure Landing Zone networking resources exist. (✅ done)
+#      - VNet: d5007d-dev-vwan-spoke in d5007d-dev-networking resource group
+#      - Address space and DNS servers configured
+#
+# DEPLOYMENT STEPS (AFTER COMPLETING ALL PRECONDITIONS ABOVE):
+#
+# Step 1. (✅ COMPLETED): Complete Full Azure Onboarding Process
+#   - All foundational setup completed via onboarding scripts (steps 1-7, 6.1, 6.2, 11)
+#   - Service principal, OIDC, GitHub secrets, resource groups, roles, SSH keys all configured
+#   STATUS: ✅ completed during onboarding
+#
+# Step 2. (✅ COMPLETED): Validate Terraform Configuration Locally
+#   - Fixed variable naming consistency and module compatibility issues
+#   - Created missing backend container and reinitialized state
+#   - Verified terraform validate, plan working correctly
+#   STATUS: ✅ completed during validation
+#
+# Step 3. (READY): Deploy CI/CD Infrastructure via GitHub Actions
+#   - Push changes to trigger GitHub Actions workflow
+#   - Monitor deployment of NSGs, subnets, Bastion host, and runner VM
+#   - Validate all resources created successfully
+#   STATUS: ⏳ ready for deployment
 # 
-# Step 2. (Automated): Create the NSG and subnet for the runner
-#   - Both are created and associated in a single step by the Terraform pipeline (module.runner_nsg).
-#   - No manual onboarding scripts are required for these resources.
-#   STATUS:  created by pipeline
+# ==============================================================================
+# ONBOARDING SCRIPTS REFERENCE (REQUIRED PREREQUISITES)
+# ------------------------------------------------------------------------------
+# All preconditions above are completed using these onboarding scripts:
+# 
+# Location: OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/
+# 
+# Core Identity & Authentication:
+#   - step1_register_app.sh                        # Azure AD app registration
+#   - step2_grant_subscription_level_permissions.sh # Service principal permissions  
+#   - step3_configure_github_oidc_federation.sh     # OIDC federation setup
+#   - step4_prepare_github_secrets.sh               # Extract secret values
+#   - step5_add_github_secrets_cli.sh               # Automated GitHub secret creation
+# 
+# Resource Groups & Roles:
+#   - step6_create_resource_group.sh                # Create all resource groups
+#   - step6.1_CreateCustomRole.sh                   # Create custom Azure roles
+#   - step6.2_assign_roles_to_resource_group.sh     # Assign roles to service principal
+# 
+# Infrastructure Backend:
+#   - step7_create_tfstate_storage_account.sh       # Terraform state storage
+# 
+# VM Access:
+#   - step11_create_ssh_key.sh                      # SSH key generation for VMs
+# 
+# Documentation:
+#   - TROUBLESHOOTING_GUIDE.md                      # Comprehensive troubleshooting
+#   - SSH_KEY_REFERENCE.md                          # SSH key management guide
+# ==============================================================================
+# 
+# ==============================================================================
+# ADDITIONAL VALIDATION STEPS PERFORMED (July 2025)
+# ------------------------------------------------------------------------------
+# During local validation before GitHub Actions deployment, the following 
+# configuration fixes were required:
 #
-# Step 3. (Manual, One-Time): Generate SSH key pair for VM admin access
-#   - Use onboarding script:
-#     bash OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/step11_create_ssh_key.sh
-#   - Register the public key as a GitHub secret.
-#   STATUS:  created
+# 1. VARIABLE NAMING CONSISTENCY:
+#    - Fixed duplicate variable declarations in variables.tf
+#    - Aligned module variable names (location vs azure_location) 
+#    - Updated module calls to use correct variable mapping
 #
-# Step 4. (Automated): Run Terraform to Deploy the Self-Hosted Runner
-#   - Each substep can be validated incrementally with `terraform plan` and `terraform apply`.
-#   - For full onboarding and troubleshooting, see README.md and cicd/README.md.
+# 2. TERRAFORM STATE BACKEND SETUP:
+#    - Created missing blob container for CICD environment:
+#      az storage container create --name "sc-ag-pssg-azure-files-poc-tfstate-cicd" 
+#        --account-name "stagpssgtfstatedev01" --auth-mode login
+#    - Reinitialized backend with correct configuration:
+#      terraform init -backend-config="backend.tfvars" -reconfigure
+#
+# 3. MODULE COMPATIBILITY:
+#    - Updated bastion/nsg, runner/nsg, and vm modules to use consistent 
+#      variable names (location instead of azure_location)
+#    - Verified module variable declarations match usage
+#
+# VALIDATION WORKFLOW:
+#   cd terraform/environments/cicd
+#   terraform validate              # Check syntax and structure
+#   terraform plan -var-file="../../terraform.tfvars" -out=tfplan  # Preview changes
+#   terraform apply tfplan          # Apply locally for validation
+#   git commit && git push          # Deploy via GitHub Actions for production
 # ==============================================================================
 
 terraform {
@@ -58,6 +145,11 @@ terraform {
   }
   backend "azurerm" {
     key = "cicd.terraform.tfstate"
+    # NOTE: Backend configuration comes from backend.tfvars
+    # If you encounter state storage errors during init, ensure:
+    # 1. The blob container exists (created by validation steps above)
+    # 2. Backend values match your tfvars (resource_group_name, storage_account_name, container_name)
+    # 3. Run: terraform init -backend-config="backend.tfvars" -reconfigure
   }
 }
 
@@ -111,11 +203,13 @@ data "azurerm_virtual_network" "spoke_vnet" {
 # 4.2 Bastion NSG: Created and managed by bastion/nsg module
 #                  Confirmed working with github actions.  don't need to run 
 #                  shell script. 
+# NOTE: Module variable mapping - modules expect 'location' parameter, 
+#       main.tf passes var.azure_location (from terraform.tfvars)
 # -------------------------------------------------------------------------------
 module "bastion_nsg" {
   source                = "../../modules/bastion/nsg"
   resource_group_name   = data.azurerm_resource_group.main.name
-  location              = data.azurerm_resource_group.main.location
+  location              = var.azure_location  # Maps azure_location -> location in module
   nsg_name              = var.bastion_network_security_group
   tags                  = var.common_tags
   vnet_id               = var.vnet_id
@@ -128,7 +222,7 @@ module "bastion_nsg" {
 module "runner_nsg" {
   source              = "../../modules/runner/nsg"
   resource_group_name = data.azurerm_resource_group.main.name
-  location            = data.azurerm_resource_group.main.location
+  location            = var.azure_location  # Maps azure_location -> location in module
   nsg_name            = var.runner_network_security_group
   tags                = var.common_tags
   vnet_id             = var.vnet_id
@@ -158,12 +252,14 @@ module "bastion" {
 # -------------------------------------------------------------------------------
 # 6.1 Deploy the Self-Hosted Runner VM using your existing module
 #    - Uncomment this section after confirming previous steps.
+# NOTE: VM module expects 'location' parameter, uses data source location 
+#       (which resolves to the same azure_location value)
 # -------------------------------------------------------------------------------
 module "self_hosted_runner_vm" {
   source                = "../../modules/vm"
   vm_name               = var.runner_vm_name
   resource_group_name   = data.azurerm_resource_group.main.name
-  location              = data.azurerm_resource_group.main.location
+  location              = data.azurerm_resource_group.main.location  # Uses data source location
   subnet_id             = module.runner_nsg.runner_subnet_id
   admin_ssh_key_public  = var.admin_ssh_key_public
   tags                  = var.common_tags
