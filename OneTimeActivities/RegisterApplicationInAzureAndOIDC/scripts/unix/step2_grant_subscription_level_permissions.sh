@@ -170,6 +170,25 @@ execute_az_command() {
     return 1
 }
 
+# Function to clean up duplicate role assignments in credentials file
+cleanup_duplicate_role_assignments() {
+    echo "Cleaning up duplicate role assignments in credentials file..."
+    local temp_file
+    temp_file=$(mktemp)
+    
+    # Remove duplicates by keeping only unique combinations of roleName + id + scope
+    jq '
+    .azure.subscription.roleAssignments = (
+        .azure.subscription.roleAssignments
+        | group_by(.roleName + (.id // "") + (.scope // ""))
+        | map(.[0])
+        | sort_by(.roleName)
+    )
+    ' "$CREDS_FILE" > "$temp_file" && mv "$temp_file" "$CREDS_FILE"
+    
+    echo "Duplicate role assignments cleaned up"
+}
+
 # Function to clean up role assignments in JSON
 cleanup_role_assignments() {
     echo "Cleaning up role assignments in credentials file..."
@@ -187,6 +206,9 @@ cleanup_role_assignments() {
       )
     else . end
     ' "$CREDS_FILE" > "$temp_file" && mv "$temp_file" "$CREDS_FILE"
+    
+    # Also clean up any duplicates
+    cleanup_duplicate_role_assignments
 }
 
 # Function to update role assignments in JSON at the correct scope
@@ -215,8 +237,7 @@ update_role_assignments() {
            "scope": $scope,
            "assignedOn": $assigned_on
        }]
-       ' "$CREDS_FILE" > "$temp_file"
-    mv "$temp_file" "$CREDS_FILE"
+       ' "$CREDS_FILE" > "$temp_file" && mv "$temp_file" "$CREDS_FILE"
     echo "Added role assignment to credentials file at scope $scope"
 }
 
@@ -236,42 +257,32 @@ capture_existing_role_assignments() {
         return
     fi
     
-    # Process each role assignment and add to JSON
-    echo "$ROLE_DETAILS" | jq -c '.[]' | while read -r role_json; do
-        local role_name
-        local role_id
-        local principal_id
-        local scope
-        
-        role_name=$(echo "$role_json" | jq -r '.roleName')
-        role_id=$(echo "$role_json" | jq -r '.id')
-        principal_id=$(echo "$role_json" | jq -r '.principalId')
-        scope=$(echo "$role_json" | jq -r '.scope')
-        
-        echo "Capturing existing role: $role_name"
-        
-        # Add to JSON file
-        local temp_file
-        temp_file=$(mktemp)
-        
-        jq --arg name "$role_name" \
-           --arg id "$role_id" \
-           --arg date "$(date '+%Y-%m-%d %H:%M:%S')" \
-           --arg scope "$scope" \
-           --arg principal_id "$principal_id" \
-           '
-           .azure.subscription.roleAssignments += [{
-               "roleName": $name,
-               "id": $id,
-               "principalId": $principal_id,
-               "scope": $scope,
-               "assignedOn": $date
-           }]
-           ' "$CREDS_FILE" > "$temp_file"
-        
-        # Replace original file with updated content
-        mv "$temp_file" "$CREDS_FILE"
-    done
+    # Process all role assignments at once to avoid duplicates
+    local temp_file
+    temp_file=$(mktemp)
+    local assigned_on
+    assigned_on=$(date '+%Y-%m-%d %H:%M:%S')
+    
+    # Transform the role details and add them all at once
+    echo "$ROLE_DETAILS" | jq --arg date "$assigned_on" '
+        map({
+            "roleName": .roleName,
+            "id": .id,
+            "principalId": .principalId,
+            "scope": .scope,
+            "assignedOn": $date
+        })
+    ' > "$temp_file.roles"
+    
+    # Update the credentials file with all role assignments at once
+    jq --slurpfile roles "$temp_file.roles" '
+        .azure.subscription.roleAssignments = $roles[0]
+    ' "$CREDS_FILE" > "$temp_file" && mv "$temp_file" "$CREDS_FILE"
+    
+    # Clean up temporary files
+    rm -f "$temp_file.roles"
+    
+    echo "All existing role assignments captured in credentials file ($(echo "$ROLE_DETAILS" | jq length) assignments)"
     
     echo "All existing role assignments captured in credentials file"
 }
@@ -487,6 +498,8 @@ else
     echo "No existing role assignments found to remove."
     update_inventory_role_assignments
 fi
+
+
 
 # Example direct call to update_role_assignments for documentation/testing:
 # update_role_assignments "Reader" \
