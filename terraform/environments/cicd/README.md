@@ -206,19 +206,38 @@ This configuration should be run **once** from your local machine to bootstrap t
 
 ## 6.1. Connecting to the Runner VM via Azure Bastion (SSH from Terminal)
 
-To securely connect to your self-hosted runner VM using Azure Bastion from your terminal, follow these steps:
+To securely connect to your self-hosted runner VM using Azure Bastion from your terminal, you must ensure the following dependencies and extensions are installed:
 
 ### Prerequisites
-- Azure CLI installed (`az`)
-- Your SSH private key (e.g., `~/.ssh/id_rsa`)
-- The Azure CLI `bastion` and `ssh` extensions installed
+- **Azure CLI** installed (`az`).
+- **SSH client** (standard on macOS/Linux, or use [OpenSSH](https://docs.microsoft.com/en-us/windows-server/administration/openssh/openssh_install_firstuse) on Windows).
+- **Azure CLI extensions:**
+  - `bastion` extension
+  - `ssh` extension
 
-### 1. Install Required Azure CLI Extensions
-If prompted, install the extensions, or run these commands manually:
+#### Install Required Azure CLI Extensions
+If not already installed, run:
 ```sh
 az extension add -n bastion
 az extension add -n ssh
 ```
+You can check if they are installed with:
+```sh
+az extension list
+```
+
+#### Keep Azure CLI and Extensions Updated
+To avoid bugs (such as the `enableTunneling` error), always keep your CLI and extensions up to date:
+```sh
+az upgrade
+az extension update --name bastion
+az extension update --name ssh
+```
+
+#### Enable Bastion Native Client Support (Tunneling)
+- In the Azure Portal, navigate to your Bastion resource.
+- Go to **Configuration** and enable **Native client support (SSH, RDP)** or **Tunneling**.
+- This is required for `az network bastion ssh` to work from your terminal.
 
 ### 2. Connect to the VM via Bastion from Your Terminal
 Replace the SSH key path if you use a different private key file.
@@ -230,10 +249,10 @@ az network bastion ssh \
   --auth-type "SSHKey" \
   --username <var.dev_runner_vm_admin_username> \
   --ssh-key ~/.ssh/id_rsa
-``
-
+```
 - If you see a prompt to install an extension, answer `y` or follow the instructions.
 - If you see an error about the `ssh` extension, run `az extension add -n ssh` and try again.
+- If you see an error about `enableTunneling`, update your CLI/extensions and enable tunneling as described above.
 
 **Note:** This method does not require a public IP on the VM and is the recommended secure access method for private subnets.
 

@@ -31,6 +31,7 @@ resource "azurerm_bastion_host" "main" {
   resource_group_name = var.resource_group_name
   dns_name            = null
   sku                 = "Standard"
+  tunneling_enabled   = true  # Enable native client support for Azure CLI SSH
   ip_configuration {
     name                 = "configuration"
     subnet_id            = var.subnet_id
