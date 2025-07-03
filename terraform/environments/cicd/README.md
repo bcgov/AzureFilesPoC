@@ -299,6 +299,6 @@ If you need to delete the Bastion NSG or subnet (for example, to allow Terraform
 - [Terraform Azure Provider Docs](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs)
 
 > **Note on NSG and Subnet Creation:**
-> - **NSGs** can be created and managed by Terraform if your service principal has the Network Contributor role on the resource group.
-> - **Subnets** can only be created by Terraform if your service principal has the Network Contributor role **and** you use the AzAPI provider to assign an NSG at creation time (required by strict Azure policy). The standard Terraform azurerm provider cannot create subnets with an NSG in a single step.
-> - If you do not have the required permissions or cannot use AzAPI, use the onboarding scripts (`step9_create_subnet.sh` and `step10_create_nsg.sh`) for manual onboarding. See script comments for details.
+> - **NSGs** and **subnets** (including the Bastion subnet) can now be created and managed by Terraform using the AzAPI provider in a GitHub Actions or Azure Pipelines CI/CD workflow, as long as your service principal has the Network Contributor role on the resource group. This has been fully tested and proven in this environment.
+> - The onboarding scripts (`step9_create_subnet.sh` and `step10_create_nsg.sh`) are only required if policy or permissions prevent you from using Terraform automation. See script comments for details and examples.
+> - **Preferred approach:** Use Terraform automation for all NSG and subnet creation for full auditability, automation, and policy compliance.

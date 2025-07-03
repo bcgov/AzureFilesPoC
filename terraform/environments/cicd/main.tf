@@ -101,24 +101,11 @@ resource "azurerm_role_assignment" "github_actions_network_contributor" {
 # SECTION 3: CORE NETWORKING (DATA SOURCES)
 # -------------------------------------------------------------------------------
 # 3.1 Look up the pre-existing Spoke VNet
-# 3.2 Look up the pre-existing Subnet for the runner
-# 3.3 Look up the pre-existing NSG for the runner
 # -------------------------------------------------------------------------------
 data "azurerm_virtual_network" "spoke_vnet" {
   name                = var.dev_vnet_name
   resource_group_name = var.dev_vnet_resource_group
 }
-
-# data "azurerm_subnet" "runner_subnet" {
-#   name                 = var.dev_runner_subnet_name
-#   virtual_network_name = var.dev_vnet_name
-#   resource_group_name  = var.dev_vnet_resource_group
-# }
-
-# data "azurerm_network_security_group" "runner_nsg" {
-#   name                = var.dev_runner_network_security_group
-#   resource_group_name = var.dev_vnet_resource_group
-# }
 
 # ===============================================================================
 # SECTION 4: NETWORK SECURITY GROUPS (NSG)
@@ -137,6 +124,20 @@ module "bastion_nsg" {
   vnet_id               = var.dev_vnet_id
   address_prefix        = var.dev_bastion_address_prefix[0]
   subnet_name           = var.dev_bastion_subnet_name
+}
+
+
+# --- Runner NSG and Subnet (Automated, Policy-Compliant) ---
+module "runner_nsg" {
+  source              = "../../modules/runner/nsg"
+  resource_group_name = data.azurerm_resource_group.main.name
+  location            = data.azurerm_resource_group.main.location
+  nsg_name            = var.dev_runner_network_security_group
+  tags                = var.dev_common_tags
+  vnet_id             = var.dev_vnet_id
+  address_prefix      = var.dev_runner_address_prefix[0]
+  subnet_name         = var.dev_runner_subnet_name
+  # ssh_allowed_cidr  = var.dev_runner_ssh_allowed_cidr # Uncomment if you want to allow SSH inbound
 }
 
 

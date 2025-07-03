@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # step10_create_nsg.sh
-# *****NOTE:*****  Confirmed not required created NSG with terraform and github actions CI/CD pipeline
 # This script creates a Network Security Group (NSG) in a specified resource group and location.
+#
+# ⚠️ In most modern BC Gov environments, you can use Terraform with the AzAPI provider in a GitHub Actions or Azure Pipelines CI/CD workflow to create and manage NSGs automatically.
+#    If your pipeline/service principal has the right permissions, prefer managing NSGs in Terraform for full automation and auditability.
+#    Use this script only if you are blocked by policy or permissions.
 #
 # POLICY & PERMISSION LIMITATIONS:
 # - This script is only required if your service principal (used by Terraform or CI/CD) does NOT have sufficient permissions (e.g., Network Contributor) to create or update NSGs in Azure.
