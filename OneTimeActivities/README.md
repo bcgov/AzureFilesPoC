@@ -8,10 +8,27 @@ This directory contains documentation and scripts for one-time onboarding activi
 - **[SSH_KEY_REFERENCE.md](RegisterApplicationInAzureAndOIDC/SSH_KEY_REFERENCE.md)** - Complete SSH key management and Bastion connection guide
 - **[Validation Process](ValidationProcess.md)** - End-to-end validation after onboarding
 
+## 📁 Folder Structure
+
+This directory is organized into logical sections for different types of one-time activities:
+
+### RegisterApplicationInAzureAndOIDC/
+Azure AD application registration, service principal creation, and OIDC configuration for GitHub Actions authentication.
+
+### GitHubActionsSetup/
+GitHub Actions workflow configuration, templates, and best practices for CI/CD automation.
+
+### SelfHostedRunnerSetup/
+Self-hosted GitHub Actions runner installation and configuration for data plane operations that require network access to Azure services.
+
+### ValidationProcess.md
+End-to-end validation procedures to confirm that all systems are working correctly after onboarding.
+
 ## Contents
 
 - [RegisterApplicationInAzureAndOIDC/README.md](RegisterApplicationInAzureAndOIDC/README.md) – Main onboarding and OIDC setup guide
-- [github-actions-setup.md](github-actions-setup.md) – Configuration steps for GitHub Actions workflows
+- [GitHubActionsSetup/README.md](GitHubActionsSetup/README.md) – Configuration steps for GitHub Actions workflows and templates
+- [SelfHostedRunnerSetup/README.md](SelfHostedRunnerSetup/README.md) – Self-hosted runner installation and configuration
 - [ValidationProcess.md](ValidationProcess.md) – Steps to validate the end-to-end CI/CD pipeline after onboarding
 
 ## Quick Start: Onboarding Steps

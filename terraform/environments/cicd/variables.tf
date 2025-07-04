@@ -238,5 +238,20 @@ variable "gateway_subnet_name" {
 variable "runner_vm_size" {
   type        = string
   description = "The size (SKU) of the self-hosted runner virtual machine. Recommended: Standard_DS2_v2 or Standard_B2ms."
-  default     = "Standard_B1s"
+  default     = "Standard_D2s_v4"
+}
+
+variable "storage_network_security_group" {
+  type        = string
+  description = "The name of the NSG for the storage subnet."
+}
+
+variable "storage_subnet_name" {
+  type        = string
+  description = "The name of the storage subnet."
+}
+
+variable "storage_subnet_address_prefix" {
+  type        = list(string)
+  description = "The address prefix for the storage subnet."
 }

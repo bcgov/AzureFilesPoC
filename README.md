@@ -218,7 +218,7 @@ The **self-hosted GitHub Actions runner VM** is deployed **inside the private Az
 
 ### Key Components
 
-1. **Runner VM** (`Standard_B1s`): Lightweight Ubuntu VM for CI/CD workloads
+1. **Runner VM** (`Standard_D2s_v4`): Lightweight Ubuntu VM for CI/CD workloads
 2. **Azure Bastion** (`Standard` SKU): Secure SSH/RDP access with native client support
 3. **Network Security Groups**: Policy-compliant subnet creation with required firewall rules
 4. **Private Networking**: Runner communicates with storage accounts via private endpoints

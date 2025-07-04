@@ -1,0 +1,54 @@
+name: Self-Hosted Runner Workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - test
+          - prod
+
+jobs:
+  self-hosted-job:
+    name: 'Job running on self-hosted runner'
+    runs-on: self-hosted
+    environment: ${{ github.event.inputs.environment }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Show runner info
+        run: |
+          echo "Runner OS: $(uname -a)"
+          echo "Runner User: $(whoami)"
+          echo "Working Directory: $(pwd)"
+          echo "Available disk space:"
+          df -h
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Show Azure Account Info
+        run: az account show
+
+      - name: Test Azure Files Access
+        run: |
+          # Example of data plane operations that require self-hosted runners
+          # Replace with your actual storage account and file share names
+          
+          # List storage accounts
+          az storage account list --output table
+          
+          # Note: Actual file share operations would require the storage account
+          # to have trusted services enabled and proper network configuration
+          echo "Self-hosted runner can access Azure data plane services"
