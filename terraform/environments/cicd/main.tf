@@ -212,20 +212,9 @@ data "azurerm_virtual_network" "spoke_vnet" {
 #                  shell script. 
 # NOTE: Module variable mapping - modules expect 'location' parameter, 
 #       main.tf passes var.azure_location (from terraform.tfvars)
+# NOTE: Dependencies added to prevent "AnotherOperationInProgress" errors
+#       when creating multiple subnets on same VNet concurrently
 # -------------------------------------------------------------------------------
-module "bastion_nsg" {
-  source                = "../../modules/bastion/nsg"
-  resource_group_name   = data.azurerm_resource_group.main.name
-  location              = var.azure_location  # Maps azure_location -> location in module
-  nsg_name              = var.bastion_network_security_group
-  tags                  = var.common_tags
-  vnet_id               = var.vnet_id
-  address_prefix        = var.bastion_address_prefix[0]
-  subnet_name           = var.bastion_subnet_name
-}
-
-
-# --- Runner NSG and Subnet (Automated, Policy-Compliant) ---
 module "runner_nsg" {
   source              = "../../modules/runner/nsg"
   resource_group_name = data.azurerm_resource_group.main.name
@@ -236,6 +225,20 @@ module "runner_nsg" {
   address_prefix      = var.runner_vnet_address_space[0]
   subnet_name         = var.runner_subnet_name
   # ssh_allowed_cidr  = var.runner_ssh_allowed_cidr # Uncomment if you want to allow SSH inbound
+}
+
+module "bastion_nsg" {
+  source                = "../../modules/bastion/nsg"
+  resource_group_name   = data.azurerm_resource_group.main.name
+  location              = var.azure_location  # Maps azure_location -> location in module
+  nsg_name              = var.bastion_network_security_group
+  tags                  = var.common_tags
+  vnet_id               = var.vnet_id
+  address_prefix        = var.bastion_address_prefix[0]
+  subnet_name           = var.bastion_subnet_name
+  
+  # Dependency: Wait for runner subnet to be created first
+  depends_on = [module.runner_nsg]
 }
 
 # ===============================================================================
