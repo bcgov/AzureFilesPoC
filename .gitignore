@@ -74,3 +74,17 @@ privatekey.txt
 terraform/environments/cicd/privatekey.txt
 sshkey.txt
 **/sshkey.txt
+
+# Scripts with real sensitive values (keep templates only)
+**/step6.2_assign_roles_to_resource_group.sh
+
+# Custom role definitions with real subscription IDs (keep template versions)
+**/*-resource-group-contributor.json
+**/*-role-assignment-writer.json
+
+# Any file with actual organizational values
+*_with_real_values.*
+*_production.*
+*_sensitive.*
+
+questionsforazureadmin.md

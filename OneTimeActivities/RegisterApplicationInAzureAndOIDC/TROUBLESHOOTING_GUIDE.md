@@ -58,7 +58,7 @@ az account show
 az login
 
 # Set correct subscription
-az account set --subscription "your-subscription-id"
+az account set --subscription "<subscription-id>"
 ```
 
 ### Problem: Insufficient permissions for script execution
@@ -72,7 +72,7 @@ az role assignment list --assignee $(az ad signed-in-user show --query id -o tsv
 ### Problem: Service principal credentials expired
 ```bash
 # Check app registration status
-az ad app show --id "your-client-id"
+az ad app show --id "<client-id>"
 
 # Rotate client secret if needed (step2 script handles this)
 ./step2_grant_subscription_level_permissions.sh
@@ -83,34 +83,34 @@ az ad app show --id "your-client-id"
 ### Problem: Cannot connect to VM via Bastion
 ```bash
 # 1. Verify VM is running
-az vm get-instance-view --name ag-pssg-azure-files-poc-dev-vm \
-  --resource-group ag-pssg-azure-files-poc-dev-rg \
+az vm get-instance-view --name <vm-name> \
+  --resource-group <resource-group-name> \
   --query "instanceView.statuses[1].displayStatus" -o tsv
 
 # 2. Check Bastion host status
-az network bastion show --name ag-pssg-azure-files-poc-dev-bastion \
-  --resource-group ag-pssg-azure-files-poc-dev-rg \
+az network bastion show --name <bastion-name> \
+  --resource-group <resource-group-name> \
   --query "provisioningState" -o tsv
 
 # 3. Get VM resource ID for connection
-VM_ID=$(az vm show --name ag-pssg-azure-files-poc-dev-vm \
-  --resource-group ag-pssg-azure-files-poc-dev-rg --query id -o tsv)
+VM_ID=$(az vm show --name <vm-name> \
+  --resource-group <resource-group-name> --query id -o tsv)
 
 # 4. Try connection with debugging
-az network bastion ssh --name ag-pssg-azure-files-poc-dev-bastion \
-  --resource-group ag-pssg-azure-files-poc-dev-rg \
+az network bastion ssh --name <bastion-name> \
+  --resource-group <resource-group-name> \
   --target-resource-id "$VM_ID" \
-  --auth-type ssh-key --username azureuser \
+  --auth-type ssh-key --username <admin-username> \
   --ssh-key ~/.ssh/id_rsa --verbose
 ```
 
 ### Problem: Bastion host not found
 ```bash
 # Check if bastion was deployed
-az network bastion list --resource-group ag-pssg-azure-files-poc-dev-rg
+az network bastion list --resource-group <resource-group-name>
 
 # If missing, check Terraform deployment
-cd terraform/environments/dev
+cd terraform/environments/<environment>
 terraform plan
 terraform apply
 ```
@@ -118,8 +118,8 @@ terraform apply
 ### Problem: SSH key not installed on VM
 ```bash
 # Check VM configuration
-az vm show --name ag-pssg-azure-files-poc-dev-vm \
-  --resource-group ag-pssg-azure-files-poc-dev-rg \
+az vm show --name <vm-name> \
+  --resource-group <resource-group-name> \
   --query "osProfile.linuxConfiguration.ssh.publicKeys" -o table
 
 # If key missing, may need to recreate VM or use alternative access method
@@ -145,7 +145,7 @@ gh secret list
 ### Problem: OIDC federation not working
 ```bash
 # Check federated credential configuration
-az ad app federated-credential list --id "your-client-id"
+az ad app federated-credential list --id "<client-id>"
 
 # Re-run OIDC setup if needed
 ./step3_configure_github_oidc_federation.sh
@@ -154,10 +154,10 @@ az ad app federated-credential list --id "your-client-id"
 ### Problem: GitHub Actions failing with authentication errors
 ```bash
 # Check if app registration has correct permissions
-az role assignment list --assignee "your-client-id" --all
+az role assignment list --assignee "<client-id>" --all
 
 # Verify OIDC subject claim format in GitHub Actions logs
-# Should match: repo:owner/repo:ref:refs/heads/main
+# Should match: repo:<owner>/<repo>:ref:refs/heads/<branch>
 ```
 
 ## Terraform State Issues
@@ -168,13 +168,13 @@ az role assignment list --assignee "your-client-id" --all
 ./step8_fix_terraform_state.sh
 
 # Or manually address specific issues:
-cd terraform/environments/dev
+cd terraform/environments/<environment>
 
 # Check state status
 terraform show
 
 # Import existing resources if needed
-terraform import azurerm_resource_group.main /subscriptions/.../resourceGroups/...
+terraform import azurerm_resource_group.main /subscriptions/<subscription-id>/resourceGroups/<resource-group-name>
 
 # Force unlock if state is locked
 terraform force-unlock LOCK_ID
@@ -183,10 +183,10 @@ terraform force-unlock LOCK_ID
 ### Problem: Terraform backend not accessible
 ```bash
 # Verify storage account exists
-az storage account show --name agpssgterraformstate --resource-group ag-pssg-azure-files-poc-dev-rg
+az storage account show --name <storage-account-name> --resource-group <resource-group-name>
 
 # Check storage account permissions
-az role assignment list --scope "/subscriptions/.../resourceGroups/.../providers/Microsoft.Storage/storageAccounts/agpssgterraformstate"
+az role assignment list --scope "/subscriptions/<subscription-id>/resourceGroups/<resource-group-name>/providers/Microsoft.Storage/storageAccounts/<storage-account-name>"
 
 # Re-run storage setup if needed
 ./step7_create_tfstate_storage_account.sh
@@ -219,7 +219,7 @@ az role definition list --custom-role-only --query "[].{Name:roleName, Id:name}"
 az role assignment list --assignee "your-principal-id" --all
 
 # Clean up duplicates manually:
-az role assignment delete --assignee "principal-id" --role "role-name" --scope "scope"
+az role assignment delete --assignee "<principal-id>" --role "<role-name>" --scope "<scope>"
 
 # Or re-run step2 which has cleanup logic
 ./step2_grant_subscription_level_permissions.sh
@@ -232,7 +232,7 @@ az role assignment list --assignee $(az ad signed-in-user show --query id -o tsv
   --query "[?roleDefinitionName=='Owner' || roleDefinitionName=='User Access Administrator']"
 
 # Verify principal ID is correct
-az ad sp show --id "your-client-id" --query id -o tsv
+az ad sp show --id "<client-id>" --query id -o tsv
 ```
 
 ## Resource Group Issues
@@ -240,7 +240,7 @@ az ad sp show --id "your-client-id" --query id -o tsv
 ### Problem: Resource groups not created
 ```bash
 # List current resource groups
-az group list --query "[?starts_with(name, 'ag-pssg-azure-files-poc')].{Name:name, Location:location}" -o table
+az group list --query "[?starts_with(name, '<project-name>')].{Name:name, Location:location}" -o table
 
 # Re-run resource group creation
 ./step6_create_resource_group.sh
@@ -249,7 +249,7 @@ az group list --query "[?starts_with(name, 'ag-pssg-azure-files-poc')].{Name:nam
 ### Problem: Resource group access denied
 ```bash
 # Check permissions on resource group
-az role assignment list --resource-group "ag-pssg-azure-files-poc-dev-rg"
+az role assignment list --resource-group "<resource-group-name>"
 
 # Re-assign roles if needed
 ./step6.2_assign_roles_to_resource_group.sh
@@ -269,7 +269,7 @@ az group create --name test --location canadacentral --verbose
 az configure --list-defaults
 
 # Reset if needed
-az configure --defaults location=canadacentral
+az configure --defaults location=<azure-region>
 ```
 
 ### Verify script prerequisites

@@ -38,15 +38,15 @@
 #      - OIDC federated credentials configured in Azure AD
 #
 #   6. Terraform backend storage account and containers exist. (✅ done)
-#      - Storage account: stagpssgtfstatedev01
-#      - Container for CICD: sc-ag-pssg-azure-files-poc-tfstate-cicd
+#      - Storage account: <storage-account-name>
+#      - Container for CICD: <container-name>-cicd
 #      - Created by: step7_create_tfstate_storage_account.sh + manual container creation
 #
 #   7. All names and address spaces are set in terraform.tfvars. (✅ done)
 #      - CICD resource group name, networking configuration, VM settings
 #
 #   8. BC Gov Azure Landing Zone networking resources exist. (✅ done)
-#      - VNet: d5007d-dev-vwan-spoke in d5007d-dev-networking resource group
+#      - VNet: <ministry-code>-<environment>-vwan-spoke in <ministry-code>-<environment>-networking resource group
 #      - Address space and DNS servers configured
 #
 # DEPLOYMENT STEPS (AFTER COMPLETING ALL PRECONDITIONS ABOVE):
@@ -111,8 +111,8 @@
 #
 # 2. TERRAFORM STATE BACKEND SETUP:
 #    - Created missing blob container for CICD environment:
-#      az storage container create --name "sc-ag-pssg-azure-files-poc-tfstate-cicd" 
-#        --account-name "stagpssgtfstatedev01" --auth-mode login
+#      az storage container create --name "<container-name>-cicd" 
+#        --account-name "<storage-account-name>" --auth-mode login
 #    - Reinitialized backend with correct configuration:
 #      terraform init -backend-config="backend.tfvars" -reconfigure
 #
@@ -122,7 +122,7 @@
 #    - Verified module variable declarations match usage
 #
 # VALIDATION WORKFLOW:
-#   cd terraform/environments/cicd
+#   cd terraform/environments/<environment>
 #   terraform validate              # Check syntax and structure
 #   terraform plan -var-file="../../terraform.tfvars" -out=tfplan  # Preview changes
 #   terraform apply tfplan          # Apply locally for validation
@@ -173,19 +173,24 @@ data "azurerm_resource_group" "main" {
 # ===============================================================================
 # SECTION 2: RBAC ASSIGNMENTS (GITHUB ACTIONS SERVICE PRINCIPAL)
 # ------------------------------------------------------------------------------
-# This resource grants the GitHub Actions service principal Network Contributor
-# rights on the CI/CD resource group, so it can manage networking resources.
+# NOTE: Role assignments are handled by onboarding scripts, not Terraform.
+# The service principal already has the following permissions assigned:
+#   - Network Contributor (for networking resources)
+#   - Virtual Machine Contributor (for VM resources)  
+#   - Managed Identity Operator (for VM managed identities)
+#   - [<team-name>-<project-name>-MANAGED]-<environment>-role-assignment-writer (for role assignments)
+#   - Storage Account Contributor (inherited from subscription level)
 #
-# Ensure you set the correct object ID for the service principal in your tfvars file:
-#   my_github_actions_spn_object_id = "<object-id>"
-#
-resource "azurerm_role_assignment" "github_actions_network_contributor" {
-  # Scope: Assigns the Network Contributor role at the resource group level.
-  # This is the ARM resource ID for the CI/CD resource group named in var.cicd_resource_group_name.
-  scope                = data.azurerm_resource_group.main.id
-  role_definition_name = "Network Contributor"
-  principal_id         = var.my_github_actions_spn_object_id
-}
+# If additional role assignments are needed, use the onboarding scripts:
+#   OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/step6.2_assign_roles_to_resource_group.sh
+# ------------------------------------------------------------------------------
+
+# Commented out - role assignments handled by onboarding scripts
+# resource "azurerm_role_assignment" "github_actions_network_contributor" {
+#   scope                = data.azurerm_resource_group.main.id
+#   role_definition_name = "Network Contributor"
+#   principal_id         = var.my_github_actions_spn_object_id
+# }
 
 # ===============================================================================
 # SECTION 3: CORE NETWORKING (DATA SOURCES)

@@ -2,12 +2,10 @@
 ├── .github
 │   └── workflows
 │       ├── azure-login-validation.yml
-│       ├── azure-terraform-validation.yml
 │       ├── main.yml
 │       ├── reusable-terraform-workflow.yml
 │       ├── runner-infra.yml
-│       ├── terraform-common.yml
-│       └── terraform-validation.yml
+│       └── terraform-common.yml
 ├── .gitignore
 ├── Architecture
 │   ├── ArchitectureOverview.md
@@ -15,20 +13,13 @@
 │   ├── azure files express route.drawio.png
 │   └── OptionsAnalysis
 │       └── AzureFilesNetworkConnectivityOptionsAnalysis.md
-├── azure-credentials.template.json
-├── DEPLOYMENT_CHECKLIST.md
-├── llm_code_snapshot.js
 ├── OneTimeActivities
 │   ├── GetAzureExistingResources
 │   │   ├── README.md
-│   │   ├── unix
-│   │   │   ├── azure_full_inventory.sh
-│   │   │   ├── PopulateTfvarsFromDiscoveredResources.sh
-│   │   │   └── UpdateExistingResources.sh
-│   │   └── windows
-│   │       ├── azure_full_inventory.ps1
-│   │       ├── PopulateTfvarsFromDiscoveredResources.ps1
-│   │       └── UpdateExistingResources.ps1
+│   │   └── unix
+│   │       ├── azure_full_inventory.sh
+│   │       ├── PopulateTfvarsFromDiscoveredResources.sh
+│   │       └── UpdateExistingResources.sh
 │   ├── GetAzureFilesPoC
 │   │   └── OneTimeActivities
 │   │       └── GetAzureExistingResources
@@ -38,27 +29,36 @@
 │   ├── README.md
 │   ├── RegisterApplicationInAzureAndOICDInGithub.md
 │   ├── RegisterApplicationInAzureAndOIDC
+│   │   ├── CopyEnvironmentVariables.sh
 │   │   ├── README.md
 │   │   ├── scripts
 │   │   │   ├── ag-pssg-azure-files-poc-dev-resource-group-contributor.json
 │   │   │   ├── ag-pssg-azure-files-poc-dev-role-assignment-writer.json
-│   │   │   ├── ag-pssg-azure-files-poc-role-assignment-writer.json
+│   │   │   ├── team-name-project-name-MANAGED-environment-resource-group-contributor.json
+│   │   │   ├── team-name-project-name-MANAGED-environment-role-assignment-writer.json
 │   │   │   └── unix
+│   │   │       ├── .env.template
+│   │   │       ├── README.md
 │   │   │       ├── step1_register_app.sh
-│   │   │       ├── step10_create_nsg.sh
+│   │   │       ├── step10_create_nsg (NOT REQUIRED).sh
 │   │   │       ├── step11_create_ssh_key.sh
 │   │   │       ├── step12_import_existing_resources.sh
 │   │   │       ├── step2_grant_subscription_level_permissions.sh
-│   │   │       ├── step3_configure_github_oidc_federation.sh
+│   │   │       ├── step3_configure_github_oidc_federation.sh.sh
 │   │   │       ├── step4_prepare_github_secrets.sh
 │   │   │       ├── step5_add_github_secrets_cli.sh
 │   │   │       ├── step6_create_resource_group.sh
+│   │   │       ├── step6.1_CreateCustomRole.sh
+│   │   │       ├── step6.2_assign_roles_to_resource_group_template.sh
 │   │   │       ├── step6.2_assign_roles_to_resource_group.sh
 │   │   │       ├── step7_create_tfstate_storage_account.sh
 │   │   │       ├── step8_fix_terraform_state.sh
-│   │   │       └── step9_create_subnet.sh
-│   │   └── validation
+│   │   │       └── step9_create_subnet (NOT REQUIRED).sh
+│   │   ├── SSH_KEY_REFERENCE.md
+│   │   └── TROUBLESHOOTING_GUIDE.md
 │   └── ValidationProcess.md
+├── package-lock.json
+├── package.json
 ├── ProofOfConceptPlan.md
 ├── questionsforazureadmin.md
 ├── README.md
@@ -70,194 +70,181 @@
 │   ├── TerraformModuleStructure.md
 │   ├── TerraformResourcesForAzurePoC.md
 │   └── TerraformWithGithubActionsProcess.md
-├── terraform
-│   ├── environments
-│   │   ├── cicd
-│   │   │   ├── backend.tfvars
-│   │   │   ├── main.tf
-│   │   │   ├── outputs.tf
-│   │   │   ├── README.md
-│   │   │   ├── terraform.tfvars.template
-│   │   │   └── variables.tf
-│   │   ├── dev
-│   │   │   ├── main.tf
-│   │   │   ├── outputs.tf
-│   │   │   ├── secrets.tfvars.template
-│   │   │   ├── terraform.tfvars.template
-│   │   │   ├── testfileshare.json
-│   │   │   └── variables.tf
-│   │   ├── prod
-│   │   └── test
-│   ├── modules
-│   │   ├── automation
-│   │   │   ├── azcopy
-│   │   │   │   ├── main.tf
-│   │   │   │   ├── outputs.tf
-│   │   │   │   └── variables.tf
-│   │   │   ├── main.tf
-│   │   │   ├── outputs.tf
-│   │   │   └── variables.tf
-│   │   ├── bastion
-│   │   │   ├── main.tf
-│   │   │   ├── nsg
-│   │   │   │   └── main.tf
-│   │   │   └── variables.tf
-│   │   ├── bc-gov-azure-files
-│   │   │   ├── main.tf
-│   │   │   ├── outputs.tf
-│   │   │   └── variables.tf
-│   │   ├── core
-│   │   │   └── resource-group
-│   │   │       ├── main.tf
-│   │   │       ├── outputs.tf
-│   │   │       └── variables.tf
-│   │   ├── dns
-│   │   │   ├── private-dns
-│   │   │   │   ├── main.tf
-│   │   │   │   ├── outputs.tf
-│   │   │   │   └── variables.tf
-│   │   │   └── resolver
-│   │   │       ├── main.tf
-│   │   │       ├── outputs.tf
-│   │   │       └── variables.tf
-│   │   ├── identity
-│   │   │   ├── aad
-│   │   │   │   ├── main.tf
-│   │   │   │   ├── outputs.tf
-│   │   │   │   └── variables.tf
-│   │   │   └── managed-identity
-│   │   │       ├── main.tf
-│   │   │       ├── outputs.tf
-│   │   │       └── variables.tf
-│   │   ├── keyvault
-│   │   │   ├── main.tf
-│   │   │   ├── outputs.tf
-│   │   │   └── variables.tf
-│   │   ├── monitoring
-│   │   │   ├── diagnostic-setting
-│   │   │   │   ├── main.tf
-│   │   │   │   ├── outputs.tf
-│   │   │   │   └── variables.tf
-│   │   │   ├── log-analytics
-│   │   │   │   ├── main.tf
-│   │   │   │   ├── outputs.tf
-│   │   │   │   └── variables.tf
-│   │   │   ├── main.tf
-│   │   │   ├── outputs.tf
-│   │   │   └── variables.tf
-│   │   ├── networking
-│   │   │   ├── firewall
-│   │   │   │   ├── main.tf
-│   │   │   │   ├── outputs.tf
-│   │   │   │   └── variables.tf
-│   │   │   ├── private-dns
-│   │   │   │   ├── main.tf
-│   │   │   │   ├── outputs.tf
-│   │   │   │   └── variables.tf
-│   │   │   ├── private-endpoint
-│   │   │   │   ├── main.tf
-│   │   │   │   ├── NotesAboutPrivateEndPoints.md
-│   │   │   │   ├── outputs.tf
-│   │   │   │   └── variables.tf
-│   │   │   ├── route-table
-│   │   │   │   ├── main.tf
-│   │   │   │   ├── outputs.tf
-│   │   │   │   └── variables.tf
-│   │   │   ├── subnet
-│   │   │   │   ├── main.tf
-│   │   │   │   ├── outputs.tf
-│   │   │   │   ├── README.md
-│   │   │   │   └── variables.tf
-│   │   │   ├── vnet
-│   │   │   │   ├── main.tf
-│   │   │   │   ├── outputs.tf
-│   │   │   │   ├── README.md
-│   │   │   │   └── variables.tf
-│   │   │   └── vnet-gateway
-│   │   │       ├── main.tf
-│   │   │       ├── outputs.tf
-│   │   │       └── variables.tf
-│   │   ├── policies
-│   │   │   ├── main.tf
-│   │   │   ├── outputs.tf
-│   │   │   └── variables.tf
-│   │   ├── rbac
-│   │   │   ├── main.tf
-│   │   │   ├── outputs.tf
-│   │   │   └── variables.tf
-│   │   ├── runner
-│   │   │   └── nsg
-│   │   │       └── main.tf
-│   │   ├── security
-│   │   │   ├── firewall
-│   │   │   │   ├── main.tf
-│   │   │   │   ├── outputs.tf
-│   │   │   │   └── variables.tf
-│   │   │   └── nsg
-│   │   │       ├── main.tf
-│   │   │       ├── outputs.tf
-│   │   │       └── variables.tf
-│   │   ├── storage
-│   │   │   ├── account
-│   │   │   │   ├── main.tf
-│   │   │   │   ├── outputs.tf
-│   │   │   │   └── variables.tf
-│   │   │   ├── blob
-│   │   │   │   ├── main.tf
-│   │   │   │   ├── outputs.tf
-│   │   │   │   └── variables.tf
-│   │   │   ├── blob-container
-│   │   │   │   ├── main.tf
-│   │   │   │   ├── outputs.tf
-│   │   │   │   └── variables.tf
-│   │   │   ├── file-share
-│   │   │   │   ├── main.tf
-│   │   │   │   ├── outputs.tf
-│   │   │   │   └── variables.tf
-│   │   │   ├── file-sync
-│   │   │   │   ├── main.tf
-│   │   │   │   ├── outputs.tf
-│   │   │   │   └── variables.tf
-│   │   │   ├── lifecycle
-│   │   │   │   ├── main.tf
-│   │   │   │   ├── outputs.tf
-│   │   │   │   └── variables.tf
-│   │   │   ├── management-policy
-│   │   │   │   ├── main.tf
-│   │   │   │   ├── outputs.tf
-│   │   │   │   └── variables.tf
-│   │   │   ├── object-replication
-│   │   │   │   ├── main.tf
-│   │   │   │   ├── outputs.tf
-│   │   │   │   └── variables.tf
-│   │   │   └── private-link-service
-│   │   │       ├── main.tf
-│   │   │       ├── outputs.tf
-│   │   │       └── variables.tf
-│   │   ├── tags
-│   │   │   ├── main.tf
-│   │   │   ├── outputs.tf
-│   │   │   └── variables.tf
-│   │   └── vm
-│   │       ├── main.tf
-│   │       ├── outputs.tf
-│   │       └── variables.tf
-│   ├── README.md
-│   ├── secrets.tfvars.template
-│   ├── terraform-cicd-issues-from-github-summary.md
-│   ├── terraform.tfvars copy.template
-│   ├── terraform.tfvars.template
-│   └── validation
-│       ├── github
-│       │   └── README.md
-│       ├── localhost
-│       │   ├── README.md
-│       │   ├── validate_authentication.sh
-│       │   └── validate_terraform.sh
-│       ├── main.tf
-│       ├── README.md
-│       ├── secrets.tfvars.template
-│       └── terraform.tfvars.template
-└── TreeStructure.txt
+└── terraform
+    ├── backend.tfvars
+    ├── backend.tfvars.template
+    ├── environments
+    │   ├── cicd
+    │   │   ├── backend.tfvars
+    │   │   ├── main.tf
+    │   │   ├── outputs.tf
+    │   │   ├── README.md
+    │   │   └── variables.tf
+    │   └── dev
+    │       ├── LICENSE.txt
+    │       ├── main.tf
+    │       ├── outputs.tf
+    │       └── variables.tf
+    ├── modules
+    │   ├── automation
+    │   │   ├── azcopy
+    │   │   │   ├── main.tf
+    │   │   │   ├── outputs.tf
+    │   │   │   └── variables.tf
+    │   │   ├── main.tf
+    │   │   ├── outputs.tf
+    │   │   └── variables.tf
+    │   ├── bastion
+    │   │   ├── main.tf
+    │   │   ├── nsg
+    │   │   │   └── main.tf
+    │   │   └── variables.tf
+    │   ├── bc-gov-azure-files
+    │   │   ├── main.tf
+    │   │   ├── outputs.tf
+    │   │   └── variables.tf
+    │   ├── core
+    │   │   └── resource-group
+    │   │       ├── main.tf
+    │   │       ├── outputs.tf
+    │   │       └── variables.tf
+    │   ├── dns
+    │   │   ├── private-dns
+    │   │   │   ├── main.tf
+    │   │   │   ├── outputs.tf
+    │   │   │   └── variables.tf
+    │   │   └── resolver
+    │   │       ├── main.tf
+    │   │       ├── outputs.tf
+    │   │       └── variables.tf
+    │   ├── identity
+    │   │   ├── aad
+    │   │   │   ├── main.tf
+    │   │   │   ├── outputs.tf
+    │   │   │   └── variables.tf
+    │   │   └── managed-identity
+    │   │       ├── main.tf
+    │   │       ├── outputs.tf
+    │   │       └── variables.tf
+    │   ├── keyvault
+    │   │   ├── main.tf
+    │   │   ├── outputs.tf
+    │   │   └── variables.tf
+    │   ├── monitoring
+    │   │   ├── diagnostic-setting
+    │   │   │   ├── main.tf
+    │   │   │   ├── outputs.tf
+    │   │   │   └── variables.tf
+    │   │   ├── log-analytics
+    │   │   │   ├── main.tf
+    │   │   │   ├── outputs.tf
+    │   │   │   └── variables.tf
+    │   │   ├── main.tf
+    │   │   ├── outputs.tf
+    │   │   └── variables.tf
+    │   ├── networking
+    │   │   ├── firewall
+    │   │   │   ├── main.tf
+    │   │   │   ├── outputs.tf
+    │   │   │   └── variables.tf
+    │   │   ├── private-dns
+    │   │   │   ├── main.tf
+    │   │   │   ├── outputs.tf
+    │   │   │   └── variables.tf
+    │   │   ├── private-endpoint
+    │   │   │   ├── main.tf
+    │   │   │   ├── NotesAboutPrivateEndPoints.md
+    │   │   │   ├── outputs.tf
+    │   │   │   └── variables.tf
+    │   │   ├── route-table
+    │   │   │   ├── main.tf
+    │   │   │   ├── outputs.tf
+    │   │   │   └── variables.tf
+    │   │   ├── subnet
+    │   │   │   ├── main.tf
+    │   │   │   ├── outputs.tf
+    │   │   │   ├── README.md
+    │   │   │   └── variables.tf
+    │   │   ├── vnet
+    │   │   │   ├── main.tf
+    │   │   │   ├── outputs.tf
+    │   │   │   ├── README.md
+    │   │   │   └── variables.tf
+    │   │   └── vnet-gateway
+    │   │       ├── main.tf
+    │   │       ├── outputs.tf
+    │   │       └── variables.tf
+    │   ├── policies
+    │   │   ├── main.tf
+    │   │   ├── outputs.tf
+    │   │   └── variables.tf
+    │   ├── rbac
+    │   │   ├── main.tf
+    │   │   ├── outputs.tf
+    │   │   └── variables.tf
+    │   ├── runner
+    │   │   └── nsg
+    │   │       └── main.tf
+    │   ├── security
+    │   │   ├── firewall
+    │   │   │   ├── main.tf
+    │   │   │   ├── outputs.tf
+    │   │   │   └── variables.tf
+    │   │   └── nsg
+    │   │       ├── main.tf
+    │   │       ├── outputs.tf
+    │   │       └── variables.tf
+    │   ├── storage
+    │   │   ├── account
+    │   │   │   ├── main.tf
+    │   │   │   ├── outputs.tf
+    │   │   │   └── variables.tf
+    │   │   ├── blob
+    │   │   │   ├── main.tf
+    │   │   │   ├── outputs.tf
+    │   │   │   └── variables.tf
+    │   │   ├── blob-container
+    │   │   │   ├── main.tf
+    │   │   │   ├── outputs.tf
+    │   │   │   └── variables.tf
+    │   │   ├── file-share
+    │   │   │   ├── main.tf
+    │   │   │   ├── outputs.tf
+    │   │   │   └── variables.tf
+    │   │   ├── file-sync
+    │   │   │   ├── main.tf
+    │   │   │   ├── outputs.tf
+    │   │   │   └── variables.tf
+    │   │   ├── lifecycle
+    │   │   │   ├── main.tf
+    │   │   │   ├── outputs.tf
+    │   │   │   └── variables.tf
+    │   │   ├── management-policy
+    │   │   │   ├── main.tf
+    │   │   │   ├── outputs.tf
+    │   │   │   └── variables.tf
+    │   │   ├── object-replication
+    │   │   │   ├── main.tf
+    │   │   │   ├── outputs.tf
+    │   │   │   └── variables.tf
+    │   │   └── private-link-service
+    │   │       ├── main.tf
+    │   │       ├── outputs.tf
+    │   │       └── variables.tf
+    │   ├── tags
+    │   │   ├── main.tf
+    │   │   ├── outputs.tf
+    │   │   └── variables.tf
+    │   └── vm
+    │       ├── main.tf
+    │       ├── outputs.tf
+    │       └── variables.tf
+    ├── README.md
+    ├── secrets.tfvars
+    ├── secrets.tfvars.template
+    ├── terraform.tfvars
+    ├── terraform.tfvars.template
+    └── troubleshooting
+        └── terraform-cicd-issues-from-github-summary.md
 
-72 directories, 189 files
+66 directories, 182 files

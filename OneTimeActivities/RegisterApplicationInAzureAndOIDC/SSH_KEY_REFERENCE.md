@@ -27,10 +27,10 @@ az network bastion ssh --name <bastion-name> --resource-group <resource-group> \
   --username <admin-username> --ssh-key ~/.ssh/id_rsa
 
 # Example for this project
-az network bastion ssh --name ag-pssg-azure-files-poc-dev-bastion \
-  --resource-group ag-pssg-azure-files-poc-dev-rg \
-  --target-resource-id $(az vm show --name ag-pssg-azure-files-poc-dev-vm --resource-group ag-pssg-azure-files-poc-dev-rg --query id -o tsv) \
-  --auth-type ssh-key --username azureuser --ssh-key ~/.ssh/id_rsa
+az network bastion ssh --name <bastion-name> \
+  --resource-group <resource-group-name> \
+  --target-resource-id $(az vm show --name <vm-name> --resource-group <resource-group-name> --query id -o tsv) \
+  --auth-type ssh-key --username <admin-username> --ssh-key ~/.ssh/id_rsa
 ```
 
 ## Detailed Key Management
@@ -44,7 +44,7 @@ ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ""
 ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa
 
 # Generate with comment (helpful for identification)
-ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -C "azure-files-poc-$(date +%Y%m%d)"
+ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -C "<project-name>-$(date +%Y%m%d)"
 ```
 
 ### Key Verification
@@ -99,20 +99,20 @@ chmod 644 ~/.ssh/id_rsa.pub
 ### VM Resource ID Discovery
 ```bash
 # Get VM resource ID for bastion connections
-VM_ID=$(az vm show --name ag-pssg-azure-files-poc-dev-vm \
-  --resource-group ag-pssg-azure-files-poc-dev-rg --query id -o tsv)
+VM_ID=$(az vm show --name <vm-name> \
+  --resource-group <resource-group-name> --query id -o tsv)
 echo "VM Resource ID: $VM_ID"
 
 # List all VMs in resource group
-az vm list --resource-group ag-pssg-azure-files-poc-dev-rg \
+az vm list --resource-group <resource-group-name> \
   --query "[].{Name:name, ResourceId:id}" -o table
 ```
 
 ### Bastion Host Verification
 ```bash
 # Check bastion host status
-az network bastion show --name ag-pssg-azure-files-poc-dev-bastion \
-  --resource-group ag-pssg-azure-files-poc-dev-rg \
+az network bastion show --name <bastion-name> \
+  --resource-group <resource-group-name> \
   --query "{Name:name, State:provisioningState, Location:location}" -o table
 
 # List all bastion hosts in subscription
@@ -122,18 +122,18 @@ az network bastion list --query "[].{Name:name, ResourceGroup:resourceGroup, Sta
 ### VM SSH Configuration Verification
 ```bash
 # Check VM OS profile (should show SSH public keys)
-az vm show --name ag-pssg-azure-files-poc-dev-vm \
-  --resource-group ag-pssg-azure-files-poc-dev-rg \
+az vm show --name <vm-name> \
+  --resource-group <resource-group-name> \
   --query "osProfile.linuxConfiguration.ssh.publicKeys" -o table
 
 # Check VM admin username
-az vm show --name ag-pssg-azure-files-poc-dev-vm \
-  --resource-group ag-pssg-azure-files-poc-dev-rg \
+az vm show --name <vm-name> \
+  --resource-group <resource-group-name> \
   --query "osProfile.adminUsername" -o tsv
 
 # Verify VM is running
-az vm get-instance-view --name ag-pssg-azure-files-poc-dev-vm \
-  --resource-group ag-pssg-azure-files-poc-dev-rg \
+az vm get-instance-view --name <vm-name> \
+  --resource-group <resource-group-name> \
   --query "instanceView.statuses[1].displayStatus" -o tsv
 ```
 
@@ -156,7 +156,7 @@ gh secret list | grep SSH
 ### SSH Key in Terraform Variables
 ```bash
 # Update terraform.tfvars with current public key
-cd /Users/richardfremmerlid/Projects/AzureFilesPoC/terraform
+cd /path/to/your/project/terraform
 echo "admin_ssh_key_public = \"$(cat ~/.ssh/id_rsa.pub)\"" > temp_ssh_update.txt
 echo "Update your terraform.tfvars with this line:"
 cat temp_ssh_update.txt
@@ -168,10 +168,10 @@ rm temp_ssh_update.txt
 ### Connection with Port Forwarding
 ```bash
 # Forward local port through bastion to VM service
-az network bastion ssh --name ag-pssg-azure-files-poc-dev-bastion \
-  --resource-group ag-pssg-azure-files-poc-dev-rg \
+az network bastion ssh --name <bastion-name> \
+  --resource-group <resource-group-name> \
   --target-resource-id "$VM_ID" \
-  --auth-type ssh-key --username azureuser \
+  --auth-type ssh-key --username <admin-username> \
   --ssh-key ~/.ssh/id_rsa \
   -- -L 8080:localhost:80  # Forward local 8080 to VM port 80
 ```
@@ -186,15 +186,15 @@ az network bastion ssh --name ag-pssg-azure-files-poc-dev-bastion \
 ### Connection Debugging
 ```bash
 # Enable verbose SSH debugging
-az network bastion ssh --name ag-pssg-azure-files-poc-dev-bastion \
-  --resource-group ag-pssg-azure-files-poc-dev-rg \
+az network bastion ssh --name <bastion-name> \
+  --resource-group <resource-group-name> \
   --target-resource-id "$VM_ID" \
-  --auth-type ssh-key --username azureuser \
+  --auth-type ssh-key --username <admin-username> \
   --ssh-key ~/.ssh/id_rsa --verbose
 
 # Check bastion connectivity
-az network bastion show --name ag-pssg-azure-files-poc-dev-bastion \
-  --resource-group ag-pssg-azure-files-poc-dev-rg \
+az network bastion show --name <bastion-name> \
+  --resource-group <resource-group-name> \
   --query "{ProvisioningState:provisioningState, DnsName:dnsName}" -o table
 ```
 
@@ -203,13 +203,13 @@ az network bastion show --name ag-pssg-azure-files-poc-dev-bastion \
 ### ED25519 Keys (Modern Alternative)
 ```bash
 # Generate ED25519 key (smaller, faster, equally secure)
-ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -C "azure-files-poc-ed25519"
+ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -C "<project-name>-ed25519"
 
 # Use ED25519 key with bastion
-az network bastion ssh --name ag-pssg-azure-files-poc-dev-bastion \
-  --resource-group ag-pssg-azure-files-poc-dev-rg \
+az network bastion ssh --name <bastion-name> \
+  --resource-group <resource-group-name> \
   --target-resource-id "$VM_ID" \
-  --auth-type ssh-key --username azureuser \
+  --auth-type ssh-key --username <admin-username> \
   --ssh-key ~/.ssh/id_ed25519
 ```
 
@@ -222,7 +222,7 @@ ls -la ~/.ssh/*.pub
 cat >> ~/.ssh/config << EOF
 Host azure-vm-bastion
     HostName azure-vm-via-bastion  # This would be handled by az command
-    User azureuser
+    User <admin-username>
     IdentityFile ~/.ssh/id_rsa
     IdentitiesOnly yes
 EOF
@@ -296,10 +296,10 @@ head -1 ~/.ssh/id_rsa.pub
 ### Connection Timeouts
 ```bash
 # Increase connection timeout
-az network bastion ssh --name ag-pssg-azure-files-poc-dev-bastion \
-  --resource-group ag-pssg-azure-files-poc-dev-rg \
+az network bastion ssh --name <bastion-name> \
+  --resource-group <resource-group-name> \
   --target-resource-id "$VM_ID" \
-  --auth-type ssh-key --username azureuser \
+  --auth-type ssh-key --username <admin-username> \
   --ssh-key ~/.ssh/id_rsa \
   -- -o ConnectTimeout=60
 ```

@@ -3,64 +3,52 @@
 # step6.2_assign_roles_to_resource_group.sh
 #
 # SUMMARY:
-#   This script assigns one or more specified roles to a service principal or user at the resource group scope in Azure.
-#   It is intended to be run after resource groups are created, to grant the necessary permissions for automation and operations.
-#
-# WHAT IT DOES:
-#   - Accepts resource group name, assignee object ID, and one or more roles as arguments.
-#   - Assigns each specified role to the assignee at the resource group scope using the Azure CLI.
-#   - Updates the .env/azure_full_inventory.json file with the current role assignments for the resource group.
-#   - Prints status and next steps.
+#   Assigns Azure RBAC roles to a service principal at the resource group scope.
 #
 # USAGE:
-#      bash step6.2_assign_roles_to_resource_group.sh --rgname <resource-group-name> --assignee <object-id> --role "Role1" [--role "Role2" ...] [--subscription-id <id>]
+#   bash step6.2_assign_roles_to_resource_group.sh --rgname <resource-group-name> --assignee <object-id> --role "Role1" [--role "Role2" ...] [--subscription-id <id>]
 #
 # PRECONDITIONS:
-#   - Azure CLI and jq are installed.
-#   - You are logged in to Azure with sufficient permissions to assign roles (run 'az login' if needed).
-#   - The target resource group(s) already exist in Azure.
-#   - The assignee object ID (service principal or user) is known.
-#   - all resource groups must already exist in Azure, created by step6_create_resource_group.sh.
-#   - custom roles were already created in Azure, as specified in the inventory. with  step6.1_CreateCustomRole.sh
-#       - OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/ag-pssg-azure-files-poc-dev-resource-group-contributor.json
-#       - OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/ag-pssg-azure-files-poc-dev-role-assignment-writer.json
+#   - Azure CLI and jq installed and configured
+#   - Authenticated to Azure (az login)
+#   - Target resource groups exist
+#   - Custom roles exist (created by step6.1_CreateCustomRole.sh)
+#   - Service principal object ID is known
 #
-# INPUTS:
-#   - Resource group name (via --rgname)
-#   - Assignee object ID (via --assignee)
-#   - One or more role names (via --role)
-#   - Optional: subscription ID (via --subscription-id)
+# POSTCONDITIONS:
+#   - Role assignments created in Azure at specified resource group scope
+#   - Inventory JSON updated with current role assignments
 #
-# OUTPUTS:
-#   - Assigns the specified roles to the assignee at the resource group scope in Azure.
-#   - Updates .env/azure_full_inventory.json with the new role assignments.
-#   - Prints status and next steps for verification.
+# ROLE ASSIGNMENT INVENTORY:
+# =========================
+# Resource Group: rg-<project-name>-<environment>
+#   - <project-name>-ServicePrincipal (<service-principal-object-id>):
+#       * Storage Account Contributor
+#       * [<team-name>-<project-name>-MANAGED]-<environment>-role-assignment-writer
 #
-# NOTES:
-#   -this script does not assign inherited subscription-level roles. It only manages resource group-level assignments.
-#   - This script assigns one or more specified roles to a service principal or user at the resource group scope.
-#   
-# INVENTORY:
-# Role assignments applied (as of 2025-06-29):
-#   Resource Group: rg-<project-name>-dev
-#     - <project-name>-ServicePrincipal (<client-id>):
-#         * Storage Account Contributor
-#         * [AG-PSSG-AZURE-FILES-POC-MANAGED]-dev-role-assignment-writer
-#   Resource Group: rg-<project-name>-tfstate-dev
-#     - No direct role assignments
-#   Resource Group: rg-<project-name>-cicd-tools-dev
-#    - <project-name>-ServicePrincipal (<client-id>):
-#         * Managed Identity Operator
-#         * Network Contributor
-#         * Virtual Machine Contributor
-#         * [AG-PSSG-AZURE-FILES-POC-MANAGED]-dev-role-assignment-writer
-# Inherited subscription-level roles for <project-name>-ServicePrincipal (<client-id>):
-#   those are assigned by step2_grant_subscription_level_permissions.sh
-#   * Reader
-#   * [BCGOV-MANAGED-LZ-LIVE] Network-Subnet-Contributor
-#   * Monitoring Contributor
-#   * Private DNS Zone Contributor
-#   * Storage Account Contributor
+# Resource Group: rg-<project-name>-tfstate-<environment>
+#   - No direct role assignments (inherits subscription-level permissions)
+#
+# Resource Group: rg-<project-name>-<environment>-tools
+#   - <project-name>-ServicePrincipal (<service-principal-object-id>):
+#       * Managed Identity Operator
+#       * Network Contributor
+#       * Virtual Machine Contributor
+#       * [<team-name>-<project-name>-MANAGED]-<environment>-role-assignment-writer
+#
+# Resource Group: <ministry-code>-<environment>-networking
+#   - <project-name>-ServicePrincipal (<service-principal-object-id>):
+#       * Network Contributor
+#       * [<team-name>-<project-name>-MANAGED]-<environment>-role-assignment-writer
+#
+# Subscription-level roles (assigned separately by step2_grant_subscription_level_permissions.sh):
+#   - <project-name>-ServicePrincipal (<service-principal-object-id>):
+#       * Reader
+#       * [BCGOV-MANAGED-LZ-LIVE] Network-Subnet-Contributor
+#       * Monitoring Contributor
+#       * Private DNS Zone Contributor
+#       * Storage Account Contributor
+#
 #================================================================
 
 set -euo pipefail
@@ -75,11 +63,12 @@ show_resource_group_role_assignments() {
     echo "Resource Group | Role Name"
     echo "-------------- | ---------"
     
-    # List all three target resource groups
+    # List all target resource groups (updated 2025-07-03)
     local resource_groups=(
-        "rg-ag-pssg-azure-files-poc-dev"
-        "rg-ag-pssg-azure-files-poc-tfstate-dev"
-        "rg-ag-pssg-azure-files-poc-dev-tools"
+        "rg-<project-name>-<environment>"
+        "rg-<project-name>-tfstate-<environment>"
+        "rg-<project-name>-<environment>-tools"
+        "<ministry-code>-<environment>-networking"
     )
     
     for rg in "${resource_groups[@]}"; do

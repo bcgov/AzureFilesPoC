@@ -8,7 +8,7 @@ As part of the onboarding process, we created a custom Azure role named `<projec
 - This custom role enables the GitHub Actions pipeline to automate Azure File Share creation and related RBAC assignments, while preventing broader or unnecessary access.
 - The custom role name follows BC Gov naming conventions for clarity and auditability.
 
-The custom role definition is stored at `scripts/<project-name>-role-assignment-writer.json` for reference and re-use.
+The custom role definition is stored at `scripts/<team-name>-<project-name>-MANAGED-<environment>-role-assignment-writer.json` for reference and re-use.
 
 ---
 
@@ -185,8 +185,8 @@ RegisterApplicationInAzureAndOIDC/
     │   ├── step8_fix_terraform_state.sh
     │   ├── step11_create_ssh_key.sh
     │   └── step12_import_existing_resources.sh
-    └── ag-pssg-azure-files-poc-dev-resource-group-contributor.json
-    └── ag-pssg-azure-files-poc-dev-role-assignment-writer.json
+    └── <team-name>-<project-name>-MANAGED-<environment>-resource-group-contributor.json
+    └── <team-name>-<project-name>-MANAGED-<environment>-role-assignment-writer.json
 ```
 
 ---
