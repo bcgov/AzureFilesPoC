@@ -114,7 +114,7 @@
 #      az storage container create --name "<container-name>-cicd" 
 #        --account-name "<storage-account-name>" --auth-mode login
 #    - Reinitialized backend with correct configuration:
-#      terraform init -backend-config="backend.tfvars" -reconfigure
+#      terraform init -backend-config="resource_group_name=<rg>" -backend-config="storage_account_name=<sa>" -backend-config="container_name=<container>"
 #
 # 3. MODULE COMPATIBILITY:
 #    - Updated bastion/nsg, runner/nsg, and vm modules to use consistent 
@@ -123,6 +123,7 @@
 #
 # VALIDATION WORKFLOW:
 #   cd terraform/environments/<environment>
+#   terraform init -backend-config="resource_group_name=<rg>" -backend-config="storage_account_name=<sa>" -backend-config="container_name=<container>"
 #   terraform validate              # Check syntax and structure
 #   terraform plan -var-file="../../terraform.tfvars" -out=tfplan  # Preview changes
 #   terraform apply tfplan          # Apply locally for validation
@@ -145,11 +146,11 @@ terraform {
   }
   backend "azurerm" {
     key = "cicd.terraform.tfstate"
-    # NOTE: Backend configuration comes from backend.tfvars
+    # NOTE: Backend configuration comes from CLI parameters
     # If you encounter state storage errors during init, ensure:
     # 1. The blob container exists (created by validation steps above)
-    # 2. Backend values match your tfvars (resource_group_name, storage_account_name, container_name)
-    # 3. Run: terraform init -backend-config="backend.tfvars" -reconfigure
+    # 2. Backend values are provided via CLI parameters
+    # 3. Run: terraform init -backend-config="resource_group_name=<rg>" -backend-config="storage_account_name=<sa>" -backend-config="container_name=<container>"
   }
 }
 
