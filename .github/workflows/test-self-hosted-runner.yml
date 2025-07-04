@@ -1,0 +1,42 @@
+name: Test Self-Hosted Runner
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-runner:
+    name: Test Self-Hosted Runner
+    runs-on: self-hosted
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Show runner information
+        run: |
+          echo "🎉 Runner is working!"
+          echo "Hostname: $(hostname)"
+          echo "OS: $(uname -a)"
+          echo "User: $(whoami)"
+          echo "Working Directory: $(pwd)"
+          echo "Available disk space:"
+          df -h
+          
+      - name: Test Azure CLI
+        run: |
+          echo "Testing Azure CLI..."
+          az --version
+          
+      - name: Test basic Azure connection
+        run: |
+          echo "Testing basic Azure connectivity..."
+          # This will fail without authentication, but shows the CLI works
+          az account show --output table || echo "No Azure authentication (expected for basic test)"
+          
+      - name: Show environment
+        run: |
+          echo "Environment variables:"
+          echo "PATH: $PATH"
+          echo "HOME: $HOME"
+          echo "Current processes:"
+          ps aux | head -10
