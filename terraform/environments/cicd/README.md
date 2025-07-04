@@ -157,30 +157,108 @@ Before using this CI/CD environment, you must complete the following one-time on
 
 ## 5. How to Use
 
-This configuration should be run **once** from your local machine to bootstrap the runner.
+This configuration follows a **Local Validation → GitHub Plan → GitHub Apply** workflow for safety and consistency.
 
-1.  **Navigate to the Directory:**
-    ```bash
-    cd terraform/environments/cicd
-    ```
+### 5.0. Deployment Workflow Overview
 
-2.  **Create `runner_setup.sh` (Optional, Recommended):**
-    If you want to automate the runner installation, create the `runner_setup.sh` file in this directory and populate it with the setup commands.
+```mermaid
+graph TD
+    A[👩‍💻 Developer<br/>Local Machine] --> B[📁 Navigate to cicd directory]
+    B --> C[🔧 terraform init<br/>with backend config]
+    C --> D[✅ terraform validate]
+    D --> E[📋 terraform plan<br/>-var-file tfvars]
+    E --> F{🤔 Plan looks good?}
+    F -->|No| G[🔄 Fix issues locally]
+    G --> D
+    F -->|Yes| H[📤 git commit & push]
+    
+    H --> I[🔄 GitHub Actions<br/>Plan Workflow]
+    I --> J[🔐 OIDC Azure Login]
+    J --> K[📝 Generate terraform.tfvars<br/>from GitHub vars/secrets]
+    K --> L[🔧 terraform init<br/>with CLI backend config]
+    L --> M[✅ terraform validate]
+    M --> N[📋 terraform plan<br/>-var-file tfvars]
+    N --> O{🤔 GitHub plan matches<br/>local plan?}
+    O -->|No| P[🚨 Investigation needed<br/>Check OIDC/vars/secrets]
+    O -->|Yes| Q[✅ Ready for Apply]
+    
+    Q --> R[🚀 GitHub Actions<br/>Apply Workflow]
+    R --> S[🔐 OIDC Azure Login]
+    S --> T[📝 Generate terraform.tfvars<br/>from GitHub vars/secrets]
+    T --> U[🔧 terraform init<br/>with CLI backend config]
+    U --> V[📋 terraform plan<br/>-var-file tfvars]
+    V --> W[🏗️ terraform apply<br/>Create Azure resources]
+    W --> X[🎉 CI/CD Infrastructure<br/>Ready!]
+    
+    style A fill:#e1f5fe
+    style I fill:#f3e5f5
+    style R fill:#e8f5e8
+    style X fill:#fff3e0
+```
 
-3.  **Create/Update `terraform.tfvars`:**
-    Ensure the `terraform.tfvars` file in this directory is populated with the correct values, especially `my_home_ip_address`.
+### 5.1. Step 1: Local Validation (Required)
 
-4.  **Initialize Terraform:**
-    This command connects Terraform to your remote state backend.
-    ```bash
-    terraform init -backend-config="resource_group_name=<your-tfstate-rg>" -backend-config="storage_account_name=<your-tfstate-sa>" -backend-config="container_name=<your-tfstate-container>"
-    ```
+**Navigate to the Directory:**
+```bash
+cd terraform/environments/cicd
+```
 
-5.  **Apply the Configuration:**
-    Terraform will show you a plan and ask for confirmation before creating the resources.
-    ```bash
-    terraform apply -var-file=terraform.tfvars
-    ```
+**Initialize, Validate, and Plan Locally:**
+```bash
+# Initialize Terraform with backend configuration
+terraform init -backend-config="resource_group_name=<your-tfstate-rg>" -backend-config="storage_account_name=<your-tfstate-sa>" -backend-config="container_name=<your-tfstate-container>"
+
+# Validate configuration syntax and structure  
+terraform validate
+
+# Create plan using terraform.tfvars from parent directory
+terraform plan -var-file="../../terraform.tfvars" -out=tfplan
+```
+
+> **Purpose:** This ensures your configuration is syntactically correct and will produce the expected resources before running in GitHub Actions.
+
+### 5.2. Step 2: GitHub Actions Plan (Verification)
+
+Once local validation passes, test the same commands in GitHub Actions:
+
+1. **Commit and push your changes:**
+   ```bash
+   git add .
+   git commit -m "Update CI/CD infrastructure configuration"
+   git push origin main
+   ```
+
+2. **Or trigger workflow manually:**
+   - Go to GitHub Actions → "Deploy CI/CD Self-Hosted Runner Infrastructure" 
+   - Click "Run workflow"
+   - Set `plan_only: true`
+   - Click "Run workflow"
+
+> **Purpose:** This verifies that GitHub Actions can successfully generate the same plan using OIDC authentication and GitHub variables/secrets.
+
+### 5.3. Step 3: GitHub Actions Apply (Deployment)
+
+After confirming the GitHub Actions plan matches your local plan:
+
+1. **Trigger apply workflow:**
+   - Go to GitHub Actions → "Deploy CI/CD Self-Hosted Runner Infrastructure"
+   - Click "Run workflow" 
+   - Set `plan_only: false`
+   - Click "Run workflow"
+
+2. **Or push to main branch:**
+   - Any push to main branch will automatically trigger apply (if configured)
+
+> **Purpose:** This creates the actual Azure resources using the verified plan.
+
+### 5.4. Optional: Local Apply for Testing
+
+For rapid iteration during development, you can also apply locally:
+```bash
+terraform apply tfplan
+```
+
+> **Warning:** Local apply bypasses GitHub Actions logging and audit trails. Use GitHub Actions apply for production deployments.
 
 ---
 
