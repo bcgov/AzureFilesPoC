@@ -275,6 +275,9 @@ module "self_hosted_runner_vm" {
   tags                  = var.common_tags
   vm_size               = var.runner_vm_size
   # Add other required variables as needed
+  
+  # Dependency: Wait for networking to be fully ready
+  depends_on = [module.bastion_nsg, module.runner_nsg]
 }
 # ===============================================================================
 # SECTION 7: OUTPUTS (RECOMMENDED)

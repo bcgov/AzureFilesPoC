@@ -79,6 +79,11 @@ network_security_group         = "<network-security-group-name>"
 bastion_network_security_group = "<bastion-nsg-name>"
 runner_network_security_group  = "<runner-nsg-name>"
 
+# Storage Subnet Configuration (NEW - Policy-Compliant Subnet Creation)
+storage_network_security_group    = "<storage-nsg-name>"
+storage_subnet_name               = "<storage-subnet-name>"
+storage_subnet_address_prefix     = ["<storage-subnet-cidr>"]
+
 # Subnets
 subnet_name             = "<subnet-name>"
 subnet_address_prefixes = ["<subnet-address-prefix>"]

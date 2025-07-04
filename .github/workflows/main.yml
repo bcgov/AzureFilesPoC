@@ -80,42 +80,129 @@ jobs:
 
       - name: Generate terraform.tfvars for dev
         run: |
-          # Ensure this script does not try to set 'allowed_ip_rules' if it was previously there.
+          # Generate terraform.tfvars from GitHub secrets and variables
           cat <<EOF > terraform/terraform.tfvars
-          azure_location              = "${{ vars.AZURE_LOCATION }}"
-          service_principal_id    = "${{ vars.SERVICE_PRINCIPAL_ID }}"
-          resource_group          = "${{ vars.RESOURCE_GROUP }}"
-          storage_account_name    = "${{ vars.STORAGE_ACCOUNT_NAME }}"
-          file_share_name         = "${{ vars.FILE_SHARE_NAME }}"
-          file_share_quota_gb     = ${{ vars.FILE_SHARE_QUOTA_GB }}
-          network_security_group  = "${{ vars.NETWORK_SECURITY_GROUP }}"
-          resource_id             = "${{ vars.RESOURCE_ID }}"
+          # =============================================================================
+          # ENVIRONMENT AND LOCATION CONFIGURATION
+          # =============================================================================
+          environment     = "dev"
+          azure_location  = "${{ vars.AZURE_LOCATION }}"
+          azure_subscription_id = "${{ vars.AZURE_SUBSCRIPTION_ID }}"
+          
+          # =============================================================================
+          # AZURE LANDING ZONE RESOURCES (PRE-PROVISIONED BY BC GOV)
+          # =============================================================================
+          # Service Principal
+          service_principal_id = "${{ vars.SERVICE_PRINCIPAL_ID }}"
+          
+          # Existing VNet and Networking (Landing Zone)
+          vnet_name             = "${{ vars.VNET_NAME }}"
+          vnet_resource_group   = "${{ vars.VNET_RESOURCE_GROUP }}"
+          vnet_address_space    = ${{ vars.VNET_ADDRESS_SPACE }}
+          vnet_dns_servers      = ${{ vars.VNET_DNS_SERVERS }}
+          vnet_id               = "${{ vars.VNET_ID }}"
+          dns_servers           = ${{ vars.DNS_SERVERS }}
+          
+          # =============================================================================
+          # PROJECT RESOURCE GROUPS (CREATED BY USER IDENTITY - NOT TERRAFORM)
+          # =============================================================================
+          # Main DEV Resource Group
+          resource_group_name   = "${{ vars.RESOURCE_GROUP_NAME }}"
+          resource_group        = "${{ vars.RESOURCE_GROUP }}"
+          resource_id           = "${{ vars.RESOURCE_ID }}"
+          
+          # =============================================================================
+          # TERRAFORM STATE STORAGE CONFIGURATION  
+          # =============================================================================
+          tfstate_container = "${{ vars.TFSTATE_CONTAINER }}"
+          tfstate_rg        = "${{ vars.TFSTATE_RG }}"
+          tfstate_sa        = "${{ vars.TFSTATE_SA }}"
+          
+          # =============================================================================
+          # STORAGE AND FILE SERVICES
+          # =============================================================================
+          storage_account_name = "${{ vars.STORAGE_ACCOUNT_NAME }}"
+          file_share_name      = "${{ vars.FILE_SHARE_NAME }}"
+          file_share_quota_gb  = ${{ vars.FILE_SHARE_QUOTA_GB }}
+          
+          # =============================================================================
+          # NETWORKING CONFIGURATION
+          # =============================================================================
+          
+          # Network Security Groups
+          network_security_group         = "${{ vars.NETWORK_SECURITY_GROUP }}"
+          bastion_network_security_group = "${{ vars.BASTION_NETWORK_SECURITY_GROUP }}"
+          runner_network_security_group  = "${{ vars.RUNNER_NETWORK_SECURITY_GROUP }}"
+          
+          # Storage Subnet Configuration (NEW - Policy-Compliant Subnet Creation)
+          storage_network_security_group    = "${{ vars.STORAGE_NETWORK_SECURITY_GROUP }}"
+          storage_subnet_name               = "${{ vars.STORAGE_SUBNET_NAME }}"
+          storage_subnet_address_prefix     = ${{ vars.STORAGE_SUBNET_ADDRESS_PREFIX }}
+          
+          # Subnets
           subnet_name             = "${{ vars.SUBNET_NAME }}"
-          vnet_id                 = "${{ vars.VNET_ID }}"
-          vnet_name               = "${{ vars.VNET_NAME }}"
-          vnet_resource_group     = "${{ vars.VNET_RESOURCE_GROUP }}"
           subnet_address_prefixes = ${{ vars.SUBNET_ADDRESS_PREFIXES }}
-          vnet_address_space      = ${{ vars.VNET_ADDRESS_SPACE }}
-          vnet_dns_servers        = ${{ vars.VNET_DNS_SERVERS }}
-          dns_servers             = ${{ vars.DNS_SERVERS }}
-          common_tags             = ${{ vars.COMMON_TAGS }}
-          service_principal_id    = "${{ vars.SERVICE_PRINCIPAL_ID }}"
-          file_sync_service_name  = "${{ vars.FILE_SYNC_SERVICE_NAME }}"
-          log_analytics_workspace_name = "${{ vars.LOG_ANALYTICS_WORKSPACE_NAME }}"
-          automation_account_name = "${{ vars.AUTOMATION_ACCOUNT_NAME }}"
-          firewall_name           = "${{ vars.FIREWALL_NAME }}"
-          route_table_name        = "${{ vars.ROUTE_TABLE_NAME }}"
+          bastion_subnet_name     = "${{ vars.BASTION_SUBNET_NAME }}"
+          bastion_address_prefix  = ${{ vars.BASTION_ADDRESS_PREFIX }}
+          runner_subnet_name      = "${{ vars.RUNNER_SUBNET_NAME }}"
+          runner_vnet_address_space = ${{ vars.RUNNER_VNET_ADDRESS_SPACE }}
+          
+          # Gateway Configuration
+          gateway_subnet_name            = "${{ vars.GATEWAY_SUBNET_NAME }}"
+          gateway_subnet_address_prefix = ${{ vars.GATEWAY_SUBNET_ADDRESS_PREFIX }}
+          vng_name                      = "${{ vars.VNG_NAME }}"
+          vng_public_ip_name            = "${{ vars.VNG_PUBLIC_IP_NAME }}"
+          vng_sku                       = "${{ vars.VNG_SKU }}"
+          vng_type                      = "${{ vars.VNG_TYPE }}"
+          vng_vpn_type                  = "${{ vars.VNG_VPN_TYPE }}"
+          
+          # =============================================================================
+          # BASTION HOST CONFIGURATION
+          # =============================================================================
+          bastion_name           = "${{ vars.BASTION_NAME }}"
+          bastion_public_ip_name = "${{ vars.BASTION_PUBLIC_IP_NAME }}"
+          
+          # =============================================================================
+          # GITHUB RUNNER VM CONFIGURATION
+          # =============================================================================
+          runner_vm_name           = "${{ vars.RUNNER_VM_NAME }}"
+          runner_vm_ip_address     = "${{ vars.RUNNER_VM_IP_ADDRESS }}"
+          runner_vm_admin_username = "${{ vars.RUNNER_VM_ADMIN_USERNAME }}"
+          runner_vm_size           = "${{ vars.RUNNER_VM_SIZE }}"
+          
+          # =============================================================================
+          # SECURITY AND ACCESS CONFIGURATION
+          # =============================================================================
+          my_github_actions_spn_object_id = "${{ vars.MY_GITHUB_ACTIONS_SPN_OBJECT_ID }}"
+          my_home_ip_address           = "${{ vars.MY_HOME_IP_ADDRESS }}"
+          
+          # =============================================================================
+          # RESOURCE TAGGING
+          # =============================================================================
+          common_tags = ${{ vars.COMMON_TAGS }}
           EOF
+          
+          # Add SSH key using printf for safe handling of special characters and newlines
+          printf 'admin_ssh_key_public = "%s"\n' "${{ secrets.ADMIN_SSH_KEY_PUBLIC }}" >> terraform/terraform.tfvars
+          
+          echo "✅ Generated terraform.tfvars from GitHub secrets and variables"
+          echo "File size: $(wc -l < terraform/terraform.tfvars) lines"
 
-      - name: "debug TF_VAR_service_principal_id"
+      - name: "Validate terraform.tfvars generation"
         run: |
-          echo "TF_VAR_service_principal_id: ${{ env.TF_VAR_service_principal_id }}"
-          echo "service_principal_id: ${{ secrets.SERVICE_PRINCIPAL_ID }}"
+          if [ ! -f terraform/terraform.tfvars ]; then
+            echo "❌ terraform.tfvars was not created"
+            exit 1
+          fi
+          echo "✅ Found terraform/terraform.tfvars"
+          echo "File size: $(wc -l < terraform/terraform.tfvars) lines"
 
       - name: Display Generated terraform.tfvars (Debug Step)
         run: |
-          echo "Content of the generated terraform/terraform.tfvars:"
-          cat terraform/terraform.tfvars || echo "File not found or empty."
+          echo "Content of terraform/terraform.tfvars (first 20 lines):"
+          head -20 terraform/terraform.tfvars
+          echo "..."
+          echo "Total lines: $(wc -l < terraform/terraform.tfvars)"
 
       - name: Terraform Init
         working-directory: terraform/environments/dev

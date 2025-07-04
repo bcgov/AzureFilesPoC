@@ -264,11 +264,48 @@ terraform apply tfplan
 
 ## 6. Post-Deployment Steps
 
-1.  **Verify the Runner in GitHub:**
+### 6.0. Expected Deployment Timeline
+
+**Total deployment time: ~45 minutes** (this is normal for BC Gov environments)
+
+- **Infrastructure creation**: ~5 minutes (NSGs, subnets, Bastion, VM provisioning)
+- **Extension installation**: ~40 minutes (BC Gov policy-mandated security extensions)
+
+### 6.1. Monitor Deployment Progress
+
+Use the provided readiness check script to monitor your VM status:
+
+```bash
+# Check if VM is ready for GitHub Actions runner setup
+cd terraform/environments/cicd
+./check-vm-ready.sh <resource-group> <vm-name> <bastion-name> <subscription-id>
+```
+
+**Expected Extension Installation:**
+- `AzureMonitorLinuxAgent`: ✅ Succeeded (Azure Monitor data collection)
+- `AzurePolicyforLinux`: ✅ Succeeded (Policy compliance monitoring)  
+- `ChangeTracking-Linux`: ✅ Succeeded (Change tracking and inventory)
+- `MDE.Linux`: ✅ Succeeded (Microsoft Defender for Endpoints)
+- `DependencyAgentLinux`: ⚠️ May fail on Ubuntu 22.04 (expected, non-critical)
+
+> **Note:** The `DependencyAgentLinux` extension failure is expected on Ubuntu 22.04.5 LTS and does not affect VM functionality. All other critical extensions should succeed.
+
+### 6.2. Verify Infrastructure Readiness
+
+1.  **Check VM Status:**
+    ```bash
+    # Quick status check
+    ./check-vm-ready.sh <resource-group> <vm-name>
+    
+    # Full status with connection instructions
+    ./check-vm-ready.sh <resource-group> <vm-name> <bastion-name> <subscription-id>
+    ```
+
+2.  **Verify the Runner in GitHub:**
     *   Navigate to your GitHub repository's **Settings > Actions > Runners**.
     *   You should see your new runner (e.g., `<runner-vm-name>`) in the list with an "Idle" status.
 
-2.  **Update Your Application Workflow:**
+3.  **Update Your Application Workflow:**
     *   In your main application deployment workflow file (e.g., `.github/workflows/deploy-dev.yml`), change the `runs-on` property for your jobs from `ubuntu-latest` to `self-hosted`.
     ```yaml
     jobs:
@@ -277,7 +314,7 @@ terraform apply tfplan
         # ... rest of your job steps
     ```
 
-3.  **Commit and Push:**
+4.  **Commit and Push:**
     Commit the changes to your workflow file. The next time the pipeline runs, it will execute on your new, secure, self-hosted runner.
 
 ---
@@ -318,6 +355,14 @@ az extension update --name ssh
 - This is required for `az network bastion ssh` to work from your terminal.
 
 ### 2. Connect to the VM via Bastion from Your Terminal
+
+**Option 1: Use the readiness check script (recommended)**
+```bash
+# Script will provide the exact connection command
+./check-vm-ready.sh <resource-group> <vm-name> <bastion-name> <subscription-id>
+```
+
+**Option 2: Manual connection**
 Replace the SSH key path if you use a different private key file.
 ```sh
 az network bastion ssh \
@@ -382,10 +427,35 @@ If you need to delete the Bastion NSG or subnet (for example, to allow Terraform
 
 ## 8. Troubleshooting
 
+### 8.1. VM Readiness Check Script
+
+Use the provided script to diagnose VM status and readiness:
+
+```bash
+# Basic readiness check
+./check-vm-ready.sh <resource-group> <vm-name>
+
+# Full check with connection instructions
+./check-vm-ready.sh <resource-group> <vm-name> <bastion-name> <subscription-id>
+
+# Example for this environment
+./check-vm-ready.sh <resource-group> <vm-name> <bastion-name> <subscription-id>
+```
+
+### 8.2. Common Issues and Expected Behavior
+
+- **Deployment takes ~45 minutes:** This is normal for BC Gov environments due to policy-mandated extension installation
+- **DependencyAgentLinux fails:** Expected on Ubuntu 22.04.5 LTS, does not affect functionality
+- **Extensions show "Updating" for 30+ minutes:** Normal behavior, wait for completion
 - **Runner not appearing in GitHub:** Ensure the registration script ran successfully and the VM has outbound internet access.
 - **SSH not working:** Double-check your NSG rules and that your public IP is correct in `terraform.tfvars`.
 - **Policy errors:** Confirm the VM is in the correct subnet and that public network access is disabled on the storage account.
 - **VM not starting:** Check Azure quotas and available resources in your region.
+
+### 8.3. Detailed Troubleshooting
+
+For comprehensive troubleshooting commands and diagnostic procedures, see:
+- **[`TROUBLESHOOTING.md`](./TROUBLESHOOTING.md)** - Complete diagnostic guide with Azure CLI commands
 
 ---
 
@@ -399,3 +469,33 @@ If you need to delete the Bastion NSG or subnet (for example, to allow Terraform
 > - **NSGs** and **subnets** (including the Bastion subnet) can now be created and managed by Terraform using the AzAPI provider in a GitHub Actions or Azure Pipelines CI/CD workflow, as long as your service principal has the Network Contributor role on the resource group. This has been fully tested and proven in this environment.
 > - The onboarding scripts (`step9_create_subnet.sh` and `step10_create_nsg.sh`) are only required if policy or permissions prevent you from using Terraform automation. See script comments for details and examples.
 > - **Preferred approach:** Use Terraform automation for all NSG and subnet creation for full auditability, automation, and policy compliance.
+
+## ✅ SUCCESSFUL DEPLOYMENT VERIFICATION (July 4, 2025)
+
+**Infrastructure Status:** All components deployed and operational
+
+**Successful Bastion SSH Connection:**
+```bash
+az network bastion ssh --name "<bastion-name>" \
+  --resource-group "<resource-group>" \
+  --target-resource-id "/subscriptions/YOUR-SUBSCRIPTION-ID/resourceGroups/<resource-group>/providers/Microsoft.Compute/virtualMachines/<vm-name>" \
+  --auth-type ssh-key --username <admin-username> --ssh-key ~/.ssh/id_rsa
+```
+
+**VM Details:**
+- **VM Name:** <vm-name>
+- **Operating System:** Ubuntu 22.04.5 LTS
+- **Private IP:** 10.46.73.20
+- **Admin User:** <admin-username>
+- **Authentication:** SSH public key
+
+**Extensions Installed:**
+- AzureMonitorLinuxAgent ✅
+- AzurePolicyforLinux ✅
+- ChangeTracking-Linux ✅
+- MDE.Linux ✅
+- DependencyAgentLinux ⚠️ (failed but non-critical)
+
+**Deployment Time:** ~45 minutes (expected for BC Gov Azure Policy compliance)
+
+## Current Status Summary

@@ -1,8 +1,20 @@
 # --- terraform/environments/dev/main.tf ---
 #
 # This file composes reusable modules using a consistent set of variables
-# to build the 'dev' environment.
-# This version is structured to troubleshoot the 403 network/permission error.
+# to build the 'dev' environment for Azure Files PoC.
+#
+# UPDATED: Applied lessons learned from cicd/main.tf for BC Gov policy compliance
+# 
+# KEY CHANGES APPLIED:
+# 1. Added AzAPI provider for policy-compliant subnet creation
+# 2. Created storage/nsg module that combines NSG and subnet creation
+# 3. Uses data sources to reference existing VNet instead of creating new one
+# 4. Added proper dependency management to prevent "AnotherOperationInProgress" errors
+# 5. Updated bastion configuration to use the same pattern as cicd environment
+# 6. Consistent variable naming aligned with working cicd pattern
+#
+# PATTERN: NSG → Subnet+NSG (via AzAPI) → Resources that use the subnet
+# This ensures BC Gov policy compliance and prevents Azure API conflicts.
 
 terraform {
   required_version = ">= 1.6.6"
@@ -11,6 +23,10 @@ terraform {
     azurerm = {
       source  = "hashicorp/azurerm"
       version = "~> 3.0"
+    }
+    azapi = {
+      source  = "azure/azapi"
+      version = "~> 1.0"
     }
     time = {
       source  = "hashicorp/time"
@@ -27,52 +43,64 @@ provider "azurerm" {
   features {}
 }
 
+provider "azapi" {
+  # AzAPI provider for BC Gov policy-compliant resources
+  # Used for creating subnets with NSG association in a single operation
+}
+
 # ================================================================================
-# Azure Infrastructure as code (IaC Best Practices)
+# Azure Infrastructure as Code (IaC) Best Practices for BC Gov Policy Compliance
 # -------------------------------------------------------------------------------
-# KEY PRINCIPLES: 
+# UPDATED APPROACH: Policy-Compliant Networking with AzAPI
 # -------------------------------------------------------------------------------
-# 1. RBAC / Least Privilege
-#    - Assign roles at the lowest appropriate scope (module-level patterns).
+# This version uses the lessons learned from the CICD environment to implement
+# BC Gov Azure Policy compliant networking using AzAPI for subnet creation.
+# 
+# KEY CHANGES FROM ORIGINAL VERSION:
+# 1. Added AzAPI provider for policy-compliant subnet creation
+# 2. NSG and subnet creation combined in single modules (modules/storage/nsg)
+# 3. Proper dependency management to avoid "AnotherOperationInProgress" errors
+# 4. Reference existing VNet instead of creating new one
+# 5. Consistent variable naming aligned with working CICD pattern
 # -------------------------------------------------------------------------------
-# RESOURCE CREATION SEQUENCING
+# RESOURCE CREATION SEQUENCING (UPDATED)
 # -------------------------------------------------------------------------------
-# 1. Resource Group First
-#    - Always create the resource group first; all other resources depend on it.
-# 2. Core Infrastructure (Networking, Storage)
-#    - 2.1 Storage Account: Created early, required for file shares, blobs, policies.
-#    - 2.2 Networking (recommended sequencing):
-#        2.2.1 Virtual Network (VNet): Foundation for all networking resources.
-#        2.2.2 Subnets: Created within the VNet for resource segmentation.
-#        2.2.3 Network Security Groups (NSGs): Applied to subnets or NICs for traffic filtering.
-#        2.2.4 Route Tables: Associated with subnets to control routing.
-#        2.2.5 Azure Firewall: Deployed after VNet/subnets for centralized security.
-#        2.2.6 Private Endpoints: Created after VNet/subnets and target resources (e.g., storage).
-#        2.2.7 Private DNS Zones & Links: Created after private endpoints for name resolution.
-#        2.2.8 Virtual Network Gateway: Created after VNet/subnets for VPN/ExpressRoute.
-#    - Sequence: VNet → Subnets → NSGs → Route Tables → Firewall → Private Endpoints → Private DNS → VNet Gateway
-#    - Rationale: Each object depends on the previous (e.g., endpoints require subnets, DNS links require endpoints, gateways require VNet/subnets).
-# 3. Data Plane Resources
-#    - 3.1 File Share, 
-#    - 3.2 Blob Container: Created after storage account.
-#    - 3.3 Management Policy: Created after storage account and blob container.
-# 4. Security and Connectivity
-#    - Private Endpoint: After storage/networking resources.
-#    - Private DNS Zone: After private endpoint (links to endpoint & VNet).
-#    - Route Table, Firewall, VNet Gateway: After core networking (depend on VNet/subnets).
-# 5. Monitoring, Automation, File Sync
-#    - Monitoring, Automation, File Sync: After core resources (depend on storage/networking).
+# 1. Resource Group (pre-existing, referenced via data source)
+# 2. Core Infrastructure:
+#    - 2.1 NSG + Subnet Creation (combined, using AzAPI for policy compliance)
+#    - 2.2 Private Endpoints (optional, after subnet creation)
+#    - 2.3 Private DNS Zones (optional, after private endpoints)
+#    - 2.4 Storage Account (after networking if using private endpoints)
+# 3. Data Plane Resources:
+#    - 3.1 File Share (after storage account + role assignment delay)
+#    - 3.2 Blob Container (optional, after storage account)
+#    - 3.3 Management Policy (optional, after storage account)
+# 4. Monitoring, Automation, File Sync (optional, after core resources)
 # -------------------------------------------------------------------------------
-# Reference: Microsoft & BC Gov Azure IaC Best Practices
-# ================================================================================
+# BC Gov Policy Compliance:
+# - Subnets MUST have NSG association at creation time
+# - Use AzAPI to create subnet with NSG in single operation
+# - Proper sequencing prevents Azure API "AnotherOperationInProgress" errors
+# - Reference existing VNet from central landing zone
+# ===============================================================================
 
 #================================================================================
-# SECTION summarizes all terraform resources that are currently enabled
-#         and will run and be created when script executed in github
-# LIST:
-# 1. Resource Group (created using user identity before running this script)
-# 2.9 Storage Account (enabled-confirmed working)
-# 3.1 File Share (commented out)
+# DEPLOYMENT SUMMARY - CURRENT STATE
+#================================================================================
+# Resources that will be created when this script is executed:
+# 1. Resource Group (pre-existing, referenced via data source)
+# 2. VNet Reference (pre-existing, referenced via data source)
+# 3. Storage NSG + Subnet (policy-compliant creation using AzAPI)
+# 4. Storage Account (enabled - confirmed working)
+# 5. Role Assignment + Delay (for service principal data plane access)
+# 6. File Share (commented out - enable after storage account is working)
+# 
+# Optional resources (commented out):
+# - Private Endpoints (for secure access to storage)
+# - Private DNS Zones (for name resolution)
+# - Blob Container (for blob storage)
+# - Management Policy (for lifecycle management)
+# - Monitoring, Automation, File Sync
 #================================================================================
 
 #================================================================================
@@ -113,130 +141,84 @@ data "azurerm_resource_group" "main" {
   name = var.resource_group_name
 }
 
+# ===============================================================================
+# SECTION 1.1: EXISTING VNET REFERENCE
+# ===============================================================================
+# Reference the existing VNet that was created by the central team
+# This VNet is used for hosting the development environment resources
+# -------------------------------------------------------------------------------
+data "azurerm_virtual_network" "spoke_vnet" {
+  name                = var.vnet_name
+  resource_group_name = var.vnet_resource_group
+}
+
 #================================================================================
 # SECTION 2: CORE INFRASTRUCTURE (NETWORKING & STORAGE)
 #================================================================================
-# 2.1 Virtual Network (VNet)
-# 2.2 Subnets
-# 2.3 Network Security Groups (NSGs)
-# 2.4 Route Tables
-# 2.5 Azure Firewall (Optional)
-# 2.6 Private Endpoints (Optional)
-# 2.7 Private DNS Zones & Links (Optional)
-# 2.8 Virtual Network Gateway (Optional)
-# 2.9 Storage Account
+# 2.1 Network Security Groups (NSGs) and Subnets
+# 2.2 Private Endpoints (Optional)
+# 2.3 Private DNS Zones & Links (Optional)
+# 2.4 Storage Account
 
-# --------------------------------------------------------------------------------
-# 2.1 (Optional) Virtual Network
-# --------------------------------------------------------------------------------
-# module "vnet" {
-#   source = "../../modules/networking/vnet"
-#   name                = var.vnet_name
-#   address_space       = var.vnet_address_space
-#   location            = var.azure_location
-#   resource_group_name = var.resource_group
-#   tags                = var.common_tags
-#   service_principal_id = var.service_principal_id
-# }
+# ===============================================================================
+# SECTION 2.1: NETWORK SECURITY GROUPS (NSG) AND SUBNETS
+# -------------------------------------------------------------------------------
+# BC Gov Policy Requirement: Subnets must have NSG association at creation time
+# Solution: Use AzAPI to create subnet with NSG association in single operation
+# 
+# Pattern: NSG → Subnet+NSG (via AzAPI) → Resources that use the subnet
+# This prevents the "AnotherOperationInProgress" error and ensures policy compliance
+# -------------------------------------------------------------------------------
 
-# --------------------------------------------------------------------------------
-# 2.2 (Optional) Subnets
-# --------------------------------------------------------------------------------
-# module "subnets" {
-#   source = "../../modules/networking/subnets"
-#   vnet_name           = module.vnet.name
-#   subnets             = var.subnets
-#   resource_group_name = var.resource_group
-#   tags                = var.common_tags
-#   service_principal_id = var.service_principal_id
-# }
+# 2.1.1 Storage Subnet NSG - Creates both NSG and subnet with association
+module "storage_nsg" {
+  source              = "../../modules/storage/nsg"
+  resource_group_name = data.azurerm_resource_group.main.name
+  location            = var.azure_location
+  nsg_name            = var.storage_network_security_group
+  tags                = var.common_tags
+  vnet_id             = data.azurerm_virtual_network.spoke_vnet.id
+  address_prefix      = var.storage_subnet_address_prefix[0]
+  subnet_name         = var.storage_subnet_name
+}
 
-# --------------------------------------------------------------------------------
-# 2.3 (Optional) Network Security Groups (NSGs)
-# --------------------------------------------------------------------------------
-# module "nsg" {
-#   source = "../../modules/networking/nsg"
-#   nsg_name            = var.nsg_name
-#   resource_group_name = var.resource_group
-#   location            = var.azure_location
-#   security_rules      = var.nsg_rules
-#   tags                = var.common_tags
-#   service_principal_id = var.service_principal_id
-# }
-
-# --------------------------------------------------------------------------------
-# 2.4 (Optional) Route Tables
-# --------------------------------------------------------------------------------
-# module "route_table" {
-#   source = "../../modules/networking/route-table"
-#   route_table_name    = var.route_table_name
-#   resource_group_name = var.resource_group
-#   location            = var.azure_location
-#   routes              = var.route_table_routes
-#   tags                = var.common_tags
-#   service_principal_id = var.service_principal_id
-# }
-
-# --------------------------------------------------------------------------------
-# 2.5 (Optional) Azure Firewall
-# --------------------------------------------------------------------------------
-# module "firewall" {
-#   source = "../../modules/networking/firewall"
-#   firewall_name       = var.firewall_name
-#   resource_group_name = var.resource_group
-#   location            = var.azure_location
-#   tags                = var.common_tags
-#   service_principal_id = var.service_principal_id
-# }
-
-# --------------------------------------------------------------------------------
-# 2.6 (Optional) Private Endpoints
-# --------------------------------------------------------------------------------
+# ===============================================================================
+# SECTION 2.2: PRIVATE ENDPOINTS (OPTIONAL)
+# -------------------------------------------------------------------------------
+# Private endpoints connect Azure services to the VNet privately
+# This allows secure access to storage accounts without exposing them to the internet
+# -------------------------------------------------------------------------------
 # module "storage_private_endpoint" {
 #   source = "../../modules/networking/private-endpoint"
 #   name                         = "pe-${module.poc_storage_account.name}"
-#   resource_group_name          = var.resource_group
+#   resource_group_name          = data.azurerm_resource_group.main.name
 #   location                     = var.azure_location
-#   subnet_id                    = module.subnets.subnet_ids["private-endpoint"]
+#   subnet_id                    = module.storage_nsg.storage_subnet_id
 #   private_connection_resource_id = module.poc_storage_account.id
 #   subresource_names            = ["file", "blob"]
 #   tags                         = var.common_tags
 #   service_principal_id         = var.service_principal_id
 # }
 
-# --------------------------------------------------------------------------------
-# 2.7 (Optional) Private DNS Zones & Links
-# --------------------------------------------------------------------------------
+# ===============================================================================
+# SECTION 2.3: PRIVATE DNS ZONES & LINKS (OPTIONAL)
+# -------------------------------------------------------------------------------
+# Private DNS zones provide name resolution for private endpoints
+# -------------------------------------------------------------------------------
 # module "private_dns_zone" {
 #   source = "../../modules/networking/private-dns"
 #   dns_zone_name         = var.private_dns_zone_name
-#   resource_group_name   = var.resource_group
+#   resource_group_name   = data.azurerm_resource_group.main.name
 #   vnet_link_name        = var.private_dns_vnet_link_name
-#   virtual_network_id    = module.vnet.id
+#   virtual_network_id    = data.azurerm_virtual_network.spoke_vnet.id
 #   registration_enabled  = false
 #   tags                  = var.common_tags
 #   service_principal_id  = var.service_principal_id
 # }
 
-# --------------------------------------------------------------------------------
-# 2.8 (Optional) Virtual Network Gateway
-# --------------------------------------------------------------------------------
-# module "vnet_gateway" {
-#   source = "../../modules/networking/vnet-gateway"
-#   vnet_gateway_name     = var.vnet_gateway_name
-#   resource_group_name   = var.resource_group
-#   location              = var.azure_location
-#   gateway_type          = var.gateway_type
-#   vpn_type              = var.vpn_type
-#   sku                   = var.vnet_gateway_sku
-#   ip_configurations     = var.vnet_gateway_ip_configurations
-#   tags                  = var.common_tags
-#   service_principal_id  = var.service_principal_id
-# }
-
-# --------------------------------------------------------------------------------
-# 2.9 Storage Account
-# --------------------------------------------------------------------------------
+# ===============================================================================
+# SECTION 2.4: STORAGE ACCOUNT
+# -------------------------------------------------------------------------------
 # NOTE: Assign RBAC roles (e.g., "Storage File Data SMB Share Contributor") at the STORAGE ACCOUNT LEVEL for all users/groups that need access to file shares. This is the Microsoft recommended best practice for Azure Files RBAC.
 # Documentation: Role Assignments Created by This Module
 # PRECONDITIONS FOR CREATING THE STORAGE ACCOUNT:
@@ -283,7 +265,7 @@ module "poc_storage_account" {
   # by the firewall. This can be hardened in a subsequent step.
 }
 #================================================================================
-# SECTION 2.9.1: DATA PLANE ROLE ASSIGNMENT AND DELAY
+# SECTION 2.4.1: DATA PLANE ROLE ASSIGNMENT AND DELAY
 #================================================================================
 # This section assigns the necessary DATA PLANE role to the service principal
 # to allow it to create resources INSIDE the storage account (e.g., file shares).
@@ -452,17 +434,33 @@ resource "time_sleep" "wait_for_role_propagation" {
 #   # Add other required arguments for runbooks, etc.
 # }
 
-# --------------------------------------------------------------------------------
-# 2.10 (Optional) Bastion Host
-# --------------------------------------------------------------------------------
+# ===============================================================================
+# SECTION 4.4: BASTION HOST (OPTIONAL)
+# -------------------------------------------------------------------------------
+# Bastion provides secure RDP/SSH access to VMs without exposing them to the internet
+# Uses the same policy-compliant NSG+subnet pattern as storage
+# -------------------------------------------------------------------------------
+# module "bastion_nsg" {
+#   source                = "../../modules/bastion/nsg"
+#   resource_group_name   = data.azurerm_resource_group.main.name
+#   location              = var.azure_location
+#   nsg_name              = var.bastion_network_security_group
+#   tags                  = var.common_tags
+#   vnet_id               = data.azurerm_virtual_network.spoke_vnet.id
+#   address_prefix        = var.bastion_address_prefix[0]
+#   subnet_name           = var.bastion_subnet_name
+#   
+#   # Dependency: Wait for storage subnet to be created first
+#   depends_on = [module.storage_nsg]
+# }
+
 # module "bastion" {
-#   source = "../../modules/bastion"
-#   resource_group_name              = data.azurerm_resource_group.main.name
-#   location                        = data.azurerm_resource_group.main.location
-#   vnet_name                       = var.vnet_name
-#   vnet_resource_group             = var.vnet_resource_group
-#   bastion_name                    = var.bastion_name
-#   public_ip_name                  = var.bastion_public_ip_name
-#   address_prefix                  = var.bastion_address_prefix[0]
-#   network_security_group          = var.bastion_network_security_group
+#   source                = "../../modules/bastion"
+#   resource_group_name   = data.azurerm_resource_group.main.name
+#   location              = data.azurerm_resource_group.main.location
+#   vnet_name             = data.azurerm_virtual_network.spoke_vnet.name
+#   vnet_resource_group   = data.azurerm_virtual_network.spoke_vnet.resource_group_name
+#   bastion_name          = var.bastion_name
+#   public_ip_name        = var.bastion_public_ip_name
+#   subnet_id             = module.bastion_nsg.bastion_subnet_id
 # }

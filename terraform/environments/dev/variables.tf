@@ -145,13 +145,13 @@ variable "route_table_name" {
 variable "vnet_gateway_name" {
   description = "The name of the Virtual Network Gateway."
   type        = string
-  default     = ""  
+  default     = ""
 }
 
 variable "gateway_type" {
   description = "The type of the gateway (Vpn or ExpressRoute)."
   type        = string
-  default     = ""  
+  default     = ""
 }
 
 variable "vpn_type" {
@@ -206,4 +206,59 @@ variable "bastion_network_security_group" {
   description = "The name of the Network Security Group to associate with the Bastion subnet."
   type        = string
   default     = ""
+}
+
+# ===============================================================================
+# NETWORKING VARIABLES FOR POLICY-COMPLIANT SUBNET CREATION
+# ===============================================================================
+# These variables support the AzAPI-based subnet creation pattern
+# that ensures NSG association at subnet creation time (BC Gov policy requirement)
+# -------------------------------------------------------------------------------
+
+variable "storage_network_security_group" {
+  description = "The name of the Network Security Group to associate with the storage subnet."
+  type        = string
+  default     = ""
+}
+
+variable "storage_subnet_name" {
+  description = "The name of the storage subnet for private endpoints."
+  type        = string
+  default     = ""
+}
+
+variable "storage_subnet_address_prefix" {
+  description = "The address prefix for the storage subnet."
+  type        = list(string)
+  default     = []
+}
+
+# ===============================================================================
+# BASTION HOST VARIABLES (OPTIONAL)
+# ===============================================================================
+# Variables for optional Bastion host deployment
+# -------------------------------------------------------------------------------
+
+variable "bastion_name" {
+  description = "The name of the Azure Bastion host."
+  type        = string
+  default     = ""
+}
+
+variable "bastion_public_ip_name" {
+  description = "The name of the public IP for the Bastion host."
+  type        = string
+  default     = ""
+}
+
+variable "bastion_address_prefix" {
+  description = "The address prefix for the Bastion subnet."
+  type        = list(string)
+  default     = []
+}
+
+variable "bastion_subnet_name" {
+  description = "The name of the Bastion subnet."
+  type        = string
+  default     = "AzureBastionSubnet"
 }

@@ -274,6 +274,37 @@ ssh-add ~/.ssh/id_rsa
 
 ## Troubleshooting Common Issues
 
+### SSH Key Created with Passphrase Despite Script Settings
+If the `step11_create_ssh_key.sh` script was supposed to create a key without a passphrase but you're being prompted for one:
+
+```bash
+# Check if key has a passphrase (will prompt if it does)
+ssh-keygen -y -f ~/.ssh/id_rsa > /dev/null
+
+# Remove passphrase from existing key
+ssh-keygen -p -f ~/.ssh/id_rsa
+# When prompted:
+# - Enter old passphrase: [enter your current passphrase]
+# - Enter new passphrase: [press Enter for empty]
+# - Enter same passphrase again: [press Enter for empty]
+
+# Verify key now has no passphrase
+ssh-keygen -y -f ~/.ssh/id_rsa > /dev/null && echo "Key has no passphrase" || echo "Key still has passphrase"
+```
+
+**Root Cause**: The script checks if keys exist and skips creation if they do. If you had existing keys with passphrases, the script won't overwrite them.
+
+**Solution**: Either remove the passphrase (above) or regenerate the keys:
+```bash
+# Backup existing keys
+cp ~/.ssh/id_rsa ~/.ssh/id_rsa.backup
+cp ~/.ssh/id_rsa.pub ~/.ssh/id_rsa.pub.backup
+
+# Remove existing keys and regenerate
+rm ~/.ssh/id_rsa ~/.ssh/id_rsa.pub
+bash step11_create_ssh_key.sh
+```
+
 ### Permission Errors
 ```bash
 # Fix common permission issues
@@ -304,9 +335,50 @@ az network bastion ssh --name <bastion-name> \
   -- -o ConnectTimeout=60
 ```
 
----
+## ✅ SUCCESSFUL CONNECTION EXAMPLE (July 4, 2025)
 
-For additional help, refer to:
-- SSH man pages: `man ssh`, `man ssh-keygen`
-- Azure Bastion documentation: https://docs.microsoft.com/en-us/azure/bastion/
-- Azure CLI SSH documentation: https://docs.microsoft.com/en-us/cli/azure/network/bastion
+**Working Bastion SSH Command:**
+```bash
+az network bastion ssh --name "<bastion-name>" \
+  --resource-group "<resource-group>" \
+  --target-resource-id "/subscriptions/YOUR-SUBSCRIPTION-ID/resourceGroups/<resource-group>/providers/Microsoft.Compute/virtualMachines/<vm-name>" \
+  --auth-type ssh-key --username <admin-username> --ssh-key ~/.ssh/id_rsa
+```
+
+**Connection Details:**
+- VM: `<vm-name>`
+- OS: Ubuntu 22.04.5 LTS (GNU/Linux 6.8.0-1030-azure x86_64)
+- User: `<admin-username>`
+- IP: 10.46.73.20
+- Authentication: SSH key with passphrase
+
+**Common Issues and Solutions:**
+
+### SSH Key Created with Passphrase Despite Script Settings
+```bash
+# Check if key has a passphrase (will prompt if it does)
+ssh-keygen -y -f ~/.ssh/id_rsa > /dev/null
+
+# Remove passphrase from existing key
+ssh-keygen -p -f ~/.ssh/id_rsa
+# When prompted:
+# - Enter old passphrase: [enter your current passphrase]
+# - Enter new passphrase: [press Enter for empty]
+# - Enter same passphrase again: [press Enter for empty]
+
+# Verify key now has no passphrase
+ssh-keygen -y -f ~/.ssh/id_rsa > /dev/null && echo "Key has no passphrase" || echo "Key still has passphrase"
+```
+
+**Root Cause**: The script checks if keys exist and skips creation if they do. If you had existing keys with passphrases, the script won't overwrite them.
+
+**Solution**: Either remove the passphrase (above) or regenerate the keys:
+```bash
+# Backup existing keys
+cp ~/.ssh/id_rsa ~/.ssh/id_rsa.backup
+cp ~/.ssh/id_rsa.pub ~/.ssh/id_rsa.pub.backup
+
+# Remove existing keys and regenerate
+rm ~/.ssh/id_rsa ~/.ssh/id_rsa.pub
+bash step11_create_ssh_key.sh
+```

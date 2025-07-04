@@ -194,3 +194,59 @@ jobs:
         if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && github.event.inputs.plan_only == 'false')
         working-directory: terraform/environments/cicd
         run: terraform apply -auto-approve tfplan
+
+      - name: Post-Deployment VM Status Check
+        if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && github.event.inputs.plan_only == 'false')
+        run: |
+          echo "🚀 Infrastructure deployment complete!"
+          echo "📊 Checking VM and extension status..."
+          
+          # Get VM basic info
+          echo "VM Status:"
+          az vm show --resource-group ${{ vars.CICD_RESOURCE_GROUP_NAME }} \
+            --name ${{ vars.RUNNER_VM_NAME }} \
+            --query "{Name:name, PowerState:powerState, ProvisioningState:provisioningState}" \
+            --output table
+          
+          # Check extension status
+          echo -e "\nExtension Status:"
+          az vm extension list --resource-group ${{ vars.CICD_RESOURCE_GROUP_NAME }} \
+            --vm-name ${{ vars.RUNNER_VM_NAME }} \
+            --query "[].{Name:name, State:provisioningState, Publisher:publisher}" \
+            --output table
+          
+          # Check VM Agent status
+          echo -e "\nVM Agent Status:"
+          az vm get-instance-view --resource-group ${{ vars.CICD_RESOURCE_GROUP_NAME }} \
+            --name ${{ vars.RUNNER_VM_NAME }} \
+            --query "instanceView.vmAgent.statuses[0].{Code:code, Status:displayStatus, Message:message}" \
+            --output table
+          
+          echo -e "\n⏳ Note: BC Gov policy-mandated extensions may take 15-30 minutes to complete installation."
+          echo "🔗 VM is accessible via Bastion once extensions reach 'Updating' state."
+          echo "📖 See TROUBLESHOOTING.md for monitoring commands and common issues."
+
+      - name: Generate Connection Instructions
+        if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && github.event.inputs.plan_only == 'false')
+        run: |
+          echo "## 🎉 CI/CD Infrastructure Deployment Complete!"
+          echo ""
+          echo "### 📋 Next Steps:"
+          echo "1. **Monitor Extension Installation** (15-30 minutes expected):"
+          echo "   \`\`\`bash"
+          echo "   az vm extension list --resource-group ${{ vars.CICD_RESOURCE_GROUP_NAME }} --vm-name ${{ vars.RUNNER_VM_NAME }} --query \"[].{Name:name, State:provisioningState}\" --output table"
+          echo "   \`\`\`"
+          echo ""
+          echo "2. **Connect to VM via Bastion** (once extensions are in 'Updating' state):"
+          echo "   \`\`\`bash"
+          echo "   az network bastion ssh --name ${{ vars.BASTION_NAME }} --resource-group ${{ vars.CICD_RESOURCE_GROUP_NAME }} --target-resource-id \"/subscriptions/${{ vars.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ vars.CICD_RESOURCE_GROUP_NAME }}/providers/Microsoft.Compute/virtualMachines/${{ vars.RUNNER_VM_NAME }}\" --auth-type \"SSHKey\" --username ${{ vars.RUNNER_VM_ADMIN_USERNAME }} --ssh-key ~/.ssh/id_rsa"
+          echo "   \`\`\`"
+          echo ""
+          echo "3. **Setup GitHub Actions Runner** (after VM is fully ready):"
+          echo "   - Follow the GitHub Actions runner setup guide"
+          echo "   - Configure runner with repository token"
+          echo ""
+          echo "### 🔍 Troubleshooting:"
+          echo "- See \`terraform/environments/cicd/TROUBLESHOOTING.md\` for detailed diagnostic commands"
+          echo "- Extensions in 'Updating' state is normal and expected"
+          echo "- DependencyAgentLinux may fail on Ubuntu 22.04 - this is expected and can be ignored"

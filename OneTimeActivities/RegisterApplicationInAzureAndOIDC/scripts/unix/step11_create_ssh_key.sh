@@ -103,6 +103,17 @@ EMAIL="${2:-$(whoami)@$(hostname)}"
 
 if [[ -f "$KEY_PATH" && -f "$KEY_PATH.pub" ]]; then
   echo "✅ SSH key already exists at $KEY_PATH"
+  
+  # Check if existing key has a passphrase (non-interactive check)
+  # This checks the key format without prompting for passphrase
+  if ssh-keygen -y -f "$KEY_PATH" -P "" > /dev/null 2>&1; then
+    echo "✅ Key has no passphrase (ready for automation)"
+  else
+    echo "⚠️  Key appears to have a passphrase."
+    echo "   For automation compatibility, you may want to remove it:"
+    echo "   ssh-keygen -p -f $KEY_PATH"
+    echo "   (Enter old passphrase, then press Enter twice for empty new passphrase)"
+  fi
 else
   echo "Generating new SSH key at $KEY_PATH"
   ssh-keygen -t rsa -b 4096 -C "$EMAIL" -f "$KEY_PATH" -N "" #no passphrase required
