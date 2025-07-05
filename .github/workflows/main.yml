@@ -40,7 +40,7 @@ jobs:
   #   # ...
 
   terraform-dev:
-    name: 'Terraform Deploy to Dev (Trusted Services Test)'
+    name: 'Terraform Deploy to Dev (using self-hosted runner)'
     runs-on: ubuntu-latest
     environment: dev # Ensures correct GitHub Environment variables/secrets are used
     env:
@@ -80,8 +80,71 @@ jobs:
 
       - name: Generate terraform.tfvars for dev
         run: |
-          cp terraform/environments/dev/terraform.tfvars terraform/terraform.tfvars
-          echo "✅ Copied dev terraform.tfvars to root for workflow use"
+          # Generate terraform.tfvars from GitHub secrets and variables
+          cat <<EOF > terraform/terraform.tfvars
+          # =============================================================================
+          # ENVIRONMENT AND LOCATION CONFIGURATION
+          # =============================================================================
+          environment     = "dev"
+          azure_location  = "${{ vars.AZURE_LOCATION }}"
+          #azure_subscription_id = "${{ vars.AZURE_SUBSCRIPTION_ID }}"
+          
+          # =============================================================================
+          # AZURE LANDING ZONE RESOURCES (PRE-PROVISIONED BY BC GOV)
+          # =============================================================================
+          service_principal_id = "${{ vars.SERVICE_PRINCIPAL_ID }}"
+          vnet_name             = "${{ vars.VNET_NAME }}"
+          vnet_resource_group   = "${{ vars.VNET_RESOURCE_GROUP }}"
+          vnet_address_space    = ${{ vars.VNET_ADDRESS_SPACE }}
+          vnet_dns_servers      = ${{ vars.VNET_DNS_SERVERS }}
+          vnet_id               = "${{ vars.VNET_ID }}"
+          dns_servers           = ${{ vars.DNS_SERVERS }}
+          
+          # =============================================================================
+          # PROJECT RESOURCE GROUPS (CREATED BY USER IDENTITY - NOT TERRAFORM)
+          # =============================================================================
+          resource_group        = "${{ vars.RESOURCE_GROUP }}"
+          resource_id           = "${{ vars.RESOURCE_ID }}"
+          
+          # =============================================================================
+          # TERRAFORM STATE STORAGE CONFIGURATION  
+          # =============================================================================
+          tfstate_container = "${{ vars.TFSTATE_CONTAINER }}"
+          tfstate_rg        = "${{ vars.TFSTATE_RG }}"
+          tfstate_sa        = "${{ vars.TFSTATE_SA }}"
+          
+          # =============================================================================
+          # STORAGE AND FILE SERVICES
+          # =============================================================================
+          storage_account_name = "${{ vars.STORAGE_ACCOUNT_NAME }}"
+          file_share_name      = "${{ vars.FILE_SHARE_NAME }}"
+          file_share_quota_gb  = ${{ vars.FILE_SHARE_QUOTA_GB }}
+          
+          # =============================================================================
+          # NETWORKING CONFIGURATION
+          # =============================================================================
+          network_security_group         = "${{ vars.NETWORK_SECURITY_GROUP }}"
+          storage_network_security_group    = "${{ vars.STORAGE_NETWORK_SECURITY_GROUP }}"
+          storage_subnet_name               = "${{ vars.STORAGE_SUBNET_NAME }}"
+          storage_subnet_address_prefix     = ${{ vars.STORAGE_SUBNET_ADDRESS_PREFIX }}
+          subnet_name             = "${{ vars.SUBNET_NAME }}"
+          subnet_address_prefixes = ${{ vars.SUBNET_ADDRESS_PREFIXES }}
+          #gateway_subnet_name            = "${{ vars.GATEWAY_SUBNET_NAME }}"
+          #gateway_subnet_address_prefix = ${{ vars.GATEWAY_SUBNET_ADDRESS_PREFIX }}
+          
+          # =============================================================================
+          # SECURITY AND ACCESS CONFIGURATION
+          # =============================================================================
+          my_github_actions_spn_object_id = "${{ vars.MY_GITHUB_ACTIONS_SPN_OBJECT_ID }}"
+          #my_home_ip_address           = "${{ vars.MY_HOME_IP_ADDRESS }}"
+          
+          # =============================================================================
+          # RESOURCE TAGGING
+          # =============================================================================
+          common_tags = ${{ vars.COMMON_TAGS }}
+          EOF
+
+          echo "✅ Generated terraform.tfvars from GitHub secrets and variables"
           echo "File size: $(wc -l < terraform/terraform.tfvars) lines"
 
       - name: "Validate terraform.tfvars generation"
@@ -112,7 +175,7 @@ jobs:
       - name: Terraform Plan
         id: plan
         working-directory: terraform/environments/dev
-        run: terraform plan -var-file=../../terraform.tfvars -out=tfplan
+        run: terraform plan -var-file=terraform.tfvars -out=tfplan
 
       - name: Terraform Apply
         if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && github.event.inputs.plan_only == 'false')
