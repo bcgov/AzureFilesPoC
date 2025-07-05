@@ -153,7 +153,7 @@ resource "azurerm_role_assignment" "storage_data_contributor_for_blobs" {
 }
 
 resource "time_sleep" "wait_for_blob_role_propagation" {
-  create_duration = "45s"
+  create_duration = "120s" # Increased from 45s to allow for Azure permission propagation
   triggers        = { role_assignment_id = azurerm_role_assignment.storage_data_contributor_for_blobs.id }
   depends_on      = [azurerm_role_assignment.storage_data_contributor_for_blobs]
 }
