@@ -14,13 +14,13 @@ resource "azurerm_storage_account" "main" {
   #deny public access.  only allow access to the runner subnet for now
   public_network_access_enabled = false 
   
-  #network_rules {
-  #  # This now becomes the default action when public access is enabled.
-  #  default_action = "Deny"
-  #  virtual_network_subnet_ids = [
-  #    var.runner_subnet_id,   # <-- Add the resource ID of your runner subnet
-  #    # var.storage_subnet_id, # Optionally, add storage subnet if needed
-  #  ]
-  #}
+  network_rules {
+    # This now becomes the default action when public access is enabled.
+    default_action = "Deny"
+    virtual_network_subnet_ids = [
+      var.runner_subnet_id,   # <-- Add the resource ID of your runner subnet
+      # var.storage_subnet_id, # Optionally, add storage subnet if needed
+    ]
+  }
 }
 
