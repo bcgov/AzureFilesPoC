@@ -62,30 +62,31 @@ module "storage_nsg" {
   subnet_name         = var.storage_subnet_name
 }
 
+# --- All modules and resources below are commented out for isolation test ---
 # This module now ONLY creates the private storage account. Its internal code has
 # been cleaned up to be policy-compliant.
-module "poc_storage_account" {
-  source               = "../../modules/storage/account"
-  storage_account_name = var.storage_account_name
-  resource_group_name  = data.azurerm_resource_group.main.name
-  azure_location       = var.azure_location
-  tags                 = var.common_tags
-}
+# module "poc_storage_account" {
+#   source               = "../../modules/storage/account"
+#   storage_account_name = var.storage_account_name
+#   resource_group_name  = data.azurerm_resource_group.main.name
+#   azure_location       = var.azure_location
+#   tags                 = var.common_tags
+# }
 
 # This module creates the private endpoint and connects it to the storage account.
 # It will now succeed because the storage account creation is no longer blocked by policy.
-module "storage_private_endpoint" {
-  source                          = "../../modules/networking/private-endpoint"
-  private_endpoint_name           = "pe-${var.storage_account_name}"
-  location                        = var.azure_location
-  resource_group                  = data.azurerm_resource_group.main.name
-  private_endpoint_subnet_id      = module.storage_nsg.storage_subnet_id
-  private_service_connection_name = "conn-to-${var.storage_account_name}"
-  private_connection_resource_id  = module.poc_storage_account.id
-  subresource_names               = ["file"]
-  common_tags                     = var.common_tags
-  service_principal_id            = var.service_principal_id
-}
+# module "storage_private_endpoint" {
+#   source                          = "../../modules/networking/private-endpoint"
+#   private_endpoint_name           = "pe-${var.storage_account_name}"
+#   location                        = var.azure_location
+#   resource_group                  = data.azurerm_resource_group.main.name
+#   private_endpoint_subnet_id      = module.storage_nsg.storage_subnet_id
+#   private_service_connection_name = "conn-to-${var.storage_account_name}"
+#   private_connection_resource_id  = module.poc_storage_account.id
+#   subresource_names               = ["file"]
+#   common_tags                     = var.common_tags
+#   service_principal_id            = var.service_principal_id
+# }
 
 #================================================================================
 # SECTION 2.4: PRIVATE DNS ZONE (REMOVED)
@@ -99,16 +100,16 @@ module "storage_private_endpoint" {
 #================================================================================
 # SECTION 2.4.1: DATA PLANE ROLE ASSIGNMENT AND DELAY
 #================================================================================
-resource "azurerm_role_assignment" "storage_data_contributor_for_files" {
-  role_definition_name = "Storage File Data SMB Share Contributor"
-  scope                = module.poc_storage_account.id
-  principal_id         = var.service_principal_id
-}
+# resource "azurerm_role_assignment" "storage_data_contributor_for_files" {
+#   role_definition_name = "Storage File Data SMB Share Contributor"
+#   scope                = module.poc_storage_account.id
+#   principal_id         = var.service_principal_id
+# }
 
-resource "time_sleep" "wait_for_role_propagation" {
-  create_duration = "45s"
-  triggers        = { role_assignment_id = azurerm_role_assignment.storage_data_contributor_for_files.id }
-}
+# resource "time_sleep" "wait_for_role_propagation" {
+#   create_duration = "45s"
+#   triggers        = { role_assignment_id = azurerm_role_assignment.storage_data_contributor_for_files.id }
+# }
 
 #================================================================================
 # SECTION 3: DATA PLANE RESOURCES (DISABLED FOR TEST)
