@@ -437,33 +437,3 @@ module "poc_file_share" {
 #   # Add other required arguments for runbooks, etc.
 # }
 
-# ===============================================================================
-# SECTION 4.4: BASTION HOST (OPTIONAL)
-# -------------------------------------------------------------------------------
-# Bastion provides secure RDP/SSH access to VMs without exposing them to the internet
-# Uses the same policy-compliant NSG+subnet pattern as storage
-# -------------------------------------------------------------------------------
-# module "bastion_nsg" {
-#   source                = "../../modules/bastion/nsg"
-#   resource_group_name   = data.azurerm_resource_group.main.name
-#   location              = var.azure_location
-#   nsg_name              = var.bastion_network_security_group
-#   tags                  = var.common_tags
-#   vnet_id               = data.azurerm_virtual_network.spoke_vnet.id
-#   address_prefix        = var.bastion_address_prefix[0]
-#   subnet_name           = var.bastion_subnet_name
-#   
-#   # Dependency: Wait for storage subnet to be created first
-#   depends_on = [module.storage_nsg]
-# }
-
-# module "bastion" {
-#   source                = "../../modules/bastion"
-#   resource_group_name   = data.azurerm_resource_group.main.name
-#   location              = data.azurerm_resource_group.main.location
-#   vnet_name             = data.azurerm_virtual_network.spoke_vnet.name
-#   vnet_resource_group   = data.azurerm_virtual_network.spoke_vnet.resource_group_name
-#   bastion_name          = var.bastion_name
-#   public_ip_name        = var.bastion_public_ip_name
-#   subnet_id             = module.bastion_nsg.bastion_subnet_id
-# }

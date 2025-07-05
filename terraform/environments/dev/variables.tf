@@ -3,6 +3,12 @@
 # This file defines the "contract" or inputs required to deploy the 'dev' environment.
 # The variable names align with the project-wide convention.
 
+variable "environment" {
+  type        = string
+  description = "The target environment (dev, cicd, prod, test)."
+  default     = "dev"
+}
+
 variable "storage_account_name" {
   description = "The name of the storage account to create. Must be globally unique."
   type        = string
@@ -101,36 +107,6 @@ variable "automation_account_name" {
   default     = null
 }
 
-variable "bastion_network_security_group" {
-  description = "The name of the NSG for the Bastion subnet (optional)."
-  type        = string
-  default     = null
-}
-
-variable "bastion_address_prefix" {
-  description = "The address prefix(es) for the Bastion subnet (optional)."
-  type        = list(string)
-  default     = []
-}
-
-variable "bastion_subnet_name" {
-  description = "The name of the Bastion subnet (optional)."
-  type        = string
-  default     = null
-}
-
-variable "bastion_name" {
-  description = "The name of the Bastion host (optional)."
-  type        = string
-  default     = null
-}
-
-variable "bastion_public_ip_name" {
-  description = "The name of the public IP for Bastion (optional)."
-  type        = string
-  default     = null
-}
-
 variable "vnet_address_space" {
   description = "The address space for the dev VNet."
   type        = list(string)
@@ -179,48 +155,43 @@ variable "allowed_ip_rules" {
   default     = []
 }
 
-variable "runner_vm_size" {
-  description = "The size of the GitHub Actions runner VM."
-  type        = string
-  default     = "Standard_D2s_v4"
-}
-
-variable "runner_vm_name" {
-  description = "The name of the GitHub Actions runner VM."
-  type        = string
-}
-
-variable "runner_vm_ip_address" {
-  description = "The IP address of the GitHub Actions runner VM."
-  type        = string
-}
-
-variable "runner_vm_admin_username" {
-  description = "The admin username for the GitHub Actions runner VM."
-  type        = string
-}
-
-variable "cicd_resource_group_name" {
-  description = "The name of the CI/CD resource group."
-  type        = string
-}
-
-variable "runner_network_security_group" {
-  description = "The name of the runner network security group."
-  type        = string
-}
-
 variable "my_github_actions_spn_object_id" {
   description = "The object ID of the GitHub Actions service principal."
   type        = string
 }
 
-variable "my_home_ip_address" {
-  description = "The home IP address for access control."
-  type        = string
+variable "subnet_address_prefixes" {
+  description = "The address prefixes for the subnet (optional, not used in current dev deployment)."
+  type        = list(string)
+  default     = []
 }
 
-variable "admin_ssh_key_public" {
-  description = "The public SSH key for VM admin access."
+variable "subnet_name" {
+  description = "The name of the subnet (optional, not used in current dev deployment)."
   type        = string
+  default     = ""
 }
+
+variable "tfstate_sa" {
+  description = "The name of the storage account for Terraform state (optional, not used in current dev deployment)."
+  type        = string
+  default     = ""
+}
+
+variable "tfstate_rg" {
+  description = "The name of the resource group for Terraform state (optional, not used in current dev deployment)."
+  type        = string
+  default     = ""
+}
+
+variable "tfstate_container" {
+  description = "The name of the blob container for Terraform state (optional, not used in current dev deployment)."
+  type        = string
+  default     = ""
+}
+
+#variable "my_home_ip_address" {
+#  description = "The home IP address for access control."
+#  type        = string
+#}
+
