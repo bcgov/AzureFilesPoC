@@ -59,7 +59,8 @@ resource "azurerm_storage_share" "main" {
 # This ensures the service principal can manage data within the share.
 #==================================================================================
 resource "azurerm_role_assignment" "file_share_contributor" {
-  scope                = azurerm_storage_share.main.id
+  # Use the ARM resource ID of the storage account, not the file share URL or name
+  scope                = var.storage_account_id
   role_definition_name = "Storage File Data SMB Share Contributor"
   principal_id         = var.service_principal_id
 }

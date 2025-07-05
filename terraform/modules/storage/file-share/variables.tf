@@ -63,3 +63,8 @@ variable "root_squash" {
   description = "Root squash setting for NFS shares."
   default     = null
 }
+
+variable "storage_account_id" {
+  type        = string
+  description = "The ARM resource ID of the storage account where the share will be created. Used for RBAC scope."
+}

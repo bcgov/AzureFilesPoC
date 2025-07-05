@@ -153,8 +153,8 @@ module "poc_file_share" {
   depends_on = [time_sleep.wait_for_role_propagation]
 
   file_share_name       = var.file_share_name
-  # Pass the storage account name, not the ID
   storage_account_name  = module.poc_storage_account.name
+  storage_account_id    = module.poc_storage_account.id
   quota_gb              = 10
   service_principal_id  = var.service_principal_id
   enabled_protocol      = "SMB"
