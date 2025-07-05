@@ -208,10 +208,10 @@ module "poc_blob_container" {
   ]
 
   storage_account_name    = module.poc_storage_account.name
+  storage_account_id      = module.poc_storage_account.id  # Add this line
   container_name          = var.blob_container_name
   container_access_type   = "private"
-  service_principal_id    = var.service_principal_id
-  metadata              = {
+  metadata                = {
     env            = "dev"
     project        = var.common_tags["project"]
     owner          = var.common_tags["owner"]

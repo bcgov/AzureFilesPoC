@@ -1,20 +1,24 @@
-# Storage Blob Container with least-privilege RBAC
-
-# This block is a best practice for modules to declare their provider requirements.
 terraform {
   required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      # This module is now compatible with provider version 3.75.0
-      version = ">= 3.0"
+    azapi = {
+      source  = "azure/azapi"
+      version = ">= 1.0"
     }
   }
 }
 
-resource "azurerm_storage_container" "main" {
-  name                  = var.container_name
-  storage_account_name  = var.storage_account_name
-  container_access_type = var.container_access_type
-   # Corresponds to the metadata property
-  metadata = var.metadata
+# Create blob container using AzAPI provider
+resource "azapi_resource" "blob_container" {
+  type      = "Microsoft.Storage/storageAccounts/blobServices/containers@2023-01-01"
+  name      = var.container_name
+  parent_id = "${var.storage_account_id}/blobServices/default"
+  
+  body = jsonencode({
+    properties = {
+      publicAccess = var.container_access_type == "private" ? "None" : (
+        var.container_access_type == "blob" ? "Blob" : "Container"
+      )
+      metadata = var.metadata
+    }
+  })
 }
