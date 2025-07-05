@@ -90,6 +90,14 @@ After the script completes, start and enable the runner service with the followi
 2. Navigate to **Settings > Actions > Runners**
 3. Verify your runner appears with "Idle" status
 
+
+### TO START THE RUNNER after install
+```bash
+sudo systemctl start actions.runner.bcgov-AzureFilesPoc.azure-files-poc-runner-vm-ag-pssg-azure-files-poc-dev-01.service
+sudo systemctl enable actions.runner.bcgov-AzureFilesPoc.azure-files-poc-runner-vm-ag-pssg-azure-files-poc-dev-01.service
+sudo systemctl status actions.runner.bcgov-AzureFilesPoc.azure-files-poc-runner-vm-ag-pssg-azure-files-poc-dev-01.service
+```
+
 ## Detailed Installation Guide
 
 ### Prerequisites Verification

@@ -41,7 +41,7 @@ jobs:
 
   terraform-dev:
     name: 'Terraform Deploy to Dev (Trusted Services Test)'
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     environment: dev # Ensures correct GitHub Environment variables/secrets are used
     env:
       ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
