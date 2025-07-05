@@ -123,19 +123,6 @@ resource "azurerm_network_security_group" "storage" {
     source_address_prefix      = "*"
     destination_address_prefix = "AzureCloud"
   }
-
-  # Allow outbound internet access for Azure services
-  security_rule {
-    name                       = "AllowInternetOutbound"
-    priority                   = 130
-    direction                  = "Outbound"
-    access                     = "Allow"
-    protocol                   = "*"
-    source_port_range          = "*"
-    destination_port_range     = "*"
-    source_address_prefix      = "*"
-    destination_address_prefix = "Internet"
-  }
 }
 
 # Storage Subnet with NSG Association (BC Gov Policy Compliant)

@@ -11,8 +11,7 @@ resource "azurerm_storage_account" "main" {
   large_file_share_enabled          = true
   # ... other settings ...
 
-  # --- TEMPORARY CHANGE FOR PIPELINE SUCCESS ---
-  # Enable public access to allow the pipeline runner to connect.
+  #deny public access.  only allow access to the runner subnet for now
   public_network_access_enabled = false 
   
   network_rules {
