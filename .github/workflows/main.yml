@@ -104,8 +104,7 @@ jobs:
           common_tags                       = ${{ vars.COMMON_TAGS }}
           blob_container_name                = "${{ vars.BLOB_CONTAINER_NAME }}"
           blob_container_metadata            = ${{ vars.BLOB_CONTAINER_METADATA }}
-          blob_container_default_encryption_scope = "${{ vars.BLOB_CONTAINER_DEFAULT_ENCRYPTION_SCOPE }}"
-          blob_container_deny_encryption_scope_override = ${{ vars.BLOB_CONTAINER_DENY_ENCRYPTION_SCOPE_OVERRIDE }}
+          # Removed encryption scope variables as not supported by provider version
           EOF
 
       - name: Terraform Init

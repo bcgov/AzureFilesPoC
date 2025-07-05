@@ -6,6 +6,4 @@ resource "azurerm_storage_container" "main" {
   container_access_type = var.container_access_type
 
   metadata = var.metadata # optional, map(string)
-  default_encryption_scope       = var.default_encryption_scope       # optional
-  deny_encryption_scope_override = var.deny_encryption_scope_override # optional, bool
 }

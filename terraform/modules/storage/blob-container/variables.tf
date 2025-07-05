@@ -24,15 +24,3 @@ variable "metadata" {
   type        = map(string)
   default     = {}
 }
-
-variable "default_encryption_scope" {
-  description = "The default encryption scope to set on the blob container."
-  type        = string
-  default     = null
-}
-
-variable "deny_encryption_scope_override" {
-  description = "Whether to prevent override of the default encryption scope."
-  type        = bool
-  default     = null
-}
