@@ -138,7 +138,7 @@ provider "azapi" {
 # --------------------------------------------------------------------------------
 #ASSUMPTION:  This terraform script assumes the resource group exists
 data "azurerm_resource_group" "main" {
-  name = var.resource_group_name
+  name = var.resource_group
 }
 
 # ===============================================================================
@@ -164,7 +164,7 @@ data "azurerm_virtual_network" "spoke_vnet" {
 # SECTION 2.1: NETWORK SECURITY GROUPS (NSG) AND SUBNETS
 # -------------------------------------------------------------------------------
 # BC Gov Policy Requirement: Subnets must have NSG association at creation time
-# Solution: Use AzAPI to create subnet with NSG association in single operation
+# Solution: Use AzAPI to create subnet with NSG association in a single operation
 # 
 # Pattern: NSG → Subnet+NSG (via AzAPI) → Resources that use the subnet
 # This prevents the "AnotherOperationInProgress" error and ensures policy compliance
@@ -257,6 +257,7 @@ module "poc_storage_account" {
   storage_account_name = var.storage_account_name
   resource_group_name  = data.azurerm_resource_group.main.name
   location             = data.azurerm_resource_group.main.location
+  azure_location       = var.azure_location
   tags                 = var.common_tags
   service_principal_id = var.service_principal_id
 
@@ -339,33 +340,35 @@ resource "time_sleep" "wait_for_role_propagation" {
 # - To use ACLs, set enabledOnboardedWindowsACL = true on the file share and enable Azure AD authentication on the storage account.
 # - Assign RBAC roles to Entra (Azure AD) users/groups at the storage account level and set NTFS ACLs for granular access control.
 # --------------------------------------------------------------------------------
-# module "poc_file_share" {
-#   source = "../../modules/storage/file-share"
-#
-#   # This `depends_on` block is CRITICAL. It tells Terraform to not even start
-#   # creating the file share until the `time_sleep` resource is finished.
-#   # This solves the permissions race condition.
-#   depends_on = [
-#     time_sleep.wait_for_role_propagation
-#   ]
-#
-#   # Required
-#   file_share_name      = var.file_share_name
-#   storage_account_name = module.poc_storage_account.name
-#   quota_gb             = 10
-#   service_principal_id = var.service_principal_id
-#
-#   # Optional (file share–level only)
-#   enabled_protocol     = "SMB"
-#   access_tier          = "Hot"
-#   metadata = {
-#     env             = "dev"
-#     project         = "<project-name>"
-#     owner           = "<project-owner>"
-#     ministry_name   = "<ministry-code>"
-#   }
-#   # acls = [...] # Only if you want to set custom ACLs
-# }
+module "poc_file_share" {
+  source = "../../modules/storage/file-share"
+
+  # This `depends_on` block is CRITICAL. It tells Terraform to not even start
+  # creating the file share until the `time_sleep` resource is finished.
+  # This solves the permissions race condition.
+  depends_on = [
+    time_sleep.wait_for_role_propagation
+  ]
+
+  # Required
+  file_share_name      = var.file_share_name
+  storage_account_name = module.poc_storage_account.name
+  quota_gb             = 10
+  service_principal_id = var.service_principal_id
+
+  # Optional (file share–level only)
+  enabled_protocol     = "SMB"
+  access_tier          = "Hot"
+  metadata = {
+    env            = "dev"
+    project        = var.common_tags["project"]
+    owner          = var.common_tags["owner"]
+    account_coding = var.common_tags["account_coding"]
+    billing_group  = var.common_tags["billing_group"]
+    ministry_name  = var.common_tags["ministry_name"]
+  }
+  # acls = [...] # Only if you want to set custom ACLs
+}
 
 # --------------------------------------------------------------------------------
 # 3.2 (Optional) Blob Container

@@ -13,6 +13,11 @@ variable "location" {
   type        = string
 }
 
+variable "azure_location" {
+  description = "The Azure region to deploy resources into (for compatibility with parent modules)."
+  type        = string
+}
+
 variable "tags" {
   description = "A map of tags to apply to the resource."
   type        = map(string)

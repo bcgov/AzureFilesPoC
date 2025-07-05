@@ -3,52 +3,132 @@
 # This file defines the "contract" or inputs required to deploy the 'dev' environment.
 # The variable names align with the project-wide convention.
 
-variable "resource_group_name" {
-  description = "The name of the new resource group for PoC services."
-  type        = string
-  default     = ""
-}
-
 variable "storage_account_name" {
-  description = "The globally unique name for the PoC storage account."
+  description = "The name of the storage account to create. Must be globally unique."
   type        = string
-  default     = ""
 }
 
-variable "vnet_name" {
-  description = "The name of the existing VNet to connect to."
+variable "resource_group" {
+  description = "The name of the resource group in which to create resources."
   type        = string
-  default     = ""
 }
 
-variable "vnet_resource_group" {
-  description = "The name of the resource group where the existing VNet is located."
+variable "azure_location" {
+  description = "The Azure region to deploy resources into."
   type        = string
-  default     = ""
-}
-
-variable "subnet_name" {
-  description = "The name of the new subnet for private endpoints."
-  type        = string
-  default     = ""
-}
-
-variable "subnet_address_prefixes" {
-  description = "A list of CIDR address blocks for the new subnet."
-  type        = list(string)
-  default     = []
 }
 
 variable "common_tags" {
   description = "A map of common tags to apply to all resources."
   type        = map(string)
-  default     = {}
 }
 
-variable "azure_location" {
-  description = "The Azure region for the dev environment. (Matches tfvars)"
+variable "service_principal_id" {
+  description = "The object ID of the service principal used for role assignments."
   type        = string
-  default     = ""
+}
+
+variable "vnet_name" {
+  description = "The name of the existing virtual network to use."
+  type        = string
+}
+
+variable "vnet_resource_group" {
+  description = "The resource group of the existing virtual network."
+  type        = string
+}
+
+variable "storage_network_security_group" {
+  description = "The name of the NSG for the storage subnet."
+  type        = string
+}
+
+variable "storage_subnet_address_prefix" {
+  description = "The address prefix(es) for the storage subnet."
+  type        = list(string)
+}
+
+variable "storage_subnet_name" {
+  description = "The name of the storage subnet."
+  type        = string
+}
+
+variable "file_share_name" {
+  description = "The name of the Azure file share to create."
+  type        = string
+}
+
+# Optional variables for commented-out modules (add as needed for future use)
+variable "private_dns_zone_name" {
+  description = "The name of the private DNS zone."
+  type        = string
+  default     = null
+}
+
+variable "private_dns_vnet_link_name" {
+  description = "The name of the private DNS VNet link."
+  type        = string
+  default     = null
+}
+
+variable "blob_container_name" {
+  description = "The name of the blob container to create (optional)."
+  type        = string
+  default     = null
+}
+
+variable "storage_management_policy" {
+  description = "The storage management policy JSON (optional)."
+  type        = any
+  default     = null
+}
+
+variable "file_sync_service_name" {
+  description = "The name of the Azure File Sync service (optional)."
+  type        = string
+  default     = null
+}
+
+variable "log_analytics_workspace_name" {
+  description = "The name of the Log Analytics workspace (optional)."
+  type        = string
+  default     = null
+}
+
+variable "automation_account_name" {
+  description = "The name of the Automation Account (optional)."
+  type        = string
+  default     = null
+}
+
+variable "bastion_network_security_group" {
+  description = "The name of the NSG for the Bastion subnet (optional)."
+  type        = string
+  default     = null
+}
+
+variable "bastion_address_prefix" {
+  description = "The address prefix(es) for the Bastion subnet (optional)."
+  type        = list(string)
+  default     = []
+}
+
+variable "bastion_subnet_name" {
+  description = "The name of the Bastion subnet (optional)."
+  type        = string
+  default     = null
+}
+
+variable "bastion_name" {
+  description = "The name of the Bastion host (optional)."
+  type        = string
+  default     = null
+}
+
+variable "bastion_public_ip_name" {
+  description = "The name of the public IP for Bastion (optional)."
+  type        = string
+  default     = null
 }
 
 variable "vnet_address_space" {
@@ -75,12 +155,6 @@ variable "resource_id" {
   default     = ""
 }
 
-variable "file_share_name" {
-  description = "The name of the Azure File Share."
-  type        = string
-  default     = ""
-}
-
 variable "file_share_quota_gb" {
   description = "The maximum size of the file share in GB for the dev environment."
   type        = number
@@ -99,166 +173,54 @@ variable "dns_servers" {
   default     = []
 }
 
-
 variable "allowed_ip_rules" {
   description = "A list of public IP CIDR ranges to allow through the storage account firewall, passed from the CI/CD pipeline."
   type        = list(string)
   default     = []
 }
 
-variable "service_principal_id" {
-  description = "The object ID of the service principal for role assignments."
+variable "runner_vm_size" {
+  description = "The size of the GitHub Actions runner VM."
   type        = string
-  default     = ""
+  default     = "Standard_D2s_v4"
 }
 
-variable "file_sync_service_name" {
-  description = "The name of the Azure File Sync Service."
+variable "runner_vm_name" {
+  description = "The name of the GitHub Actions runner VM."
   type        = string
-  default     = ""
 }
 
-variable "log_analytics_workspace_name" {
-  description = "The name of the Log Analytics Workspace."
+variable "runner_vm_ip_address" {
+  description = "The IP address of the GitHub Actions runner VM."
   type        = string
-  default     = ""
 }
 
-variable "automation_account_name" {
+variable "runner_vm_admin_username" {
+  description = "The admin username for the GitHub Actions runner VM."
   type        = string
-  description = "The name of the Automation Account"
-  default     = ""
 }
 
-variable "firewall_name" {
-  description = "The name of the Azure Firewall."
+variable "cicd_resource_group_name" {
+  description = "The name of the CI/CD resource group."
   type        = string
-  default     = ""
 }
 
-variable "route_table_name" {
-  description = "The name of the Route Table."
+variable "runner_network_security_group" {
+  description = "The name of the runner network security group."
   type        = string
-  default     = ""
 }
 
-variable "vnet_gateway_name" {
-  description = "The name of the Virtual Network Gateway."
+variable "my_github_actions_spn_object_id" {
+  description = "The object ID of the GitHub Actions service principal."
   type        = string
-  default     = ""
 }
 
-variable "gateway_type" {
-  description = "The type of the gateway (Vpn or ExpressRoute)."
+variable "my_home_ip_address" {
+  description = "The home IP address for access control."
   type        = string
-  default     = ""
 }
 
-variable "vpn_type" {
-  description = "The VPN type (RouteBased or PolicyBased)."
+variable "admin_ssh_key_public" {
+  description = "The public SSH key for VM admin access."
   type        = string
-  default     = ""
-}
-
-variable "vnet_gateway_sku" {
-  description = "The SKU of the Virtual Network Gateway."
-  type        = string
-  default     = ""
-}
-
-variable "vnet_gateway_ip_configurations" {
-  description = "A list of IP configuration blocks for the Virtual Network Gateway."
-  type        = any
-  default     = []
-}
-
-variable "blob_container_name" {
-  description = "The name of the blob container."
-  type        = string
-  default     = ""
-}
-
-variable "storage_management_policy" {
-  description = "The management policy JSON for the storage account."
-  type        = any
-  default     = {}
-}
-
-variable "private_dns_zone_name" {
-  description = "The name of the Private DNS Zone."
-  type        = string
-  default     = ""
-}
-
-variable "private_dns_vnet_link_name" {
-  description = "The name of the VNet link for the Private DNS Zone."
-  type        = string
-  default     = ""
-}
-
-variable "virtual_network_id" {
-  description = "The ID of the virtual network to link to the Private DNS Zone."
-  type        = string
-  default     = ""
-}
-
-variable "bastion_network_security_group" {
-  description = "The name of the Network Security Group to associate with the Bastion subnet."
-  type        = string
-  default     = ""
-}
-
-# ===============================================================================
-# NETWORKING VARIABLES FOR POLICY-COMPLIANT SUBNET CREATION
-# ===============================================================================
-# These variables support the AzAPI-based subnet creation pattern
-# that ensures NSG association at subnet creation time (BC Gov policy requirement)
-# -------------------------------------------------------------------------------
-
-variable "storage_network_security_group" {
-  description = "The name of the Network Security Group to associate with the storage subnet."
-  type        = string
-  default     = ""
-}
-
-variable "storage_subnet_name" {
-  description = "The name of the storage subnet for private endpoints."
-  type        = string
-  default     = ""
-}
-
-variable "storage_subnet_address_prefix" {
-  description = "The address prefix for the storage subnet."
-  type        = list(string)
-  default     = []
-}
-
-# ===============================================================================
-# BASTION HOST VARIABLES (OPTIONAL)
-# ===============================================================================
-# Variables for optional Bastion host deployment
-# -------------------------------------------------------------------------------
-
-variable "bastion_name" {
-  description = "The name of the Azure Bastion host."
-  type        = string
-  default     = ""
-}
-
-variable "bastion_public_ip_name" {
-  description = "The name of the public IP for the Bastion host."
-  type        = string
-  default     = ""
-}
-
-variable "bastion_address_prefix" {
-  description = "The address prefix for the Bastion subnet."
-  type        = list(string)
-  default     = []
-}
-
-variable "bastion_subnet_name" {
-  description = "The name of the Bastion subnet."
-  type        = string
-  default     = "AzureBastionSubnet"
 }

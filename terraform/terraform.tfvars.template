@@ -113,6 +113,7 @@ bastion_public_ip_name = "<bastion-public-ip-name>"
 runner_vm_name           = "<runner-vm-name>"
 runner_vm_ip_address     = "<runner-vm-ip>"
 runner_vm_admin_username = "<vm-admin-username>"
+runner_vm_size = "Standard_D2s_v4"
 
 # =============================================================================
 # SECURITY AND ACCESS CONFIGURATION
