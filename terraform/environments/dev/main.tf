@@ -111,14 +111,14 @@ module "poc_file_share" {
   source     = "../../modules/storage/file-share"
   depends_on = [time_sleep.wait_for_role_propagation]
 
-  file_share_name = var.file_share_name
-  # --- FIX: Pass the ID from the storage account module ---
-  storage_account_id = module.poc_storage_account.id
-  quota_gb           = 10
-  service_principal_id = var.service_principal_id
-  enabled_protocol     = "SMB"
-  access_tier          = "Hot"
-  metadata             = {
+  file_share_name       = var.file_share_name
+  # Pass the storage account name, not the ID
+  storage_account_name  = module.poc_storage_account.name
+  quota_gb              = 10
+  service_principal_id  = var.service_principal_id
+  enabled_protocol      = "SMB"
+  access_tier           = "Hot"
+  metadata              = {
     env            = "dev"
     project        = var.common_tags["project"]
     owner          = var.common_tags["owner"]

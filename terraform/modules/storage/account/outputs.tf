@@ -1,14 +1,16 @@
+# terraform/modules/storage/file-share/outputs.tf
+
 output "id" {
-  description = "The ID of the created storage account."
-  value       = azurerm_storage_account.main.id
+  description = "The resource ID of the file share."
+  value       = azurerm_storage_share.main.id
 }
 
 output "name" {
-  description = "The name of the created storage account."
-  value       = azurerm_storage_account.main.name
+  description = "The name of the file share."
+  value       = azurerm_storage_share.main.name
 }
 
-output "primary_blob_host" {
-  description = "The primary blob endpoint host."
-  value       = azurerm_storage_account.main.primary_blob_host
+output "url" {
+  description = "The URL of the file share."
+  value       = azurerm_storage_share.main.url
 }
