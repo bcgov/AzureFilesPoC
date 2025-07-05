@@ -59,16 +59,16 @@ variable "storage_subnet_name" {
   type        = string
 }
 
-# variable "file_share_name" {
-#   description = "The name of the Azure File Share to create."
-#   type        = string
-# }
+variable "file_share_name" {
+  description = "The name of the Azure File Share to create."
+  type        = string
+}
 
-# variable "file_share_quota_gb" {
-#   description = "Quota for the Azure File Share in GB."
-#   type        = number
-#   default     = 10
-# }
+variable "file_share_quota_gb" {
+  description = "Quota for the Azure File Share in GB."
+  type        = number
+  default     = 10
+}
 
 # Optional variables for commented-out modules (add as needed for future use)
 variable "private_dns_zone_name" {

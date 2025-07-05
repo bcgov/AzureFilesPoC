@@ -23,8 +23,11 @@ The primary objective is to deploy a **private Azure Files share** and its depen
     - No `network_rules` block present
     - (For future blob use: `allow_blob_public_access = false` should be set, but not required for Azure Files only)
   - Outputs confirmed storage account and private endpoint were provisioned as expected in both environments.
+- **Data Plane Role Assignment & Propagation Wait (github CI/CD):**
+  - Successfully assigned the "Storage File Data SMB Share Contributor" role to the service principal for the storage account and waited for propagation using a `time_sleep` resource. This enables automated file share creation in the pipeline.
+  - Verified in GitHub Actions workflow with `terraform apply` that both resources were created and outputs were as expected.
 
-> This proves a secure, policy-compliant automation path into the Azure environment exists, and that the pipeline can deploy networking and storage resources both locally and via CI/CD.
+> This proves a secure, policy-compliant automation path into the Azure environment exists, and that the pipeline can deploy networking, storage, and data plane permissions both locally and via CI/CD.
 
 ## 3. The Current Roadblock (RESOLVED LOCALLY & IN CI/CD)
 The main Terraform deployment was previously **failing at the apply step** for the storage account due to a BC Gov policy block. This has now been resolved for both local and CI/CD runs:
