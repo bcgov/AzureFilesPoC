@@ -62,16 +62,15 @@ module "storage_nsg" {
   subnet_name         = var.storage_subnet_name
 }
 
-# --- All modules and resources below are commented out for isolation test ---
 # This module now ONLY creates the private storage account. Its internal code has
 # been cleaned up to be policy-compliant.
-# module "poc_storage_account" {
-#   source               = "../../modules/storage/account"
-#   storage_account_name = var.storage_account_name
-#   resource_group_name  = data.azurerm_resource_group.main.name
-#   azure_location       = var.azure_location
-#   tags                 = var.common_tags
-# }
+module "poc_storage_account" {
+  source               = "../../modules/storage/account"
+  storage_account_name = var.storage_account_name
+  resource_group_name  = data.azurerm_resource_group.main.name
+  azure_location       = var.azure_location
+  tags                 = var.common_tags
+}
 
 # This module creates the private endpoint and connects it to the storage account.
 # It will now succeed because the storage account creation is no longer blocked by policy.

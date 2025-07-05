@@ -9,10 +9,10 @@ variable "environment" {
   default     = "dev"
 }
 
-# variable "storage_account_name" {
-#   description = "The name of the storage account to create. Must be globally unique."
-#   type        = string
-# }
+variable "storage_account_name" {
+  description = "The name of the storage account to create. Must be globally unique."
+  type        = string
+}
 
 variable "resource_group" {
   description = "The name of the resource group in which to create resources."

@@ -13,11 +13,13 @@ The primary objective is to deploy a **private Azure Files share** and its depen
   - GitHub Actions runner agent is installed, configured, and registered with the `bcgov/AzureFilesPoC` repository.
 - **Test Workflows:**
   - Simple test workflows confirm the runner can execute jobs successfully.
+- **NSG Creation via Pipeline:**
+  - Confirmed that the pipeline can successfully deploy a Network Security Group (NSG) resource using the self-hosted runner and Terraform. This proves the runner, permissions, and pipeline are working for at least some Azure resources.
 
-> This proves a secure, policy-compliant automation path into the Azure environment exists.
+> This proves a secure, policy-compliant automation path into the Azure environment exists, and that the pipeline can deploy at least networking resources.
 
 ## 3. The Current Roadblock
-Despite having a working private runner, the main Terraform deployment is **failing at the apply step**.
+Despite having a working private runner and successful NSG deployment, the main Terraform deployment is **failing at the apply step** for the storage account.
 
 - **What's Blocked:** Creation of the `azurerm_storage_account` resource.
 - **The Specific Error:**
@@ -31,6 +33,7 @@ Error: creating Storage Account ... RequestDisallowedByPolicy: Resource 'stagpss
 - **Terraform Validation Errors:** Fixed provider versions, duplicate variables, incorrect arguments. Code is now syntactically correct.
 - **Platform-Managed DNS:** Removed Private DNS Zone management logic per documentation.
 - **Advanced Terraform Patterns:** Explored moving the private endpoint inside the storage account module (not required).
+- **Isolation Test:** Successfully deployed only the NSG to confirm the runner and pipeline are working for resource creation.
 
 ## 5. The Definitive Diagnosis (The True Root Cause)
 After re-evaluating the error and BC Gov documentation, the root cause was identified:

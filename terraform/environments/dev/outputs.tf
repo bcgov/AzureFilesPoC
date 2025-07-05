@@ -46,17 +46,17 @@
 #   value = module.poc_resource_group.resource_group_id
 # }
 
-# output "storage_account_id" {
-#   value = module.poc_storage_account.id
-# }
+output "storage_account_id" {
+  value = module.poc_storage_account.id
+}
 
-# output "storage_account_name" {
-#   value = module.poc_storage_account.name
-# }
+output "storage_account_name" {
+  value = module.poc_storage_account.name
+}
 
-# output "storage_account_primary_blob_host" {
-#   value = module.poc_storage_account.primary_blob_host
-# }
+output "storage_account_primary_blob_host" {
+  value = module.poc_storage_account.primary_blob_host
+}
 
 output "debug_service_principal_id" {
   value = var.service_principal_id
