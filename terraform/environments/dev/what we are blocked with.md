@@ -36,13 +36,16 @@ The primary objective is to deploy a **private Azure Files share** and its depen
 - **Data Plane Role Assignment & Propagation Wait (github CI/CD):**
   - Successfully assigned the "Storage File Data SMB Share Contributor" role to the service principal for the storage account and waited for propagation using a `time_sleep` resource. This enables automated file share creation in the pipeline.
   - Verified in GitHub Actions workflow with `terraform apply` that both resources were created and outputs were as expected.
+- **Blob Data Plane Role Assignment (Local & CI/CD):**
+  - Successfully assigned the "Storage Blob Data Contributor" role to the service principal for the storage account and waited for propagation using a `time_sleep` resource. This enables automated blob container creation in the pipeline.
+  - Verified in GitHub Actions workflow with `terraform apply` that both resources were created and outputs were as expected.
 - **File Share Creation (Local & CI/CD):**
   - The file share module is now enabled and working. No errors or policy issues remain. The previous duplicate role assignment error is resolved.
 
-> This proves a secure, policy-compliant automation path into the Azure environment exists, and that the pipeline can deploy networking, storage, and data plane permissions both locally and via CI/CD.
+> This proves a secure, policy-compliant automation path into the Azure environment exists, and that the pipeline can deploy networking, storage, and data plane permissions (including for blob and file shares) both locally and via CI/CD.
 
 ## 3. The Current Roadblock
-**None.** All previously blocking issues (policy, RBAC, file share creation) are now resolved. The deployment is fully automated and policy-compliant.
+**None.** All previously blocking issues (policy, RBAC, file share, and blob data plane role assignment) are now resolved. The deployment is fully automated and policy-compliant.
 
 ## 4. Troubleshooting Journey (Historical)
 - **RBAC Permissions:** Confirmed the Service Principal has all necessary roles (Network Contributor, Storage Account Contributor). Not a permissions issue.

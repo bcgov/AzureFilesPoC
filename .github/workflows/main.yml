@@ -102,6 +102,7 @@ jobs:
           runner_network_security_group     = "${{ vars.RUNNER_NETWORK_SECURITY_GROUP }}"
           my_github_actions_spn_object_id   = "${{ vars.MY_GITHUB_ACTIONS_SPN_OBJECT_ID }}"
           common_tags                       = ${{ vars.COMMON_TAGS }}
+          blob_container_name                = "${{ vars.BLOB_CONTAINER_NAME }}"
           EOF
 
       - name: Terraform Init

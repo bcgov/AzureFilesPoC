@@ -185,14 +185,14 @@ module "poc_file_share" {
 # --------------------------------------------------------------------------------
 # 3.2 (Optional) Blob Container
 # --------------------------------------------------------------------------------
-# module "poc_blob_container" {
-#   source = "../../modules/storage/blob-container"
-#   storage_account_name    = module.poc_storage_account.name
-#   container_name          = var.blob_container_name
-#   container_access_type   = "private"
-#   service_principal_id    = var.service_principal_id
-#   depends_on              = [time_sleep.wait_for_blob_role_propagation]
-# }
+module "poc_blob_container" {
+  source = "../../modules/storage/blob-container"
+  storage_account_name    = module.poc_storage_account.name
+  container_name          = var.blob_container_name
+  container_access_type   = "private"
+  service_principal_id    = var.service_principal_id
+  depends_on              = [time_sleep.wait_for_blob_role_propagation]
+}
 
 # --------------------------------------------------------------------------------
 # 3.3 (Optional) Storage Management Policy
