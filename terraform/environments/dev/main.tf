@@ -111,28 +111,28 @@ resource "time_sleep" "wait_for_role_propagation" {
 }
 
 #================================================================================
-# SECTION 3: DATA PLANE RESOURCES
+# SECTION 3: DATA PLANE RESOURCES (DISABLED FOR TEST)
 #================================================================================
-module "poc_file_share" {
-  source     = "../../modules/storage/file-share"
-  depends_on = [time_sleep.wait_for_role_propagation]
-
-  file_share_name       = var.file_share_name
-  # Pass the storage account name, not the ID
-  storage_account_name  = module.poc_storage_account.name
-  quota_gb              = 10
-  service_principal_id  = var.service_principal_id
-  enabled_protocol      = "SMB"
-  access_tier           = "Hot"
-  metadata              = {
-    env            = "dev"
-    project        = var.common_tags["project"]
-    owner          = var.common_tags["owner"]
-    account_coding = var.common_tags["account_coding"]
-    billing_group  = var.common_tags["billing_group"]
-    ministry_name  = var.common_tags["ministry_name"]
-  }
-}
+# module "poc_file_share" {
+#   source     = "../../modules/storage/file-share"
+#   depends_on = [time_sleep.wait_for_role_propagation]
+#
+#   file_share_name       = var.file_share_name
+#   # Pass the storage account name, not the ID
+#   storage_account_name  = module.poc_storage_account.name
+#   quota_gb              = 10
+#   service_principal_id  = var.service_principal_id
+#   enabled_protocol      = "SMB"
+#   access_tier           = "Hot"
+#   metadata              = {
+#     env            = "dev"
+#     project        = var.common_tags["project"]
+#     owner          = var.common_tags["owner"]
+#     account_coding = var.common_tags["account_coding"]
+#     billing_group  = var.common_tags["billing_group"]
+#     ministry_name  = var.common_tags["ministry_name"]
+#   }
+# }
 
 # --------------------------------------------------------------------------------
 # 3.2 (Optional) Blob Container

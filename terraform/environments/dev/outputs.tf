@@ -6,33 +6,33 @@
 #   value = module.poc_file_share.name
 # }
 
-output "vnet_address_space" {
-  value = var.vnet_address_space
-}
+# output "vnet_address_space" {
+#   value = var.vnet_address_space
+# }
 
-output "vnet_dns_servers" {
-  value = var.vnet_dns_servers
-}
+# output "vnet_dns_servers" {
+#   value = var.vnet_dns_servers
+# }
 
-output "vnet_id" {
-  value = var.vnet_id
-}
+# output "vnet_id" {
+#   value = var.vnet_id
+# }
 
-output "resource_id" {
-  value = var.resource_id
-}
+# output "resource_id" {
+#   value = var.resource_id
+# }
 
-output "file_share_quota_gb" {
-  value = var.file_share_quota_gb
-}
+# output "file_share_quota_gb" {
+#   value = var.file_share_quota_gb
+# }
 
-output "network_security_group" {
-  value = var.network_security_group
-}
+# output "network_security_group" {
+#   value = var.network_security_group
+# }
 
-output "dns_servers" {
-  value = var.dns_servers
-}
+# output "dns_servers" {
+#   value = var.dns_servers
+# }
 
 # output "resource_group_name" {
 #   value = module.poc_resource_group.resource_group_name
