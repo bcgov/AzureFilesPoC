@@ -115,12 +115,6 @@ If you need multiple file shares, blob containers, or other resources, add a num
 
 * **App registrations/service principals**: Use the same pattern for clarity.
 
-## References
-
-* [Microsoft Azure Naming Rules and Restrictions](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/resource-name-rules)
-
-* [BC Gov Cloud Naming Standards](https://github.com/bcgov/cloud-pathfinder-documentation/blob/main/docs/AzureNamingConventions.md)
-
 ---
 
 Adhering to these conventions will help ensure your Azure resources are easy to identify, manage, and audit across environments and teams.
