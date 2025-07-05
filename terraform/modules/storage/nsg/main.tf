@@ -1,5 +1,7 @@
-# In /modules/storage/nsg/main.tf
+# In /terraform/modules/storage/nsg/main.tf
 
+# This block correctly declares both providers used by this module,
+# resolving the "Provider not declared as required" error.
 terraform {
   required_providers {
     azurerm = {
@@ -15,23 +17,11 @@ terraform {
 
 # Storage NSG Module
 #
-# This module creates a Network Security Group (NSG) with security rules for storage subnet
-# and creates the subnet with NSG association using AzAPI for BC Gov policy compliance.
-# 
-# BC Gov Policy Requirement: Subnets must have NSG association at creation time
-# Solution: Create NSG first, then use AzAPI to create subnet with NSG association
+# This module creates a Network Security Group (NSG) with security rules for a storage subnet
+# and then creates the subnet with the NSG association using AzAPI for BC Gov policy compliance.
 #
-# Example usage:
-#   module "storage_nsg" {
-#     source              = "../../modules/storage/nsg"
-#     resource_group_name = var.resource_group_name
-#     location            = var.azure_location
-#     nsg_name            = var.nsg_name
-#     tags                = var.tags
-#     vnet_id             = var.vnet_id
-#     address_prefix      = var.address_prefix
-#     subnet_name         = var.subnet_name
-#   }
+# BC Gov Policy Requirement: Subnets must have NSG association at creation time.
+# Solution: Create NSG first, then use AzAPI to create subnet with NSG association.
 
 variable "resource_group_name" {
   description = "The name of the resource group where the NSG will be created."
@@ -143,7 +133,7 @@ resource "azapi_resource" "storage_subnet" {
       networkSecurityGroup = {
         id = azurerm_network_security_group.storage.id
       }
-      # Enable private endpoint network policies
+      # Enable private endpoint network policies for security
       privateEndpointNetworkPolicies = "Enabled"
       # Disable private link service network policies (not needed for storage)
       privateLinkServiceNetworkPolicies = "Disabled"
@@ -151,7 +141,7 @@ resource "azapi_resource" "storage_subnet" {
   })
 }
 
-# Outputs
+# Outputs for this module
 output "storage_nsg_id" {
   description = "The ID of the storage Network Security Group."
   value       = azurerm_network_security_group.storage.id

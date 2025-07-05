@@ -38,9 +38,10 @@ data "azurerm_subnet" "runner" {
 }
 
 #================================================================================
-# SECTION 2: CORE INFRASTRUCTURE (NETWORKING & STORAGE)
+# SECTION 2: CORE INFRASTRUCTURE
 #================================================================================
 
+# This module creates the storage subnet and its required NSG.
 module "storage_nsg" {
   source              = "../../modules/storage/nsg"
   resource_group_name = data.azurerm_resource_group.main.name
@@ -52,55 +53,35 @@ module "storage_nsg" {
   subnet_name         = var.storage_subnet_name
 }
 
+# This module now creates BOTH the storage account and its private endpoint
+# to satisfy the strict Azure Policy for simultaneous resource creation.
 module "poc_storage_account" {
-  source = "../../modules/storage/account"
-
+  source               = "../../modules/storage/account"
   storage_account_name = var.storage_account_name
   resource_group_name  = data.azurerm_resource_group.main.name
-  location             = data.azurerm_resource_group.main.location
   azure_location       = var.azure_location
   tags                 = var.common_tags
   service_principal_id = var.service_principal_id
-  runner_subnet_id     = data.azurerm_subnet.runner.id
+  
+  # Pass the storage subnet ID into the module for Private Endpoint creation.
+  storage_subnet_id    = module.storage_nsg.storage_subnet_id
 
+  # This dependency is crucial to ensure the subnet exists before the
+  # storage account and its internal private endpoint are created.
   depends_on = [
     module.storage_nsg
   ]
 }
 
-module "storage_private_endpoint" {
-  source = "../../modules/networking/private-endpoint"
-
-  private_endpoint_name           = "pe-${var.storage_account_name}"
-  location                        = var.azure_location
-  resource_group                  = data.azurerm_resource_group.main.name
-  private_endpoint_subnet_id      = module.storage_nsg.storage_subnet_id
-  private_service_connection_name = "conn-to-${var.storage_account_name}"
-  private_connection_resource_id  = module.poc_storage_account.id
-  subresource_names               = ["file"]
-  common_tags                     = var.common_tags
-  service_principal_id            = var.service_principal_id
-}
+# The 'storage_private_endpoint' module has been COMPLETELY REMOVED.
+# Its functionality is now handled inside the 'poc_storage_account' module.
 
 #================================================================================
 # SECTION 2.4: PRIVATE DNS ZONE (REMOVED)
 #================================================================================
-# The 'private_dns_zone' module has been completely removed from this configuration.
-# This is to align with the BC Government Azure Landing Zone documentation, which
-# states that Private DNS is a centralized, platform-managed service.
-#
-# The platform will automatically detect the new Private Endpoint and create the
-# necessary DNS A-record in the appropriate centralized zone (e.g.,
-# 'privatelink.file.core.windows.net') within approximately 10 minutes.
-#
-# Specifically, the documentation notes: "Attaching your custom Private DNS
-# Zone to your Virtual Network (VNet) will not work, as all DNS queries are
-# routed through the central Private DNS Resolver."
-#
-# Therefore, Terraform must not attempt to create or manage any Private DNS Zone
-# resources for this service. The 'private-endpoint' module already contains the
-# required 'lifecycle { ignore_changes }' block to prevent conflicts with this
-# platform automation.
+# The 'private_dns_zone' module was correctly removed previously to align with
+# the BC Government Azure Landing Zone documentation. The platform automatically
+# creates the required A-record for the private endpoint.
 #================================================================================
 
 #================================================================================
@@ -114,28 +95,22 @@ resource "azurerm_role_assignment" "storage_data_contributor_for_files" {
 
 resource "time_sleep" "wait_for_role_propagation" {
   create_duration = "45s"
-  triggers = {
-    role_assignment_id = azurerm_role_assignment.storage_data_contributor_for_files.id
-  }
+  triggers        = { role_assignment_id = azurerm_role_assignment.storage_data_contributor_for_files.id }
 }
 
 #================================================================================
 # SECTION 3: DATA PLANE RESOURCES
 #================================================================================
 module "poc_file_share" {
-  source = "../../modules/storage/file-share"
-
-  depends_on = [
-    time_sleep.wait_for_role_propagation
-  ]
-
+  source               = "../../modules/storage/file-share"
+  depends_on           = [time_sleep.wait_for_role_propagation]
   file_share_name      = var.file_share_name
   storage_account_name = module.poc_storage_account.name
   quota_gb             = 10
   service_principal_id = var.service_principal_id
   enabled_protocol     = "SMB"
   access_tier          = "Hot"
-  metadata = {
+  metadata             = {
     env            = "dev"
     project        = var.common_tags["project"]
     owner          = var.common_tags["owner"]
