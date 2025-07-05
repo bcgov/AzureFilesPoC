@@ -101,6 +101,13 @@ jobs:
           storage_account_name = "${{ vars.STORAGE_ACCOUNT_NAME }}"
           file_share_name      = "${{ vars.FILE_SHARE_NAME }}"
           file_share_quota_gb  = ${{ vars.FILE_SHARE_QUOTA_GB }}
+
+          # =============================================================================
+          # STORAGE SUBNET CONFIGURATION (NEW - Policy-Compliant Subnet Creation)
+          # =============================================================================
+          storage_network_security_group = "${{ vars.STORAGE_NETWORK_SECURITY_GROUP }}"
+          storage_subnet_name            = "${{ vars.STORAGE_SUBNET_NAME }}"
+          storage_subnet_address_prefix  = ${{ vars.STORAGE_SUBNET_ADDRESS_PREFIX }}
           
           # =============================================================================
           # NETWORKING CONFIGURATION
