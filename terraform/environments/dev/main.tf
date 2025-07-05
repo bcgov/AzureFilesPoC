@@ -16,6 +16,12 @@ terraform {
 
 provider "azurerm" {
   features {}
+  
+  # --- ADD THIS LINE ---
+  # This tells Terraform not to automatically register Azure Resource Providers.
+  # This is required in permission-restricted environments where the
+  # service principal does not have subscription-level rights to do so.
+  skip_provider_registration = true
 }
 
 provider "azapi" {
