@@ -1,41 +1,40 @@
+# In /terraform/modules/storage/account/variables.tf
+
 variable "storage_account_name" {
-  description = "The globally unique name for the storage account."
+  description = "The name of the Azure Storage Account."
   type        = string
 }
 
 variable "resource_group_name" {
-  description = "The name of the resource group where the storage account will be created."
-  type        = string
-}
-
-variable "location" {
-  description = "The Azure region for the storage account."
+  description = "The name of the resource group in which to create the storage account."
   type        = string
 }
 
 variable "azure_location" {
-  description = "The Azure region to deploy resources into (for compatibility with parent modules)."
+  description = "The Azure region where the storage account will be created."
   type        = string
 }
 
 variable "tags" {
-  description = "A map of tags to apply to the resource."
+  description = "A map of tags to assign to the storage account."
   type        = map(string)
   default     = {}
 }
 
-variable "allowed_ip_rules" {
-  type        = list(string)
-  description = "A list of public IP CIDR ranges to allow through the firewall. For the GitHub runner."
-  default     = []
-}
-
 variable "service_principal_id" {
-  description = "The object ID of the service principal for role assignments."
+  description = "(Optional) The object ID of a service principal for role assignments."
   type        = string
+  default     = null
 }
 
 variable "runner_subnet_id" {
-  description = "The resource ID of the runner subnet allowed to access the storage account."
+  description = "(Optional) The resource ID of the GitHub runner subnet. Currently unused."
+  type        = string
+  default     = null
+}
+
+# --- NEW VARIABLE ADDED ---
+variable "storage_subnet_id" {
+  description = "The ID of the subnet where the Private Endpoint for the storage account will be placed."
   type        = string
 }
