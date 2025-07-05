@@ -63,9 +63,18 @@
 ├── questionsforazureadmin.md
 ├── README.md
 ├── Resources
-│   ├── AzurePipelinesResources.md
+│   ├── AzureLandingZone_Guardrails_Summary.md
 │   ├── AzureResourceNamingConventions.md
-│   ├── BcGovAzurePolicyTerraformNotes.md
+│   ├── BCGov-AzureLandingZone_Guardrails_Summary.md
+│   ├── BCGov-AzurePipelinesResources.md
+│   ├── BCGov-GitHubActionsResourcesForAzureFilesPoC.md
+│   ├── BCGov-IaC_CICD_BestPractices_Summary.md
+│   ├── BCGov-NetworkingSummary.md
+│   ├── BCGov-PrivateDNSandEndpoints.md
+│   ├── BCGov-TerraformModuleStructure.md
+│   ├── BCGov-TerraformResourcesForAzurePoC.md
+│   ├── BCGov-TerraformWithGithubActionsProcess.md
+│   ├── BcGov-AzurePolicyTerraformNotes.md
 │   ├── GitHubActionsResourcesForAzureFilesPoC.md
 │   ├── TerraformModuleStructure.md
 │   ├── TerraformResourcesForAzurePoC.md
