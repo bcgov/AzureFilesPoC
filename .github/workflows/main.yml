@@ -103,6 +103,9 @@ jobs:
           my_github_actions_spn_object_id   = "${{ vars.MY_GITHUB_ACTIONS_SPN_OBJECT_ID }}"
           common_tags                       = ${{ vars.COMMON_TAGS }}
           blob_container_name                = "${{ vars.BLOB_CONTAINER_NAME }}"
+          blob_container_metadata            = ${{ vars.BLOB_CONTAINER_METADATA }}
+          blob_container_default_encryption_scope = "${{ vars.BLOB_CONTAINER_DEFAULT_ENCRYPTION_SCOPE }}"
+          blob_container_deny_encryption_scope_override = ${{ vars.BLOB_CONTAINER_DENY_ENCRYPTION_SCOPE_OVERRIDE }}
           EOF
 
       - name: Terraform Init

@@ -18,3 +18,21 @@ variable "service_principal_id" {
   description = "The object ID of the service principal or user to assign least-privilege access."
   type        = string
 }
+
+variable "metadata" {
+  description = "A map of metadata to assign to the blob container."
+  type        = map(string)
+  default     = {}
+}
+
+variable "default_encryption_scope" {
+  description = "The default encryption scope to set on the blob container."
+  type        = string
+  default     = null
+}
+
+variable "deny_encryption_scope_override" {
+  description = "Whether to prevent override of the default encryption scope."
+  type        = bool
+  default     = null
+}
