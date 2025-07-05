@@ -1,4 +1,26 @@
-# --- terraform/environments/dev/main.tf ---
+# terraform/modules/storage/account/main.tf
+#
+# =====================================================================================
+# VERIFIED WORKING WITH CI/CD (as of July 5, 2025)
+# =====================================================================================
+#
+# The following infrastructure components have been successfully deployed via both:
+#   - Local `terraform apply` on the self-hosted runner
+#   - GitHub Actions workflow (CI/CD pipeline)
+#
+# ✅ Network Security Group (NSG) for storage subnet
+# ✅ Storage Account (policy-compliant, private-only)
+# ✅ Private Endpoint for Storage Account (file subresource)
+#
+# Key policy compliance settings:
+#   - `public_network_access_enabled = false` (required)
+#   - No `network_rules` block present (required)
+#   - (For future blob use: `allow_blob_public_access = false` should be set, but not required for Azure Files only)
+#
+# Outputs and Azure Portal confirm all resources are provisioned as expected.
+#
+# If you add new modules/resources, update this block after successful CI/CD deployment.
+# =====================================================================================
 
 terraform {
   required_version = ">= 1.6.6"
@@ -70,6 +92,7 @@ module "poc_storage_account" {
   resource_group_name  = data.azurerm_resource_group.main.name
   azure_location       = var.azure_location
   tags                 = var.common_tags
+  depends_on           = [module.storage_nsg]
 }
 
 # This module creates the private endpoint and connects it to the storage account.
@@ -92,6 +115,7 @@ module "storage_private_endpoint" {
   subresource_names               = ["file"]
   common_tags                     = var.common_tags
   service_principal_id            = var.service_principal_id
+  depends_on                      = [module.poc_storage_account]
 }
 
 #================================================================================
@@ -106,16 +130,18 @@ module "storage_private_endpoint" {
 #================================================================================
 # SECTION 2.4.1: DATA PLANE ROLE ASSIGNMENT AND DELAY
 #================================================================================
-# resource "azurerm_role_assignment" "storage_data_contributor_for_files" {
-#   role_definition_name = "Storage File Data SMB Share Contributor"
-#   scope                = module.poc_storage_account.id
-#   principal_id         = var.service_principal_id
-# }
+resource "azurerm_role_assignment" "storage_data_contributor_for_files" {
+  role_definition_name = "Storage File Data SMB Share Contributor"
+  scope                = module.poc_storage_account.id
+  principal_id         = var.service_principal_id
+  depends_on           = [module.poc_storage_account]
+}
 
-# resource "time_sleep" "wait_for_role_propagation" {
-#   create_duration = "45s"
-#   triggers        = { role_assignment_id = azurerm_role_assignment.storage_data_contributor_for_files.id }
-# }
+resource "time_sleep" "wait_for_role_propagation" {
+  create_duration = "45s"
+  triggers        = { role_assignment_id = azurerm_role_assignment.storage_data_contributor_for_files.id }
+  depends_on      = [azurerm_role_assignment.storage_data_contributor_for_files]
+}
 
 #================================================================================
 # SECTION 3: DATA PLANE RESOURCES (DISABLED FOR TEST)

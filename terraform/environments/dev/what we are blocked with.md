@@ -17,17 +17,17 @@ The primary objective is to deploy a **private Azure Files share** and its depen
   - Confirmed that the pipeline can successfully deploy a Network Security Group (NSG) resource using the self-hosted runner and Terraform. This proves the runner, permissions, and pipeline are working for at least some Azure resources.
 - **Service Principal Permissions:**
   - Confirmed the service principal (`[REDACTED_SERVICE_PRINCIPAL_OBJECT_ID]`) has the required roles (`Storage Account Contributor`, `Network Contributor`, and a custom role) on the resource group. RBAC permissions are not the issue.
-- **Storage Account & Private Endpoint Creation (Local):**
-  - Successfully created a policy-compliant storage account and private endpoint using `terraform apply` run locally on the self-hosted runner. No policy errors encountered. The following settings were critical:
+- **Storage Account & Private Endpoint Creation (Local & github CI/CD):**
+  - Successfully created a policy-compliant storage account and private endpoint using `terraform apply` run both locally on the self-hosted runner **and** in the GitHub Actions workflow. No policy errors encountered. The following settings were critical:
     - `public_network_access_enabled = false`
     - No `network_rules` block present
     - (For future blob use: `allow_blob_public_access = false` should be set, but not required for Azure Files only)
-  - Outputs confirmed storage account and private endpoint were provisioned as expected.
+  - Outputs confirmed storage account and private endpoint were provisioned as expected in both environments.
 
-> This proves a secure, policy-compliant automation path into the Azure environment exists, and that the pipeline can deploy at least networking and storage resources.
+> This proves a secure, policy-compliant automation path into the Azure environment exists, and that the pipeline can deploy networking and storage resources both locally and via CI/CD.
 
-## 3. The Current Roadblock (RESOLVED LOCALLY)
-The main Terraform deployment was previously **failing at the apply step** for the storage account due to a BC Gov policy block. This has now been resolved for local runs:
+## 3. The Current Roadblock (RESOLVED LOCALLY & IN CI/CD)
+The main Terraform deployment was previously **failing at the apply step** for the storage account due to a BC Gov policy block. This has now been resolved for both local and CI/CD runs:
 
 - **What's Blocked (Previously):** Creation of the `azurerm_storage_account` resource.
 - **The Specific Error (Previously):**
@@ -58,20 +58,18 @@ After re-evaluating the error and BC Gov documentation, the root cause was ident
 - The presence of the `network_rules` block is interpreted by policy as an attempt to configure a public IP feature, which is **blocked**.
 - Additionally, the policy checks for `allowBlobPublicAccess = false` for blob storage. For Azure Files only, this is not required, but should be set if blob containers are added in the future.
 
-## 6. The Final Solution (Tested & Working Locally)
+## 6. The Final Solution (Tested & Working Locally and in CI/CD)
 - **All Terraform files have been updated for policy compliance:**
   - The `storage/account` module now creates a storage account with `public_network_access_enabled = false` and **no** `network_rules` block.
   - The `dev/main.tf` file uses the standard pattern: calls the fixed `poc_storage_account` module first, then a separate `storage_private_endpoint` module.
 - **Result:**
-  - Local `terraform apply` on the self-hosted runner successfully created the storage account and private endpoint with no policy errors.
+  - `terraform apply` on the self-hosted runner and in the GitHub Actions workflow both successfully created the storage account and private endpoint with no policy errors.
 
 ## Next Steps
-- **Destroy Test Resources:**
-  - Run `terraform destroy` locally to clean up test resources.
-- **Test in CI/CD Pipeline:**
-  - Re-run the GitHub Actions workflow to confirm the same result in the pipeline environment.
-- **If successful:**
-  - Proceed to enable file share creation and further automation.
+- **Enable File Share Creation:**
+  - Uncomment and test the file share module to provision Azure Files shares.
+- **Continue Automation:**
+  - Expand automation to include monitoring, management policies, and other required resources.
 - **If issues arise in CI/CD:**
   - Compare runner environment, permissions, and provider versions with local setup.
 
