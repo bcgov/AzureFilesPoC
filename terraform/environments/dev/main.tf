@@ -3,7 +3,9 @@
 terraform {
   required_version = ">= 1.6.6"
   required_providers {
-    azurerm = { source = "hashicorp/azurerm", version = "~> 3.0" }
+    # Force a recent provider version to ensure all resource features are supported.
+    azurerm = { source = "hashicorp/azurerm", version = ">= 3.100.0" }
+    
     azapi   = { source = "azure/azapi", version = "~> 1.0" }
     time    = { source = "hashicorp/time", version = ">= 0.9.1" }
   }
@@ -41,7 +43,6 @@ data "azurerm_subnet" "runner" {
 # SECTION 2: CORE INFRASTRUCTURE
 #================================================================================
 
-# This module creates the storage subnet and its required NSG.
 module "storage_nsg" {
   source              = "../../modules/storage/nsg"
   resource_group_name = data.azurerm_resource_group.main.name
@@ -53,35 +54,38 @@ module "storage_nsg" {
   subnet_name         = var.storage_subnet_name
 }
 
-# This module now creates BOTH the storage account and its private endpoint
-# to satisfy the strict Azure Policy for simultaneous resource creation.
+# This module now ONLY creates the private storage account. Its internal code has
+# been cleaned up to be policy-compliant.
 module "poc_storage_account" {
   source               = "../../modules/storage/account"
   storage_account_name = var.storage_account_name
   resource_group_name  = data.azurerm_resource_group.main.name
   azure_location       = var.azure_location
   tags                 = var.common_tags
-  service_principal_id = var.service_principal_id
-  
-  # Pass the storage subnet ID into the module for Private Endpoint creation.
-  storage_subnet_id    = module.storage_nsg.storage_subnet_id
-
-  # This dependency is crucial to ensure the subnet exists before the
-  # storage account and its internal private endpoint are created.
-  depends_on = [
-    module.storage_nsg
-  ]
 }
 
-# The 'storage_private_endpoint' module has been COMPLETELY REMOVED.
-# Its functionality is now handled inside the 'poc_storage_account' module.
+# This module creates the private endpoint and connects it to the storage account.
+# It will now succeed because the storage account creation is no longer blocked by policy.
+module "storage_private_endpoint" {
+  source                          = "../../modules/networking/private-endpoint"
+  private_endpoint_name           = "pe-${var.storage_account_name}"
+  location                        = var.azure_location
+  resource_group                  = data.azurerm_resource_group.main.name
+  private_endpoint_subnet_id      = module.storage_nsg.storage_subnet_id
+  private_service_connection_name = "conn-to-${var.storage_account_name}"
+  private_connection_resource_id  = module.poc_storage_account.id
+  subresource_names               = ["file"]
+  common_tags                     = var.common_tags
+  service_principal_id            = var.service_principal_id
+}
 
 #================================================================================
 # SECTION 2.4: PRIVATE DNS ZONE (REMOVED)
 #================================================================================
 # The 'private_dns_zone' module was correctly removed previously to align with
-# the BC Government Azure Landing Zone documentation. The platform automatically
-# creates the required A-record for the private endpoint.
+# the BC Government Azure Landing Zone documentation, which states that Private
+# DNS is a centralized, platform-managed service. The platform will automatically
+# create the required A-record for the private endpoint.
 #================================================================================
 
 #================================================================================
@@ -120,7 +124,6 @@ module "poc_file_share" {
   }
 }
 
-# --- All optional modules at the end remain the same ---
 # --------------------------------------------------------------------------------
 # 3.2 (Optional) Blob Container
 # --------------------------------------------------------------------------------
