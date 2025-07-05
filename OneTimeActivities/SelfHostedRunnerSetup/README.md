@@ -21,7 +21,28 @@ Before starting this setup, ensure you have completed:
 - [x] GitHub repository admin permissions
 - [x] Personal Access Token (PAT) with `repo` and `admin:org` scopes
 
-## Quick Start
+## Quick Start (Recommended)
+
+### 1. Copy and Run the All-in-One Setup Script
+
+You can use the comprehensive setup script to automate the entire process:
+
+```bash
+# (On your VM)
+nano complete-runner-setup.sh  # Or use scp/curl to copy the script
+# Paste the script contents if using nano, then save and exit
+chmod +x complete-runner-setup.sh
+./complete-runner-setup.sh
+```
+- The script will prompt for your GitHub organization/user, repo, and registration token.
+- It will clean up any previous runner, install all dependencies (including data plane tools), create the user, and configure the runner as a service.
+- **Do NOT run as root.** Use a regular user with sudo privileges.
+
+---
+
+## Manual Steps (Advanced / Troubleshooting)
+
+> **Note:** The previous scripts `install-github-runner.sh` and `install-data-plane-tools.sh` are now deprecated. Use `complete-runner-setup.sh` for all setup and recovery tasks.
 
 ### Step 1: Connect to Your Runner VM
 
@@ -32,6 +53,32 @@ az network bastion ssh --name "<bastion-name>" \
   --resource-group "<resource-group>" \
   --target-resource-id "/subscriptions/YOUR-SUBSCRIPTION-ID/resourceGroups/<resource-group>/providers/Microsoft.Compute/virtualMachines/<vm-name>" \
   --auth-type ssh-key --username <admin-username> --ssh-key ~/.ssh/id_rsa
+```
+
+
+
+### Step 1.5: (If Needed) Use or Create the actions-runner User
+
+First, try switching to the user and directory:
+
+```bash
+# Try switching to the actions-runner user and directory
+sudo su - actions-runner
+cd ~/actions-runner
+```
+
+If you get an error (e.g., user does not exist or directory missing), then create the user:
+
+```bash
+# Check if the user already exists
+id actions-runner || getent passwd actions-runner
+
+# Only run the following if the user does NOT exist:
+sudo useradd -m -s /bin/bash actions-runner
+sudo passwd actions-runner  # (set a password if needed)
+sudo usermod -aG sudo actions-runner
+sudo su - actions-runner
+mkdir -p ~/actions-runner && cd ~/actions-runner
 ```
 
 ### Step 2: Download and Run Installation Script
@@ -45,12 +92,6 @@ curl -o install-github-runner.sh https://raw.githubusercontent.com/YourRepo/Azur
 # Make it executable
 chmod +x install-github-runner.sh
 
-#grant passwordless sudo
-sudo visudo
-
-#add this line to bottom of the file and save
-#actions-runner ALL=(ALL) NOPASSWD:ALL
-
 # Run the installation (will prompt for required information)
 ./install-github-runner.sh
 ```
@@ -59,44 +100,15 @@ sudo visudo
 
 The script will guide you through:
 1. Generating a registration token from GitHub
-    add your org:  bcgov
-    add your repo name:  AzureFilesPoC
-    you'll be asked to go to github and create a new self-hosted runner
-    copy the token from github and enter it when prompted
 2. Configuring the runner with your repository
 3. Installing it as a system service
 4. Starting the runner service
-
-After the script completes, start and enable the runner service with the following commands (replace the service name with your actual runner service name if different):
-
-   1. Start the runner service:
-      ```sh
-      sudo systemctl start actions.runner.bcgov-AzureFilesPoc.azure-files-poc-runner-vm-ag-pssg-azure-files-poc-dev-01.service
-      ```
-
-   2. Enable the service to start on boot:
-      ```sh
-      sudo systemctl enable actions.runner.bcgov-AzureFilesPoc.azure-files-poc-runner-vm-ag-pssg-azure-files-poc-dev-01.service
-      ```
-
-   3. Check the service status:
-      ```sh
-      sudo systemctl status actions.runner.bcgov-AzureFilesPoc.azure-files-poc-runner-vm-ag-pssg-azure-files-poc-dev-01.service
-      ```
 
 ### Step 4: Verify Runner Registration
 
 1. Go to your GitHub repository
 2. Navigate to **Settings > Actions > Runners**
 3. Verify your runner appears with "Idle" status
-
-
-### TO START THE RUNNER after install
-```bash
-sudo systemctl start actions.runner.bcgov-AzureFilesPoc.azure-files-poc-runner-vm-ag-pssg-azure-files-poc-dev-01.service
-sudo systemctl enable actions.runner.bcgov-AzureFilesPoc.azure-files-poc-runner-vm-ag-pssg-azure-files-poc-dev-01.service
-sudo systemctl status actions.runner.bcgov-AzureFilesPoc.azure-files-poc-runner-vm-ag-pssg-azure-files-poc-dev-01.service
-```
 
 ## Detailed Installation Guide
 
@@ -257,114 +269,6 @@ az --version
 terraform --version
 ```
 
-### Automated Tool Installation
-
-You can use the provided `install-github-runner.sh` script to install most required tools automatically. For additional data plane tools (AzCopy, SMB utilities, Node.js, pip), use the following script:
-
-```sh
-#!/bin/bash
-# install-data-plane-tools.sh
-# Installs additional tools for Azure Files/Blob, SMB, and data migration
-
-set -e
-
-# SMB/CIFS utilities for mounting Azure Files
-sudo apt update
-sudo apt install -y cifs-utils
-
-# AzCopy for high-performance data transfer
-wget -O azcopy.tar.gz https://aka.ms/downloadazcopy-v10-linux
-rm -rf azcopy_linux_amd64_*
-tar -xvf azcopy.tar.gz
-sudo cp ./azcopy_linux_amd64_*/azcopy /usr/local/bin/
-rm -rf azcopy.tar.gz azcopy_linux_amd64_*
-azcopy --version
-
-# Python 3 pip (for scripts/Azure SDKs)
-sudo apt install -y python3-pip
-
-# Node.js and npm (for GitHub Actions and scripts)
-sudo apt install -y nodejs npm
-
-# Optional: Monitoring tools
-sudo apt install -y htop ncdu
-
-echo "All additional data plane tools installed."
-```
-
-- The main `install-github-runner.sh` script installs: Azure CLI, Terraform, curl, wget, tar, unzip, git, jq, systemd, ca-certificates, lsb-release, gnupg.
-- Use the above script to add AzCopy, SMB/CIFS utilities, pip, Node.js/npm, and monitoring tools.
-
-**Reference:** See `install-github-runner.sh` for core tool installation and use `install-data-plane-tools.sh` for data plane operations.
-
----
-
-**Required tools summary:**
-- Core: Azure CLI, Terraform, curl, wget, tar, unzip, git, jq, systemd, ca-certificates, lsb-release, gnupg (installed by `install-github-runner.sh`)
-- Data plane: cifs-utils, AzCopy, python3-pip, nodejs, npm, htop, ncdu (install with the script above)
-
----
-
-### How to Install Data Plane Tools on the Runner VM
-
-You have two options for installing required tools:
-
-#### Option 1: Copy and Run the Script via Bastion
-1. **Copy the script to your VM:**
-   - If using Azure Bastion web shell or SSH, open the script file (`install-data-plane-tools.sh`) in your local editor, copy all contents, and paste into a new file on the VM:
-     ```sh
-     nano install-data-plane-tools.sh
-     # Paste the script, save and exit (Ctrl+O, Enter, Ctrl+X)
-     ```
-2. **Make the script executable:**
-   ```sh
-   chmod +x install-data-plane-tools.sh
-   ```
-3. **Run the script:**
-   ```sh
-   ./install-data-plane-tools.sh
-   ```
-
-#### Option 2: Download Directly from GitHub (if script is committed)
-If you have committed the script to your repository, you can download it directly on the VM:
-```sh
-curl -O https://raw.githubusercontent.com/<your-org>/<your-repo>/main/OneTimeActivities/SelfHostedRunnerSetup/install-data-plane-tools.sh
-chmod +x install-data-plane-tools.sh
-./install-data-plane-tools.sh
-```
-
----
-
-### What the Script Installs
-- **SMB/CIFS utilities** for mounting Azure Files
-- **AzCopy** for high-performance data transfer
-- **Python 3 pip** for scripts and Azure SDKs
-- **Node.js and npm** for GitHub Actions and scripts
-- **htop, ncdu** for monitoring (optional)
-
----
-
-### Best Practice
-- Use the main `install-github-runner.sh` script for core runner and tool setup.
-- Use `install-data-plane-tools.sh` for all data plane and migration tools.
-- Both scripts can be run as `azureadmin` after connecting via Bastion.
-
----
-
-### Example: Full Setup Flow
-1. Connect to your VM via Bastion.
-2. Download or copy both scripts to the VM.
-3. Run:
-   ```sh
-   chmod +x install-github-runner.sh install-data-plane-tools.sh
-   ./install-github-runner.sh
-   ./install-data-plane-tools.sh
-   ```
-4. Register the runner and verify in GitHub.
-5. Your runner is now ready for Azure Files, Blob, SMB, and data migration operations.
-
----
-
 ## Testing Your Runner
 
 ### Test 1: Basic Runner Connectivity
@@ -480,81 +384,6 @@ az network nsg rule list --nsg-name <your-nsg> --resource-group <your-rg> -o tab
 ```
 
 For detailed troubleshooting steps, see [`TROUBLESHOOTING.md`](./TROUBLESHOOTING.md).
-
----
-
-## Post-VM Creation: First Login and Runner Setup (Step-by-Step Example)
-
-This section documents the exact steps performed after the VM was created by the GitHub workflow and first accessed via Bastion. Follow this sequence for a successful, real-world setup:
-
-1. **Login to the VM via Bastion as `azureadmin`**
-   - Use Azure Portal or CLI to connect with your SSH key.
-
-2. **Download the GitHub runner install script**
-   ```sh
-   curl -o install-github-runner.sh https://raw.githubusercontent.com/bcgov/AzureFilesPoC/main/OneTimeActivities/SelfHostedRunnerSetup/install-github-runner.sh
-   chmod +x install-github-runner.sh
-   ```
-
-3. **Grant passwordless sudo to the `actions-runner` user**
-   - Edit sudoers file:
-     ```sh
-     sudo visudo
-     # Add this line at the end:
-     actions-runner ALL=(ALL) NOPASSWD:ALL
-     ```
-
-4. **Run the install script as `azureadmin`**
-   ```sh
-   ./install-github-runner.sh
-   ```
-   - Follow prompts for GitHub org (`bcgov`), repo (`AzureFilesPoC`), and registration token (from GitHub UI).
-   - **Important:** The registration token is a sensitive, short-lived secret. Always generate a fresh token from the GitHub UI (Settings > Actions > Runners > New self-hosted runner) and never store it in documentation, scripts, or repository secrets.
-
-5. **Register the runner with GitHub**
-   - The script will prompt for the registration token and configure the runner. Enter the token you just generated.
-   - Confirm the runner appears as "Idle" in GitHub under Settings > Actions > Runners.
-
-6. **Install the runner as a systemd service**
-   - The script will offer to install as a service. If not, run:
-     ```sh
-     sudo systemctl start actions.runner.bcgov-AzureFilesPoc.azure-files-poc-runner-vm-ag-pssg-azure-files-poc-dev-01.service
-     sudo systemctl enable actions.runner.bcgov-AzureFilesPoc.azure-files-poc-runner-vm-ag-pssg-azure-files-poc-dev-01.service
-     sudo systemctl status actions.runner.bcgov-AzureFilesPoc.azure-files-poc-runner-vm-ag-pssg-azure-files-poc-dev-01.service
-     ```
-
-7. **Download and run the data plane tools install script**
-   - Either copy/paste or download directly:
-     ```sh
-     curl -O https://raw.githubusercontent.com/bcgov/AzureFilesPoC/main/OneTimeActivities/SelfHostedRunnerSetup/install-data-plane-tools.sh
-     chmod +x install-data-plane-tools.sh
-     ./install-data-plane-tools.sh
-     ```
-
-8. **Verify all required tools are installed**
-   - Check versions:
-     ```sh
-     azcopy --version
-     mount.cifs --version
-     pip3 --version
-     node --version
-     npm --version
-     htop --version
-     ncdu --version
-     ```
-
-9. **Run test workflow(s) in GitHub**
-   - Use `test-self-hosted-runner.yml` to verify runner operation and Azure CLI access.
-   - Troubleshoot as needed (see Troubleshooting section below).
-
-10. **(If needed) Reboot or restart services**
-    - If the runner hangs or VM becomes unresponsive, reboot via Azure Portal and re-check service status.
-
----
-
-This sequence reflects the actual, working process used to bring the runner online, register it, and prepare it for Azure Files/Blob operations. For troubleshooting and advanced tips, see the sections below.
-
----
 
 ## Security Considerations
 

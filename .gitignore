@@ -88,3 +88,5 @@ sshkey.txt
 *_sensitive.*
 
 questionsforazureadmin.md
+OneTimeActivities/SelfHostedRunnerSetup/StartingRunnerAfterInstall.sh
+**/StartingRunnerAfterInstall.sh

@@ -1,4 +1,6 @@
 # In /.github/workflows/main.yml
+# This version REMOVES the problematic hashicorp/setup-terraform action
+# and relies on the Terraform binary already installed on the runner VM.
 name: MAIN Azure Files PoC Deploy Infrastructure
 
 permissions:
@@ -15,8 +17,6 @@ on:
         type: choice
         options:
           - dev
-          - test
-          - prod
       plan_only:
         description: 'Only run plan (no apply)'
         required: true
@@ -33,19 +33,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # This job seems to be for a different deployment strategy or environment.
-  # We are focusing on the 'terraform-dev' job for now.
-  # deploy-infrastructure:
-  #   uses: ./.github/workflows/terraform-common.yml
-  #   # ...
-
   terraform-dev:
     name: 'Terraform Deploy to Dev (using self-hosted runner)'
-    # --- CRITICAL CHANGE 1: Switched from 'ubuntu-latest' to 'self-hosted'. ---
-    # This ensures the job runs on your private runner within the VNet, which is
-    # necessary to comply with Azure policies for private resources.
     runs-on: self-hosted
-    environment: dev # Ensures correct GitHub Environment variables/secrets are used
+    environment: dev
     env:
       ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
@@ -57,10 +48,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.6.6
+      # --- REMOVED: The problematic setup-terraform step is now gone. ---
+      # - name: Set up Terraform
+      #   uses: hashicorp/setup-terraform@v3
+      #   with:
+      #     terraform_version: 1.6.6
+
+      # --- NEW: Verify the pre-installed Terraform on the runner ---
+      - name: Verify Terraform Installation
+        run: |
+          echo "Verifying Terraform version installed on the runner..."
+          terraform --version
+          echo "Terraform is available at: $(which terraform)"
 
       - name: Azure Login (OIDC)
         uses: azure/login@v2
@@ -70,118 +69,49 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           enable-AzPSSession: false
 
-      # The "Get GitHub Runner Public IP" step is NOT needed for this test.
-      # - name: Get GitHub Runner Public IP
-      #   id: ip
-      #   uses: haythem/public-ip@v1.3
-
-      - name: Display Module Content (Debug Step)
-        run: |
-          echo "--- Content of terraform/modules/storage/account/main.tf (for Trusted Services Test) ---"
-          cat terraform/modules/storage/account/main.tf
-          echo "---------------------------------------------------------------------------------------"
-
       - name: Generate terraform.tfvars for dev
         run: |
-          # Generate terraform.tfvars from GitHub secrets and variables
+          # This script block generates the tfvars file needed for the plan/apply steps.
           cat <<EOF > terraform/environments/dev/terraform.tfvars
-          # =============================================================================
-          # ENVIRONMENT AND LOCATION CONFIGURATION
-          # =============================================================================
-          environment     = "dev"
-          azure_location  = "${{ vars.AZURE_LOCATION }}"
-          #azure_subscription_id = "${{ vars.AZURE_SUBSCRIPTION_ID }}"
-          
-          # =============================================================================
-          # AZURE LANDING ZONE RESOURCES (PRE-PROVISIONED BY BC GOV)
-          # =============================================================================
-          service_principal_id = "${{ vars.SERVICE_PRINCIPAL_ID }}"
-          vnet_name             = "${{ vars.VNET_NAME }}"
-          vnet_resource_group   = "${{ vars.VNET_RESOURCE_GROUP }}"
-          vnet_address_space    = ${{ vars.VNET_ADDRESS_SPACE }}
-          vnet_dns_servers      = ${{ vars.VNET_DNS_SERVERS }}
-          vnet_id               = "${{ vars.VNET_ID }}"
-          dns_servers           = ${{ vars.DNS_SERVERS }}
-          
-          # =============================================================================
-          # PROJECT RESOURCE GROUPS (CREATED BY USER IDENTITY - NOT TERRAFORM)
-          # =============================================================================
-          resource_group        = "${{ vars.RESOURCE_GROUP }}"
-          resource_id           = "${{ vars.RESOURCE_ID }}"
-          
-          # =============================================================================
-          # TERRAFORM STATE STORAGE CONFIGURATION  
-          # =============================================================================
-          tfstate_container = "${{ vars.TFSTATE_CONTAINER }}"
-          tfstate_rg        = "${{ vars.TFSTATE_RG }}"
-          tfstate_sa        = "${{ vars.TFSTATE_SA }}"
-          
-          # =============================================================================
-          # STORAGE AND FILE SERVICES
-          # =============================================================================
-          storage_account_name = "${{ vars.STORAGE_ACCOUNT_NAME }}"
-          file_share_name      = "${{ vars.FILE_SHARE_NAME }}"
-          file_share_quota_gb  = ${{ vars.FILE_SHARE_QUOTA_GB }}
-          
-          # =============================================================================
-          # NETWORKING CONFIGURATION
-          # =============================================================================
-          network_security_group         = "${{ vars.NETWORK_SECURITY_GROUP }}"
+          # Auto-generated by GitHub Actions - DO NOT EDIT MANUALLY
+          environment                       = "dev"
+          azure_location                    = "${{ vars.AZURE_LOCATION }}"
+          service_principal_id              = "${{ vars.SERVICE_PRINCIPAL_ID }}"
+          vnet_name                         = "${{ vars.VNET_NAME }}"
+          vnet_resource_group               = "${{ vars.VNET_RESOURCE_GROUP }}"
+          vnet_address_space                = ${{ vars.VNET_ADDRESS_SPACE }}
+          vnet_dns_servers                  = ${{ vars.VNET_DNS_SERVERS }}
+          vnet_id                           = "${{ vars.VNET_ID }}"
+          dns_servers                       = ${{ vars.DNS_SERVERS }}
+          resource_group                    = "${{ vars.RESOURCE_GROUP }}"
+          resource_id                       = "${{ vars.RESOURCE_ID }}"
+          tfstate_container                 = "${{ vars.TFSTATE_CONTAINER }}"
+          tfstate_rg                        = "${{ vars.TFSTATE_RG }}"
+          tfstate_sa                        = "${{ vars.TFSTATE_SA }}"
+          storage_account_name              = "${{ vars.STORAGE_ACCOUNT_NAME }}"
+          file_share_name                   = "${{ vars.FILE_SHARE_NAME }}"
+          file_share_quota_gb               = ${{ vars.FILE_SHARE_QUOTA_GB }}
+          network_security_group            = "${{ vars.NETWORK_SECURITY_GROUP }}"
           storage_network_security_group    = "${{ vars.STORAGE_NETWORK_SECURITY_GROUP }}"
           storage_subnet_name               = "${{ vars.STORAGE_SUBNET_NAME }}"
           storage_subnet_address_prefix     = ${{ vars.STORAGE_SUBNET_ADDRESS_PREFIX }}
-          subnet_name             = "${{ vars.SUBNET_NAME }}"
-          subnet_address_prefixes = ${{ vars.SUBNET_ADDRESS_PREFIXES }}
-          #gateway_subnet_name            = "${{ vars.GATEWAY_SUBNET_NAME }}"
-          #gateway_subnet_address_prefix = ${{ vars.GATEWAY_SUBNET_ADDRESS_PREFIX }}
-          
-          # =============================================================================
-          # GITHUB RUNNER NETWORKING CONFIGURATION
-          # =============================================================================
-          runner_subnet_name = "${{ vars.RUNNER_SUBNET_NAME }}"
-          runner_vnet_address_space = ${{ vars.RUNNER_VNET_ADDRESS_SPACE }}
-          runner_network_security_group = "${{ vars.RUNNER_NETWORK_SECURITY_GROUP }}"
-
-          # =============================================================================
-          # SECURITY AND ACCESS CONFIGURATION
-          # =============================================================================
-          my_github_actions_spn_object_id = "${{ vars.MY_GITHUB_ACTIONS_SPN_OBJECT_ID }}"
-          #my_home_ip_address           = "${{ vars.MY_HOME_IP_ADDRESS }}"
-          
-          # =============================================================================
-          # RESOURCE TAGGING
-          # =============================================================================
-          common_tags = ${{ vars.COMMON_TAGS }}
+          subnet_name                       = "${{ vars.SUBNET_NAME }}"
+          subnet_address_prefixes           = ${{ vars.SUBNET_ADDRESS_PREFIXES }}
+          runner_subnet_name                = "${{ vars.RUNNER_SUBNET_NAME }}"
+          runner_vnet_address_space         = ${{ vars.RUNNER_VNET_ADDRESS_SPACE }}
+          runner_network_security_group     = "${{ vars.RUNNER_NETWORK_SECURITY_GROUP }}"
+          my_github_actions_spn_object_id   = "${{ vars.MY_GITHUB_ACTIONS_SPN_OBJECT_ID }}"
+          common_tags                       = ${{ vars.COMMON_TAGS }}
           EOF
-
-          echo "✅ Generated terraform.tfvars from GitHub secrets and variables"
-          echo "File size: $(wc -l < terraform/environments/dev/terraform.tfvars) lines"
-
-      - name: "Validate terraform.tfvars generation"
-        run: |
-          if [ ! -f terraform/environments/dev/terraform.tfvars ]; then
-            echo "❌ terraform.tfvars was not created"
-            exit 1
-          fi
-          echo "✅ Found terraform/environments/dev/terraform.tfvars"
-          echo "File size: $(wc -l < terraform/environments/dev/terraform.tfvars) lines"
-
-      - name: Display Generated terraform.tfvars (Debug Step)
-        run: |
-          echo "Content of terraform/environments/dev/terraform.tfvars (first 20 lines):"
-          head -20 terraform/environments/dev/terraform.tfvars
-          echo "..."
-          echo "Total lines: $(wc -l < terraform/environments/dev/terraform.tfvars)"
 
       - name: Terraform Init
         working-directory: terraform/environments/dev
-        run: terraform init -backend-config="resource_group_name=${{ vars.TFSTATE_RG }}" -backend-config="storage_account_name=${{ vars.TFSTATE_SA }}" -backend-config="container_name=${{ vars.TFSTATE_CONTAINER }}" -backend-config="key=dev.terraform.tfstate"
+        run: terraform init -backend-config="resource_group_name=${{ vars.TFSTATE_RG }}" -backend-config="storage_account_name=${{ vars.TFSTATE_SA }}" -backend-config="container_name=${{ vars.TFSTATE_CONTAINER }}"
 
       - name: Terraform Validate
         working-directory: terraform/environments/dev
         run: terraform validate
 
-      # MODIFIED for this test: The terraform plan command is simplified and does not pass '-var="allowed_ip_rules=[...]"'
       - name: Terraform Plan
         id: plan
         working-directory: terraform/environments/dev
