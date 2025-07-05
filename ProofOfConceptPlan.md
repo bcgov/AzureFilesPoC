@@ -1,5 +1,7 @@
-
 # Azure Files PoC Plan
+
+## ✅ Status Update (July 2025)
+- File share creation is now fully automated and unblocked in both local and CI/CD environments. All previous blockers have been resolved with the current Terraform and pipeline configuration.
 
 ## 🔍 Problem Statement
 

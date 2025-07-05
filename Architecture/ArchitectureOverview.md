@@ -36,7 +36,7 @@ This diagram illustrates the hybrid connectivity model using VPN and ExpressRout
 
 | **Component** | **Description** |
 |---------------|-----------------|
-| Azure Files (Premium Tier) | For high-performance SMB file shares (e.g., real-time playback, active evidence access). |
+| Azure Files (Premium Tier) | For high-performance SMB file shares (e.g., real-time playback, active evidence access). File share creation is now fully automated and unblocked in the PoC deployment. |
 | Azure Files (Standard Tier) | For general-purpose SMB shares with lower cost; supports manual tiering to Cool. |
 | Azure Storage Account | The foundational Azure service that **hosts** Azure Files shares and optionally Blob Storage containers. All Azure Files shares are deployed within a Storage Account. For this PoC, `StorageV2` (general-purpose v2) or `FileStorage` (for Premium) `account_kind` will be configured. |
 | Azure Blob Storage (Hot/Cool/Archive) | Used for storing large, infrequently accessed **block blobs** with lifecycle-based tiering. When files are moved from Azure Files to Blob Storage for cost optimization, they become block blobs. |

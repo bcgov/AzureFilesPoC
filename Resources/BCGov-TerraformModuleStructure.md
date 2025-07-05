@@ -35,6 +35,7 @@ Core storage components for the PoC:
 - Azure Files share creation
 - Performance tier configuration
 - Access policies
+- **Status (July 2025): File share creation is now fully automated and unblocked in all environments.**
 
 #### Blob Storage Module (`modules/storage/blob`)
 - Blob container creation

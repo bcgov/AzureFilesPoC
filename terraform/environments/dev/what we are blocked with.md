@@ -1,5 +1,15 @@
 # Project Status Summary: Azure Files Deployment via Self-Hosted Runner
 
+---
+## 🚩 Big Change Update (July 5, 2025)
+**All major roadblocks are now resolved.**
+- The pipeline can now deploy a private, policy-compliant Azure Files share and all dependencies (Storage Account, Networking, Private Endpoint, RBAC) in the BC Gov Azure environment, both locally and via CI/CD.
+- File share creation is fully automated and unblocked. No errors or policy issues remain.
+- The previous role assignment duplication issue has been fixed; only one assignment exists at the storage account level.
+- All outputs are as expected, and the infrastructure is policy-compliant.
+
+---
+
 ## 1. The Goal
 The primary objective is to deploy a **private Azure Files share** and its dependencies (Storage Account, Networking) into the BC Government Azure environment using a secure CI/CD pipeline. The infrastructure is defined in Terraform and deployed via GitHub Actions.
 
@@ -26,55 +36,39 @@ The primary objective is to deploy a **private Azure Files share** and its depen
 - **Data Plane Role Assignment & Propagation Wait (github CI/CD):**
   - Successfully assigned the "Storage File Data SMB Share Contributor" role to the service principal for the storage account and waited for propagation using a `time_sleep` resource. This enables automated file share creation in the pipeline.
   - Verified in GitHub Actions workflow with `terraform apply` that both resources were created and outputs were as expected.
+- **File Share Creation (Local & CI/CD):**
+  - The file share module is now enabled and working. No errors or policy issues remain. The previous duplicate role assignment error is resolved.
 
 > This proves a secure, policy-compliant automation path into the Azure environment exists, and that the pipeline can deploy networking, storage, and data plane permissions both locally and via CI/CD.
 
-## 3. The Current Roadblock (RESOLVED LOCALLY & IN CI/CD)
-The main Terraform deployment was previously **failing at the apply step** for the storage account due to a BC Gov policy block. This has now been resolved for both local and CI/CD runs:
+## 3. The Current Roadblock
+**None.** All previously blocking issues (policy, RBAC, file share creation) are now resolved. The deployment is fully automated and policy-compliant.
 
-- **What's Blocked (Previously):** Creation of the `azurerm_storage_account` resource.
-- **The Specific Error (Previously):**
-
-```text
-Error: creating Storage Account ... RequestDisallowedByPolicy: Resource 'stagpssgazurepocdev01' was disallowed by policy. Reasons: 'A policy is in place to prevent public IP addresses on the target Azure PaaS service(s).'.
-```
-
-- **Root Cause:**
-  - The storage account resource was missing the explicit setting for blob public access (`allow_blob_public_access = false`) and/or had a `network_rules` block, both of which triggered the policy block.
-- **Solution:**
-  - Updated the storage account module to remove the `network_rules` block and ensure `public_network_access_enabled = false` is set. For Azure Files only, `allow_blob_public_access` is not required, but should be added if blob containers are used in the future.
-
-## 4. The Troubleshooting Journey (What We Tried)
+## 4. Troubleshooting Journey (Historical)
 - **RBAC Permissions:** Confirmed the Service Principal has all necessary roles (Network Contributor, Storage Account Contributor). Not a permissions issue.
 - **Terraform Validation Errors:** Fixed provider versions, duplicate variables, incorrect arguments. Code is now syntactically correct.
 - **Platform-Managed DNS:** Removed Private DNS Zone management logic per documentation.
 - **Advanced Terraform Patterns:** Explored moving the private endpoint inside the storage account module (not required).
 - **Isolation Test:** Successfully deployed only the NSG to confirm the runner and pipeline are working for resource creation.
 - **Iterative Testing:** Repeatedly tested storage account creation with minimal settings until policy was satisfied.
+- **Role Assignment Error:** Duplicate role assignment for file share was removed; now only assigned at the storage account level.
 
-## 5. The Definitive Diagnosis (The True Root Cause)
-After re-evaluating the error and BC Gov documentation, the root cause was identified:
-
-- The original `terraform/modules/storage/account/main.tf` contained **both**:
-  - `public_network_access_enabled = false`
-  - a `network_rules { ... }` block
-- The presence of the `network_rules` block is interpreted by policy as an attempt to configure a public IP feature, which is **blocked**.
-- Additionally, the policy checks for `allowBlobPublicAccess = false` for blob storage. For Azure Files only, this is not required, but should be set if blob containers are added in the future.
-
-## 6. The Final Solution (Tested & Working Locally and in CI/CD)
+## 5. The Final Solution (Tested & Working Locally and in CI/CD)
 - **All Terraform files have been updated for policy compliance:**
   - The `storage/account` module now creates a storage account with `public_network_access_enabled = false` and **no** `network_rules` block.
   - The `dev/main.tf` file uses the standard pattern: calls the fixed `poc_storage_account` module first, then a separate `storage_private_endpoint` module.
+  - The file share module is enabled and working, with no duplicate role assignment.
 - **Result:**
-  - `terraform apply` on the self-hosted runner and in the GitHub Actions workflow both successfully created the storage account and private endpoint with no policy errors.
+  - `terraform apply` on the self-hosted runner and in the GitHub Actions workflow both successfully created the storage account, private endpoint, and file share with no policy errors.
 
 ## Next Steps
-- **Enable File Share Creation:**
-  - Uncomment and test the file share module to provision Azure Files shares.
-- **Continue Automation:**
-  - Expand automation to include monitoring, management policies, and other required resources.
-- **If issues arise in CI/CD:**
-  - Compare runner environment, permissions, and provider versions with local setup.
+- **Expand Automation:**
+  - Enable and test additional modules (blob, monitoring, management policies, etc.) as needed.
+  - Update documentation and status blocks as new resources are verified in CI/CD.
+- **Refactor/Cleanup:**
+  - Refactor code for clarity and maintainability as the project grows.
+- **Monitor for Issues:**
+  - If issues arise in CI/CD, compare runner environment, permissions, and provider versions with local setup.
 
 ---
 

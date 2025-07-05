@@ -83,7 +83,8 @@ When building Azure infrastructure with Terraform in BC Gov Landing Zones, follo
    - Create storage accounts and other PaaS resources with `public_network_access_enabled = false`.
    - Add `network_rules` to restrict access to only required subnets.
 5. **Containers, File Shares, Blobs**
-   - Once the storage account exists, create blob containers, file shares, or other child resources.
+   - Once the storage account exists, create blob containers, file shares, or other child resources. 
+   - **Update (July 2025): File share creation is now fully automated and unblocked in both local and CI/CD environments.**
 6. **Private DNS Zones and Links**
    - If using private endpoints, create private DNS zones and link them to the appropriate VNets.
 7. **Other Dependent Resources**

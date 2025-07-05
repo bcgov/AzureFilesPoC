@@ -77,6 +77,7 @@ _Last updated: July 2025_
 - Provide users with the UNC path to the Azure File Share (e.g., `\\<storageaccount>.file.core.windows.net\<sharename>`).
 - Use Entra ID credentials for authentication.
 - Test mounting from an on-prem device to confirm access.
+- **Update (July 2025): File share creation is now fully automated and unblocked in the PoC deployment.**
 - Run ping/traceroute from on-prem to Azure VMs to verify connectivity.
 
 ### 8. Monitoring & Troubleshooting
