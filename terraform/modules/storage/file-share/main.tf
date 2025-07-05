@@ -55,12 +55,6 @@ resource "azurerm_storage_share" "main" {
 }
 
 #==================================================================================
-# Assign least-privilege role to the file share resource.
-# This ensures the service principal can manage data within the share.
+# Role assignment for file share contributor is managed at the storage account level in the environment configuration.
+# Removed redundant azurerm_role_assignment resource to prevent duplicate assignment errors.
 #==================================================================================
-resource "azurerm_role_assignment" "file_share_contributor" {
-  # Use the ARM resource ID of the storage account, not the file share URL or name
-  scope                = var.storage_account_id
-  role_definition_name = "Storage File Data SMB Share Contributor"
-  principal_id         = var.service_principal_id
-}
