@@ -1,4 +1,3 @@
-# /.github/workflows/runner-infra.yml
 name: Deploy CI/CD Self-Hosted Runner Infrastructure
 
 permissions:
@@ -27,13 +26,13 @@ jobs:
   terraform-cicd:
     name: 'Terraform Deploy CI/CD Runner Infrastructure'
     runs-on: ubuntu-latest
-    environment: dev
+    ### RECOMMENDED CHANGE: Use a dedicated 'cicd' environment for better separation of secrets and rules. ###
+    environment: cicd
     env:
       ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       ARM_USE_OIDC: true
-      # Note: TF_VAR environment variables are not needed since we generate terraform.tfvars dynamically
 
     steps:
       - name: Checkout repository
@@ -52,11 +51,14 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           enable-AzPSSession: false
 
-      - name: Create terraform.tfvars from secrets and variables
+      - name: Create terraform.tfvars in the CICD environment directory
         env:
           SSH_PUBLIC_KEY: ${{ vars.ADMIN_SSH_KEY_PUBLIC }}
         run: |
-          cat > terraform/terraform.tfvars << 'EOF'
+          ### CHANGED: The output path now points directly into the 'cicd' environment directory. ###
+          TFVARS_PATH="terraform/environments/cicd/terraform.tfvars"
+          
+          cat > $TFVARS_PATH << 'EOF'
           # =============================================================================
           # ENVIRONMENT AND LOCATION CONFIGURATION
           # =============================================================================
@@ -161,28 +163,18 @@ jobs:
           EOF
           
           # Add SSH key using printf for safe handling of special characters and newlines
-          printf 'admin_ssh_key_public = "%s"\n' "$SSH_PUBLIC_KEY" >> terraform/terraform.tfvars
+          printf 'admin_ssh_key_public = "%s"\n' "$SSH_PUBLIC_KEY" >> $TFVARS_PATH
           
-          echo "✅ Generated terraform.tfvars from GitHub secrets and variables"
-          echo "File size: $(wc -l < terraform/terraform.tfvars) lines"
+          echo "✅ Generated terraform.tfvars into $TFVARS_PATH"
 
       - name: Verify terraform.tfvars exists
         run: |
-          if [ ! -f terraform/terraform.tfvars ]; then
-            echo "❌ ERROR: terraform/terraform.tfvars not found!"
-            echo "This file should have been generated from GitHub secrets and variables."
+          if [ ! -f terraform/environments/cicd/terraform.tfvars ]; then
+            echo "❌ ERROR: terraform/environments/cicd/terraform.tfvars not found!"
             exit 1
           else
-            echo "✅ Found terraform/terraform.tfvars"
-            echo "File size: $(wc -l < terraform/terraform.tfvars) lines"
+            echo "✅ Found terraform/environments/cicd/terraform.tfvars"
           fi
-
-      - name: Display terraform.tfvars content (Debug Step)
-        run: |
-          echo "Content of terraform/terraform.tfvars (first 20 lines):"
-          head -20 terraform/terraform.tfvars
-          echo "..."
-          echo "Total lines: $(wc -l < terraform/terraform.tfvars)"
 
       - name: Terraform Init
         working-directory: terraform/environments/cicd
@@ -195,7 +187,9 @@ jobs:
       - name: Terraform Plan
         id: plan
         working-directory: terraform/environments/cicd
-        run: terraform plan -var-file="../../terraform.tfvars" -out=tfplan
+        ### CHANGED: The -var-file flag is removed. ###
+        # Terraform will automatically find terraform.tfvars in the working directory.
+        run: terraform plan -out=tfplan
 
       - name: Terraform Apply
         if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && github.event.inputs.plan_only == 'false')
@@ -208,52 +202,29 @@ jobs:
           echo "🚀 Infrastructure deployment complete!"
           echo "📊 Checking VM and extension status..."
           
-          # Get VM basic info
-          echo "VM Status:"
           az vm show --resource-group ${{ vars.CICD_RESOURCE_GROUP_NAME }} \
             --name ${{ vars.RUNNER_VM_NAME }} \
             --query "{Name:name, PowerState:powerState, ProvisioningState:provisioningState}" \
             --output table
           
-          # Check extension status
           echo -e "\nExtension Status:"
           az vm extension list --resource-group ${{ vars.CICD_RESOURCE_GROUP_NAME }} \
             --vm-name ${{ vars.RUNNER_VM_NAME }} \
             --query "[].{Name:name, State:provisioningState, Publisher:publisher}" \
             --output table
-          
-          # Check VM Agent status
-          echo -e "\nVM Agent Status:"
-          az vm get-instance-view --resource-group ${{ vars.CICD_RESOURCE_GROUP_NAME }} \
-            --name ${{ vars.RUNNER_VM_NAME }} \
-            --query "instanceView.vmAgent.statuses[0].{Code:code, Status:displayStatus, Message:message}" \
-            --output table
-          
-          echo -e "\n⏳ Note: BC Gov policy-mandated extensions may take 15-30 minutes to complete installation."
-          echo "🔗 VM is accessible via Bastion once extensions reach 'Updating' state."
-          echo "📖 See TROUBLESHOOTING.md for monitoring commands and common issues."
 
       - name: Generate Connection Instructions
         if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && github.event.inputs.plan_only == 'false')
         run: |
-          echo "## 🎉 CI/CD Infrastructure Deployment Complete!"
-          echo ""
-          echo "### 📋 Next Steps:"
-          echo "1. **Monitor Extension Installation** (15-30 minutes expected):"
-          echo "   \`\`\`bash"
-          echo "   az vm extension list --resource-group ${{ vars.CICD_RESOURCE_GROUP_NAME }} --vm-name ${{ vars.RUNNER_VM_NAME }} --query \"[].{Name:name, State:provisioningState}\" --output table"
-          echo "   \`\`\`"
-          echo ""
-          echo "2. **Connect to VM via Bastion** (once extensions are in 'Updating' state):"
-          echo "   \`\`\`bash"
-          echo "   az network bastion ssh --name ${{ vars.BASTION_NAME }} --resource-group ${{ vars.CICD_RESOURCE_GROUP_NAME }} --target-resource-id \"/subscriptions/${{ vars.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ vars.CICD_RESOURCE_GROUP_NAME }}/providers/Microsoft.Compute/virtualMachines/${{ vars.RUNNER_VM_NAME }}\" --auth-type \"SSHKey\" --username ${{ vars.RUNNER_VM_ADMIN_USERNAME }} --ssh-key ~/.ssh/id_rsa"
-          echo "   \`\`\`"
-          echo ""
-          echo "3. **Setup GitHub Actions Runner** (after VM is fully ready):"
-          echo "   - Follow the GitHub Actions runner setup guide"
-          echo "   - Configure runner with repository token"
-          echo ""
-          echo "### 🔍 Troubleshooting:"
-          echo "- See \`terraform/environments/cicd/TROUBLESHOOTING.md\` for detailed diagnostic commands"
-          echo "- Extensions in 'Updating' state is normal and expected"
-          echo "- DependencyAgentLinux may fail on Ubuntu 22.04 - this is expected and can be ignored"
+          echo "## 🎉 CI/CD Infrastructure Deployment Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📋 Next Steps:" >> $GITHUB_STEP_SUMMARY
+          echo "1. **Monitor Extension Installation** (15-30 minutes expected):" >> $GITHUB_STEP_SUMMARY
+          echo '   ```bash' >> $GITHUB_STEP_SUMMARY
+          echo "   az vm extension list --resource-group ${{ vars.CICD_RESOURCE_GROUP_NAME }} --vm-name ${{ vars.RUNNER_VM_NAME }} --query \"[].{Name:name, State:provisioningState}\" --output table" >> $GITHUB_STEP_SUMMARY
+          echo '   ```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "2. **Connect to VM via Bastion** (once extensions are 'Succeeded' or 'Updating'):" >> $GITHUB_STEP_SUMMARY
+          echo '   ```bash' >> $GITHUB_STEP_SUMMARY
+          echo "   az network bastion ssh --name ${{ vars.BASTION_NAME }} --resource-group ${{ vars.CICD_RESOURCE_GROUP_NAME }} --target-resource-id \"/subscriptions/${{ vars.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ vars.CICD_RESOURCE_GROUP_NAME }}/providers/Microsoft.Compute/virtualMachines/${{ vars.RUNNER_VM_NAME }}\" --auth-type \"SSHKey\" --username ${{ vars.RUNNER_VM_ADMIN_USERNAME }} --ssh-key ~/.ssh/id_rsa" >> $GITHUB_STEP_SUMMARY
+          echo '   ```' >> $GITHUB_STEP_SUMMARY
