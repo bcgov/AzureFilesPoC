@@ -81,7 +81,7 @@ jobs:
       - name: Generate terraform.tfvars for dev
         run: |
           # Generate terraform.tfvars from GitHub secrets and variables
-          cat <<EOF > terraform/terraform.tfvars
+          cat <<EOF > terraform/environments/dev/terraform.tfvars
           # =============================================================================
           # ENVIRONMENT AND LOCATION CONFIGURATION
           # =============================================================================
@@ -145,23 +145,23 @@ jobs:
           EOF
 
           echo "✅ Generated terraform.tfvars from GitHub secrets and variables"
-          echo "File size: $(wc -l < terraform/terraform.tfvars) lines"
+          echo "File size: $(wc -l < terraform/environments/dev/terraform.tfvars) lines"
 
       - name: "Validate terraform.tfvars generation"
         run: |
-          if [ ! -f terraform/terraform.tfvars ]; then
+          if [ ! -f terraform/environments/dev/terraform.tfvars ]; then
             echo "❌ terraform.tfvars was not created"
             exit 1
           fi
-          echo "✅ Found terraform/terraform.tfvars"
-          echo "File size: $(wc -l < terraform/terraform.tfvars) lines"
+          echo "✅ Found terraform/environments/dev/terraform.tfvars"
+          echo "File size: $(wc -l < terraform/environments/dev/terraform.tfvars) lines"
 
       - name: Display Generated terraform.tfvars (Debug Step)
         run: |
-          echo "Content of terraform/terraform.tfvars (first 20 lines):"
-          head -20 terraform/terraform.tfvars
+          echo "Content of terraform/environments/dev/terraform.tfvars (first 20 lines):"
+          head -20 terraform/environments/dev/terraform.tfvars
           echo "..."
-          echo "Total lines: $(wc -l < terraform/terraform.tfvars)"
+          echo "Total lines: $(wc -l < terraform/environments/dev/terraform.tfvars)"
 
       - name: Terraform Init
         working-directory: terraform/environments/dev
@@ -175,7 +175,7 @@ jobs:
       - name: Terraform Plan
         id: plan
         working-directory: terraform/environments/dev
-        run: terraform plan -var-file=terraform.tfvars -out=tfplan
+        run: terraform plan -var-file=../../terraform.tfvars -out=tfplan
 
       - name: Terraform Apply
         if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && github.event.inputs.plan_only == 'false')
