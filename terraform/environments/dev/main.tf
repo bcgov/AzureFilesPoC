@@ -145,6 +145,19 @@ resource "time_sleep" "wait_for_role_propagation" {
   depends_on      = [azurerm_role_assignment.storage_data_contributor_for_files]
 }
 
+resource "azurerm_role_assignment" "storage_data_contributor_for_blobs" {
+  role_definition_name = "Storage Blob Data Contributor"
+  scope                = module.poc_storage_account.id
+  principal_id         = var.service_principal_id
+  depends_on           = [module.poc_storage_account]
+}
+
+resource "time_sleep" "wait_for_blob_role_propagation" {
+  create_duration = "45s"
+  triggers        = { role_assignment_id = azurerm_role_assignment.storage_data_contributor_for_blobs.id }
+  depends_on      = [azurerm_role_assignment.storage_data_contributor_for_blobs]
+}
+
 #================================================================================
 # SECTION 3: DATA PLANE RESOURCES (DISABLED FOR TEST)
 #================================================================================
@@ -178,6 +191,7 @@ module "poc_file_share" {
 #   container_name          = var.blob_container_name
 #   container_access_type   = "private"
 #   service_principal_id    = var.service_principal_id
+#   depends_on              = [time_sleep.wait_for_blob_role_propagation]
 # }
 
 # --------------------------------------------------------------------------------
