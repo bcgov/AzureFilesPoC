@@ -5,9 +5,10 @@ variable "file_share_name" {
   description = "The name of the file share to create."
 }
 
-variable "storage_account_name" {
+# --- FIX: Changed from 'storage_account_name' to 'storage_account_id' ---
+variable "storage_account_id" {
   type        = string
-  description = "The name of the existing storage account where the share will be created."
+  description = "The resource ID of the existing storage account where the share will be created."
 }
 
 variable "quota_gb" {
@@ -24,7 +25,7 @@ variable "enabled_protocol" {
 variable "access_tier" {
   type        = string
   description = "The access tier of the file share. Can be 'Hot', 'Cool', 'TransactionOptimized', or 'Premium'."
-  default     = "Hot" 
+  default     = "Hot"
 }
 
 variable "metadata" {

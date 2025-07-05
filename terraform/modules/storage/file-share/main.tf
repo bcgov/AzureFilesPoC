@@ -1,5 +1,15 @@
 # terraform/modules/storage/file-share/main.tf
 
+# This block is a best practice for modules to declare their provider requirements.
+terraform {
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = ">= 3.0"
+    }
+  }
+}
+
 # --------------------------------------------------------------------------------
 # NOTE: Role, RBAC, and ACL Requirements for File Share
 #
@@ -15,9 +25,10 @@
 # - Assign RBAC roles to Entra (Azure AD) users/groups at the storage account level and set NTFS ACLs for granular access control.
 # --------------------------------------------------------------------------------
 resource "azurerm_storage_share" "main" {
-  name                 = var.file_share_name
-  storage_account_name = var.storage_account_name
-  quota                = var.quota_gb
+  name = var.file_share_name
+  # FIX: Changed to use the storage account's resource ID to resolve the deprecation warning.
+  storage_account_id = var.storage_account_id
+  quota              = var.quota_gb
 
   # Corresponds to properties.enabledProtocols in an Azure export
   enabled_protocol = var.enabled_protocol
