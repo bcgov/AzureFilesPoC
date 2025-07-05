@@ -1,42 +1,13 @@
 # --- terraform/environments/dev/main.tf ---
-#
-# This file composes reusable modules using a consistent set of variables
-# to build the 'dev' environment for Azure Files PoC.
-#
-# UPDATED: Applied lessons learned from cicd/main.tf for BC Gov policy compliance
-# 
-# KEY CHANGES APPLIED:
-# 1. Added AzAPI provider for policy-compliant subnet creation
-# 2. Created storage/nsg module that combines NSG and subnet creation
-# 3. Uses data sources to reference existing VNet instead of creating new one
-# 4. Added proper dependency management to prevent "AnotherOperationInProgress" errors
-# 5. Updated bastion configuration to use the same pattern as cicd environment
-# 6. Consistent variable naming aligned with working cicd pattern
-#
-# PATTERN: NSG → Subnet+NSG (via AzAPI) → Resources that use the subnet
-# This ensures BC Gov policy compliance and prevents Azure API conflicts.
 
 terraform {
   required_version = ">= 1.6.6"
-
   required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "~> 3.0"
-    }
-    azapi = {
-      source  = "azure/azapi"
-      version = "~> 1.0"
-    }
-    time = {
-      source  = "hashicorp/time"
-      version = ">= 0.9.1"
-    }
+    azurerm = { source = "hashicorp/azurerm", version = "~> 3.0" }
+    azapi   = { source = "azure/azapi", version = "~> 1.0" }
+    time    = { source = "hashicorp/time", version = ">= 0.9.1" }
   }
-
-  backend "azurerm" {
-    key = "dev.terraform.tfstate"
-  }
+  backend "azurerm" { key = "dev.terraform.tfstate" }
 }
 
 provider "azurerm" {
@@ -45,114 +16,20 @@ provider "azurerm" {
 
 provider "azapi" {
   # AzAPI provider for BC Gov policy-compliant resources
-  # Used for creating subnets with NSG association in a single operation
 }
 
-# ================================================================================
-# Azure Infrastructure as Code (IaC) Best Practices for BC Gov Policy Compliance
-# -------------------------------------------------------------------------------
-# UPDATED APPROACH: Policy-Compliant Networking with AzAPI
-# -------------------------------------------------------------------------------
-# This version uses the lessons learned from the CICD environment to implement
-# BC Gov Azure Policy compliant networking using AzAPI for subnet creation.
-# 
-# KEY CHANGES FROM ORIGINAL VERSION:
-# 1. Added AzAPI provider for policy-compliant subnet creation
-# 2. NSG and subnet creation combined in single modules (modules/storage/nsg)
-# 3. Proper dependency management to avoid "AnotherOperationInProgress" errors
-# 4. Reference existing VNet instead of creating new one
-# 5. Consistent variable naming aligned with working CICD pattern
-# -------------------------------------------------------------------------------
-# RESOURCE CREATION SEQUENCING (UPDATED)
-# -------------------------------------------------------------------------------
-# 1. Resource Group (pre-existing, referenced via data source)
-# 2. Core Infrastructure:
-#    - 2.1 NSG + Subnet Creation (combined, using AzAPI for policy compliance)
-#    - 2.2 Private Endpoints (optional, after subnet creation)
-#    - 2.3 Private DNS Zones (optional, after private endpoints)
-#    - 2.4 Storage Account (after networking if using private endpoints)
-# 3. Data Plane Resources:
-#    - 3.1 File Share (after storage account + role assignment delay)
-#    - 3.2 Blob Container (optional, after storage account)
-#    - 3.3 Management Policy (optional, after storage account)
-# 4. Monitoring, Automation, File Sync (optional, after core resources)
-# -------------------------------------------------------------------------------
-# BC Gov Policy Compliance:
-# - Subnets MUST have NSG association at creation time
-# - Use AzAPI to create subnet with NSG in single operation
-# - Proper sequencing prevents Azure API "AnotherOperationInProgress" errors
-# - Reference existing VNet from central landing zone
-# ===============================================================================
-
 #================================================================================
-# DEPLOYMENT SUMMARY - CURRENT STATE
-#================================================================================
-# Resources that will be created when this script is executed:
-# 1. Resource Group (pre-existing, referenced via data source)
-# 2. VNet Reference (pre-existing, referenced via data source)
-# 3. Storage NSG + Subnet (policy-compliant creation using AzAPI)
-# 4. Storage Account (enabled - confirmed working)
-# 5. Role Assignment + Delay (for service principal data plane access)
-# 6. File Share (commented out - enable after storage account is working)
-# 
-# Optional resources (commented out):
-# - Private Endpoints (for secure access to storage)
-# - Private DNS Zones (for name resolution)
-# - Blob Container (for blob storage)
-# - Management Policy (for lifecycle management)
-# - Monitoring, Automation, File Sync
+# SECTION 1: DATA SOURCES
 #================================================================================
 
-#================================================================================
-# SECTION 1: CORE RESOURCE GROUP
-#================================================================================
-# Resource groups are pre-created by the BC Gov landing zone/central IT. 
-# Service principals and Terraform are NOT authorized to create resource groups.
-# Reference the pre-created resource group by name (var.resource_group) in all modules.
-# Look up the pre-existing resource group using a data source.
-# This READS data instead of trying to CREATE (write) the resource.
-# Policy seems to prevent creating resource groups with terraform and
-# pipeline using an azure script using service principal IDENTITY
-# options: 
-# 1. create resource group in azure portal 
-# 2. create resource group using azure CLI using script
-#    e.g. OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/unix/step6_create_resource_group.sh
-# role assignments for subscription and or resource group required
-# --------------------------------------------------------------------------------
-# REQUIRED ROLE ASSIGNMENTS FOR THIS SCRIPT TO WORK:
-#
-# Subscription Level (assigned by step2_grant_permissions.sh):
-#   - Reader
-#   - Storage Account Contributor
-#   - [BCGOV-MANAGED-LZ-LIVE] Network-Subnet-Contributor
-#   - Private DNS Zone Contributor
-#   - Monitoring Contributor
-#   (Assign only those truly needed at subscription scope for least privilege.)
-#
-# Resource Group Level (assigned by step6_create_resource_group.sh):
-#   - Storage Account Contributor
-#   - <project-name>-dev-role-assignment-writer (custom role)
-#
-# These assignments are required for the service principal to deploy and manage
-# resources in this environment. See onboarding scripts for details.
-# --------------------------------------------------------------------------------
-#ASSUMPTION:  This terraform script assumes the resource group exists
 data "azurerm_resource_group" "main" {
   name = var.resource_group
 }
 
-# ===============================================================================
-# SECTION 1.1: EXISTING VNET REFERENCE
-# ===============================================================================
-# Reference the existing VNet that was created by the central team
-# This VNet is used for hosting the development environment resources
-# -------------------------------------------------------------------------------
 data "azurerm_virtual_network" "spoke_vnet" {
   name                = var.vnet_name
   resource_group_name = var.vnet_resource_group
 }
-
-# Lookup the runner subnet by name in the existing VNet
 
 data "azurerm_subnet" "runner" {
   name                 = var.runner_subnet_name
@@ -163,22 +40,7 @@ data "azurerm_subnet" "runner" {
 #================================================================================
 # SECTION 2: CORE INFRASTRUCTURE (NETWORKING & STORAGE)
 #================================================================================
-# 2.1 Network Security Groups (NSGs) and Subnets
-# 2.2 Private Endpoints (Optional)
-# 2.3 Private DNS Zones & Links (Optional)
-# 2.4 Storage Account
 
-# ===============================================================================
-# SECTION 2.1: NETWORK SECURITY GROUPS (NSG) AND SUBNETS
-# -------------------------------------------------------------------------------
-# BC Gov Policy Requirement: Subnets must have NSG association at creation time
-# Solution: Use AzAPI to create subnet with NSG association in a single operation
-# 
-# Pattern: NSG → Subnet+NSG (via AzAPI) → Resources that use the subnet
-# This prevents the "AnotherOperationInProgress" error and ensures policy compliance
-# -------------------------------------------------------------------------------
-
-# 2.1.1 Storage Subnet NSG - Creates both NSG and subnet with association
 module "storage_nsg" {
   source              = "../../modules/storage/nsg"
   resource_group_name = data.azurerm_resource_group.main.name
@@ -190,75 +52,6 @@ module "storage_nsg" {
   subnet_name         = var.storage_subnet_name
 }
 
-# ===============================================================================
-# SECTION 2.2: PRIVATE ENDPOINTS (OPTIONAL)
-# -------------------------------------------------------------------------------
-# Private endpoints connect Azure services to the VNet privately
-# This allows secure access to storage accounts without exposing them to the internet
-# -------------------------------------------------------------------------------
-# module "storage_private_endpoint" {
-#   source = "../../modules/networking/private-endpoint"
-#   name                         = "pe-${module.poc_storage_account.name}"
-#   resource_group_name          = data.azurerm_resource_group.main.name
-#   location                     = var.azure_location
-#   subnet_id                    = module.storage_nsg.storage_subnet_id
-#   private_connection_resource_id = module.poc_storage_account.id
-#   subresource_names            = ["file", "blob"]
-#   tags                         = var.common_tags
-#   service_principal_id         = var.service_principal_id
-# }
-
-# ===============================================================================
-# SECTION 2.3: PRIVATE DNS ZONES & LINKS (OPTIONAL)
-# -------------------------------------------------------------------------------
-# Private DNS zones provide name resolution for private endpoints
-# -------------------------------------------------------------------------------
-# module "private_dns_zone" {
-#   source = "../../modules/networking/private-dns"
-#   dns_zone_name         = var.private_dns_zone_name
-#   resource_group_name   = data.azurerm_resource_group.main.name
-#   vnet_link_name        = var.private_dns_vnet_link_name
-#   virtual_network_id    = data.azurerm_virtual_network.spoke_vnet.id
-#   registration_enabled  = false
-#   tags                  = var.common_tags
-#   service_principal_id  = var.service_principal_id
-# }
-
-# ===============================================================================
-# SECTION 2.4: STORAGE ACCOUNT
-# -------------------------------------------------------------------------------
-# NOTE: Assign RBAC roles (e.g., "Storage File Data SMB Share Contributor") at the STORAGE ACCOUNT LEVEL for all users/groups that need access to file shares. This is the Microsoft recommended best practice for Azure Files RBAC.
-# Documentation: Role Assignments Created by This Module
-# PRECONDITIONS FOR CREATING THE STORAGE ACCOUNT:
-# 1. The resource group must already exist (see Section 1 for details).
-# 2. The service principal (or user) running Terraform must have the following role assignments:
-#
-#    Subscription Level (typically assigned by onboarding scripts, e.g., step2_grant_permissions.sh):
-#      - Reader
-#      - Storage Account Contributor
-#      - [BCGOV-MANAGED-LZ-LIVE] Network-Subnet-Contributor (if using private endpoints)
-#      - Private DNS Zone Contributor (if using private DNS)
-#      - Monitoring Contributor (if enabling monitoring/diagnostics)
-#      (Assign only those truly needed at subscription scope for least privilege.)
-#
-#    Resource Group Level (typically assigned by step6_create_resource_group.sh):
-#      - Storage Account Contributor
-#      - <project-name>-dev-role-assignment-writer (custom role, if required)
-#
-# 3. The storage account name must be globally unique and conform to Azure naming rules.
-# 4. Any required networking resources (e.g., VNet, subnets, NSGs) must exist if using advanced networking features.
-# 5. If using private endpoints, ensure the subnet and necessary permissions are in place.
-# 6. Tags, location, and other variables must be set appropriately in the environment or variable files.
-# --------------------------------------------------------------------------------
-# OUTPUTS:
-#     This module provisions the storage account and, if enabled, assigns the following roles:
-#     Storage Blob Data Contributor
-#     Storage File Data SMB Share Contributor
-#     Storage File Data Privileged Contributor
-#     Storage Blob Data Owner
-# NOTE: This module call assumes that the underlying module definition in 
-# `modules/storage/account/main.tf` has been temporarily set to allow public
-# network access for this pipeline run to succeed.
 module "poc_storage_account" {
   source = "../../modules/storage/account"
 
@@ -270,38 +63,57 @@ module "poc_storage_account" {
   service_principal_id = var.service_principal_id
   runner_subnet_id     = data.azurerm_subnet.runner.id
 
-  # NOTE: The storage account module should be configured to allow public access
-  # for this initial deployment step, otherwise the GitHub runner will be blocked
-  # by the firewall. This can be hardened in a subsequent step.
+  depends_on = [
+    module.storage_nsg
+  ]
 }
+
+module "storage_private_endpoint" {
+  source = "../../modules/networking/private-endpoint"
+
+  private_endpoint_name           = "pe-${var.storage_account_name}"
+  location                        = var.azure_location
+  resource_group                  = data.azurerm_resource_group.main.name
+  private_endpoint_subnet_id      = module.storage_nsg.storage_subnet_id
+  private_service_connection_name = "conn-to-${var.storage_account_name}"
+  private_connection_resource_id  = module.poc_storage_account.id
+  subresource_names               = ["file"]
+  common_tags                     = var.common_tags
+  service_principal_id            = var.service_principal_id
+}
+
+#================================================================================
+# SECTION 2.4: PRIVATE DNS ZONE (REMOVED)
+#================================================================================
+# The 'private_dns_zone' module has been completely removed from this configuration.
+# This is to align with the BC Government Azure Landing Zone documentation, which
+# states that Private DNS is a centralized, platform-managed service.
+#
+# The platform will automatically detect the new Private Endpoint and create the
+# necessary DNS A-record in the appropriate centralized zone (e.g.,
+# 'privatelink.file.core.windows.net') within approximately 10 minutes.
+#
+# Specifically, the documentation notes: "Attaching your custom Private DNS
+# Zone to your Virtual Network (VNet) will not work, as all DNS queries are
+# routed through the central Private DNS Resolver."
+#
+# Therefore, Terraform must not attempt to create or manage any Private DNS Zone
+# resources for this service. The 'private-endpoint' module already contains the
+# required 'lifecycle { ignore_changes }' block to prevent conflicts with this
+# platform automation.
+#================================================================================
+
 #================================================================================
 # SECTION 2.4.1: DATA PLANE ROLE ASSIGNMENT AND DELAY
 #================================================================================
-# This section assigns the necessary DATA PLANE role to the service principal
-# to allow it to create resources INSIDE the storage account (e.g., file shares).
-# A time_sleep resource is used to pause execution, ensuring the role assignment
-# has propagated through Azure's identity system before proceeding. This is the
-# solution to the "race condition" where Terraform tries to create the file share
-# before the required permissions are active.
-#--------------------------------------------------------------------------------
-
 resource "azurerm_role_assignment" "storage_data_contributor_for_files" {
-  # This role allows creating, deleting, and managing Azure file shares.
   role_definition_name = "Storage File Data SMB Share Contributor"
-
-  # The scope is the specific storage account we just created.
-  scope = module.poc_storage_account.id
-
-  # The principal is the Service Principal running this pipeline.
-  principal_id = var.service_principal_id
+  scope                = module.poc_storage_account.id
+  principal_id         = var.service_principal_id
 }
 
-# This resource creates an explicit dependency and forces a pause.
-# It waits for the role assignment above to complete, then sleeps for 45s.
 resource "time_sleep" "wait_for_role_propagation" {
   create_duration = "45s"
-
-  # This trigger ensures the sleep only starts after the role assignment is submitted.
   triggers = {
     role_assignment_id = azurerm_role_assignment.storage_data_contributor_for_files.id
   }
@@ -310,62 +122,17 @@ resource "time_sleep" "wait_for_role_propagation" {
 #================================================================================
 # SECTION 3: DATA PLANE RESOURCES
 #================================================================================
-# 3.1 File Share
-# 3.2 (Optional) Blob Container
-# 3.3 (Optional) Storage Management Policy
-
-# --------------------------------------------------------------------------------
-# 3.1 File Share
-# --------------------------------------------------------------------------------
-# PRECONDITIONS FOR CREATING THE FILE SHARE:
-# 1. The storage account must already exist and be accessible (see Section 2.9).
-# 2. The service principal (or user) running Terraform must have the following role assignments:
-#    - Storage File Data SMB Share Contributor (at the storage account level)
-#      (Required for creating, deleting, and managing Azure file shares and granting SMB access.)
-#    - Storage File Data SMB Share Elevated Contributor (optional, at the storage account level)
-#      (Required only if you need to manage NTFS ACLs/ownership via Azure.)
-#    - Any additional roles required for advanced features (e.g., Private Endpoint Contributor, if using private endpoints).
-# 3. If using ACLs, Azure AD authentication must be enabled on the storage account and 'enabledOnboardedWindowsACL' set to true.
-# 4. The file share name must conform to Azure naming rules and be unique within the storage account.
-# 5. All required variables (e.g., storage account name, file share name, quota) must be set in the environment or variable files.
-# --------------------------------------------------------------------------------
-# OUTPUTS:
-#     This module provisions the Azure file share and, if enabled, may assign the following roles:
-#     - Storage File Data SMB Share Contributor (at the storage account level)
-#     - Storage File Data SMB Share Elevated Contributor (optional, at the storage account level)
-#     - (No additional roles are assigned unless explicitly configured in the module.)
-#     - Outputs include the file share name, storage account name, and resource IDs for downstream modules.
-# --------------------------------------------------------------------------------
-# NOTE: Role, RBAC, and ACL Requirements for File Share
-#
-# - The service principal or user creating/managing the file share must have:
-#   * Azure RBAC: "Storage File Data SMB Share Contributor" (or higher) assigned at the STORAGE ACCOUNT LEVEL (recommended by Microsoft).
-#   * ACLs: If granular access is required, ensure NTFS ACLs are set on the file share after creation.
-# - RBAC controls management plane (create/delete/configure) and grants mount/access rights.
-# - ACLs (NTFS/Windows permissions) control data plane (read/write/list within the share).
-# - Both RBAC and ACLs are required for full access:
-#     - RBAC allows mounting and basic access to the share.
-#     - ACLs enforce per-file and per-folder permissions (preserved if migrated with tools like robocopy/AzCopy).
-# - To use ACLs, set enabledOnboardedWindowsACL = true on the file share and enable Azure AD authentication on the storage account.
-# - Assign RBAC roles to Entra (Azure AD) users/groups at the storage account level and set NTFS ACLs for granular access control.
-# --------------------------------------------------------------------------------
 module "poc_file_share" {
   source = "../../modules/storage/file-share"
 
-  # This `depends_on` block is CRITICAL. It tells Terraform to not even start
-  # creating the file share until the `time_sleep` resource is finished.
-  # This solves the permissions race condition.
   depends_on = [
     time_sleep.wait_for_role_propagation
   ]
 
-  # Required
   file_share_name      = var.file_share_name
   storage_account_name = module.poc_storage_account.name
   quota_gb             = 10
   service_principal_id = var.service_principal_id
-
-  # Optional (file share–level only)
   enabled_protocol     = "SMB"
   access_tier          = "Hot"
   metadata = {
@@ -376,9 +143,9 @@ module "poc_file_share" {
     billing_group  = var.common_tags["billing_group"]
     ministry_name  = var.common_tags["ministry_name"]
   }
-  # acls = [...] # Only if you want to set custom ACLs
 }
 
+# --- All optional modules at the end remain the same ---
 # --------------------------------------------------------------------------------
 # 3.2 (Optional) Blob Container
 # --------------------------------------------------------------------------------
@@ -445,4 +212,3 @@ module "poc_file_share" {
 #   service_principal_id    = var.service_principal_id
 #   # Add other required arguments for runbooks, etc.
 # }
-

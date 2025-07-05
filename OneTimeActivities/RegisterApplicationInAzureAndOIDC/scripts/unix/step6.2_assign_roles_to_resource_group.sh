@@ -24,7 +24,10 @@
 # Resource Group: rg-<project-name>-<environment>
 #   - <project-name>-ServicePrincipal (<service-principal-object-id>):
 #       * Storage Account Contributor
+#       * Network Contributor
 #       * [<team-name>-<project-name>-MANAGED]-<environment>-role-assignment-writer
+#   - <github-actions-spn-name> (<github-actions-spn-object-id>):
+#       * Network Contributor   # <-- Added for GitHub Actions SPN to allow NSG/subnet management
 #
 # Resource Group: rg-<project-name>-tfstate-<environment>
 #   - No direct role assignments (inherits subscription-level permissions)
@@ -58,48 +61,37 @@ show_resource_group_role_assignments() {
     local title="$1"
     local assignee="$2"
     local subscription_id="$3"
+    local rg_name="$4"
     
     echo "========== $title =========="
     echo "Resource Group | Role Name"
     echo "-------------- | ---------"
-    
-    # List all target resource groups (updated 2025-07-03)
-    local resource_groups=(
-        "rg-<project-name>-<environment>"
-        "rg-<project-name>-tfstate-<environment>"
-        "rg-<project-name>-<environment>-tools"
-        "<ministry-code>-<environment>-networking"
-    )
-    
-    for rg in "${resource_groups[@]}"; do
-        local scope="/subscriptions/$subscription_id/resourceGroups/$rg"
-        
-        # Check if resource group exists first
-        if ! az group show --name "$rg" &>/dev/null; then
-            echo "$rg | (Resource group not found)"
-            continue
-        fi
-        
-        # Get role assignments for this assignee at this resource group scope
-        local roles=$(az role assignment list --assignee "$assignee" --scope "$scope" --query "[].roleDefinitionName" -o tsv 2>/dev/null | sort || echo "")
-        
-        if [[ -z "$roles" ]]; then
-            echo "$rg | (No role assignments)"
-        else
-            # Print each role on a separate line
-            local first=true
-            while IFS= read -r role; do
-                if [[ -n "$role" ]]; then
-                    if $first; then
-                        echo "$rg | $role"
-                        first=false
-                    else
-                        echo "$(printf "%*s" ${#rg} "") | $role"
-                    fi
+
+    local scope="/subscriptions/$subscription_id/resourceGroups/$rg_name"
+    # Check if resource group exists first
+    if ! az group show --name "$rg_name" &>/dev/null; then
+        echo "$rg_name | (Resource group not found)"
+        echo ""
+        return
+    fi
+    # Get role assignments for this assignee at this resource group scope
+    local roles=$(az role assignment list --assignee "$assignee" --scope "$scope" --query "[].roleDefinitionName" -o tsv 2>/dev/null | sort || echo "")
+    if [[ -z "$roles" ]]; then
+        echo "$rg_name | (No role assignments)"
+    else
+        # Print each role on a separate line
+        local first=true
+        while IFS= read -r role; do
+            if [[ -n "$role" ]]; then
+                if $first; then
+                    echo "$rg_name | $role"
+                    first=false
+                else
+                    echo "$(printf "%*s" ${#rg_name} "") | $role"
                 fi
-            done <<< "$roles"
-        fi
-    done
+            fi
+        done <<< "$roles"
+    fi
     echo ""
 }
 
@@ -126,6 +118,43 @@ while [[ $# -gt 0 ]]; do
   esac
  done
 
+# --- PLACEHOLDER CHECK ---
+# Prevent accidental assignments to template or placeholder service principals
+TEMPLATE_IDS=(
+  "<project-name>-ServicePrincipal"
+  "<service-principal-object-id>"
+  "<my_github_actions_spn_object_id>"
+)
+for template in "${TEMPLATE_IDS[@]}"; do
+  if [[ "$ASSIGNEE" == "$template" ]]; then
+    echo "ERROR: Refusing to assign roles to template or placeholder service principal: $ASSIGNEE"
+    echo "Please provide a real service principal object ID."
+    exit 1
+  fi
+  # Also block if the assignee contains angle brackets (placeholder pattern)
+  if [[ "$ASSIGNEE" == *'<'* ]] || [[ "$ASSIGNEE" == *'>'* ]]; then
+    echo "ERROR: Refusing to assign roles to a placeholder value: $ASSIGNEE"
+    echo "Please provide a real service principal object ID."
+    exit 1
+  fi
+  # Block if the assignee is empty
+  if [[ -z "$ASSIGNEE" ]]; then
+    echo "ERROR: --assignee is required and cannot be empty."
+    exit 1
+  fi
+  # Block if the assignee is a UUID of all zeros (common test value)
+  if [[ "$ASSIGNEE" == "00000000-0000-0000-0000-000000000000" ]]; then
+    echo "ERROR: Refusing to assign roles to a zero UUID."
+    exit 1
+  fi
+  # Block if the assignee is not a valid UUID (basic check)
+  if ! [[ "$ASSIGNEE" =~ ^[0-9a-fA-F-]{36}$ ]]; then
+    echo "ERROR: --assignee does not appear to be a valid object ID: $ASSIGNEE"
+    exit 1
+  fi
+  break
+done
+
 if [[ -z "$RG_NAME" || -z "$ASSIGNEE" || ${#ROLES[@]} -eq 0 ]]; then
   echo "Error: --rgname, --assignee, and at least one --role are required."
   exit 1
@@ -138,7 +167,7 @@ fi
 SCOPE="/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RG_NAME"
 
 # --- SHOW ROLE ASSIGNMENTS BEFORE CHANGES ---
-show_resource_group_role_assignments "Role Assignments BEFORE Changes" "$ASSIGNEE" "$SUBSCRIPTION_ID"
+show_resource_group_role_assignments "Role Assignments BEFORE Changes" "$ASSIGNEE" "$SUBSCRIPTION_ID" "$RG_NAME"
 
 for ROLE in "${ROLES[@]}"; do
   echo "Assigning role '$ROLE' to $ASSIGNEE at $SCOPE..."
@@ -148,7 +177,7 @@ for ROLE in "${ROLES[@]}"; do
 echo "✅ Roles assigned to $ASSIGNEE at $RG_NAME."
 
 # --- SHOW ROLE ASSIGNMENTS AFTER CHANGES ---
-show_resource_group_role_assignments "Role Assignments AFTER Changes" "$ASSIGNEE" "$SUBSCRIPTION_ID"
+show_resource_group_role_assignments "Role Assignments AFTER Changes" "$ASSIGNEE" "$SUBSCRIPTION_ID" "$RG_NAME"
 
 # --- UPDATE FULL INVENTORY JSON ---
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../../" && pwd)"

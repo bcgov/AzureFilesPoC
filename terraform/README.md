@@ -508,3 +508,36 @@ sequenceDiagram
 >   ```
 > - Replace placeholders with actual values from your Azure environment.
 > - Ensure the GitHub Actions runner's identity is used in place of `<runner-identity>`.
+
+---
+
+## Private DNS and Private Endpoints in the Dev Environment
+
+> **Important:** As of July 2025, DNS modules and direct DNS resource creation have been removed from the development environment for policy compliance and to align with BC Gov Azure Landing Zone best practices.
+
+### How Private DNS is Handled
+- **Centralized Management:** The Azure Landing Zone centrally manages Private DNS Zones for all supported PaaS services. You do not create or manage Private DNS Zones directly in your environment.
+- **Private Endpoint Integration:** When you create a Private Endpoint for a resource (e.g., Storage Account), Azure Policy and automation will automatically associate the endpoint with the correct central Private DNS Zone and create the required DNS records.
+- **No Custom DNS Zones:** You are prevented from creating your own Private DNS Zones for supported services. For third-party or unsupported services, contact the platform team for guidance.
+- **No DNS Modules in dev/main.tf:** All DNS-related modules and resources have been removed from `environments/dev/main.tf`. Networking and private endpoint modules remain, but DNS is handled by the platform.
+
+### What You Need to Do
+- **Do NOT add DNS modules or resources** to your Terraform code for supported Azure services.
+- **Always select 'No' for 'Integrate with private DNS zone'** when creating Private Endpoints via the portal (the platform will handle DNS integration automatically).
+- **For custom DNS needs,** submit a support request to the Public Cloud team.
+- **For more details,** see [BCGov-PrivateDNSandEndpoints.md](../Resources/BCGov-PrivateDNSandEndpoints.md).
+
+### Example: Storage Account with Private Endpoint
+- Reference the existing subnet and network resources.
+- Do not attempt to create or link a Private DNS Zone.
+- The DNS record will be created automatically by policy after the Private Endpoint is provisioned.
+
+---
+
+## Recent Changes to dev/main.tf
+- **Removed:** All DNS modules and direct DNS resource creation.
+- **Retained:** Networking, subnet, NSG, and private endpoint modules.
+- **Updated:** Storage account and private endpoint configuration to rely on platform-managed DNS.
+- **Rationale:** Aligns with BC Gov policy, reduces risk of non-compliance, and simplifies environment setup.
+
+---

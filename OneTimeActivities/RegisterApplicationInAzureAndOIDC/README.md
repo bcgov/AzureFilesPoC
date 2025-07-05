@@ -593,5 +593,6 @@ Role assignment is now fully automated through the onboarding scripts:
 
 - **Custom Role Creation**: `step6.1_CreateCustomRole.sh` handles creation and updates of custom roles
 - **Role Assignment**: `step6.2_assign_roles_to_resource_group.sh` assigns all necessary roles to the service principal
+- **Network Contributor Assignment**: The script now also assigns the `Network Contributor` role to both the main service principal (`<main-service-principal-object-id>`) and the GitHub Actions SPN (`<github-actions-spn-object-id>`) for the main resource group (`<main-resource-group-name>`). This is required for NSG and subnet management by Terraform and aligns with BC Gov policy compliance.
 
 These scripts provide before/after comparisons and handle all the complex role assignment logic automatically. Manual role assignment commands are no longer required.

@@ -1,8 +1,17 @@
-# Creates a Private Endpoint for a resource.
+# In /modules/networking/private-endpoint/main.tf
+terraform {
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = ">= 3.0"
+    }
+  }
+}
 
 resource "azurerm_private_endpoint" "main" {
   name                = var.private_endpoint_name
-  location            = var.azure_location
+  # --- FIX: Changed var.azure_location to var.location to match the module's variables.tf ---
+  location            = var.location
   resource_group_name = var.resource_group
   subnet_id           = var.private_endpoint_subnet_id
   tags                = var.common_tags

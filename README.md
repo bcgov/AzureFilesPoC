@@ -46,11 +46,16 @@ The BC Government is exploring Azure Files as a solution to address several chal
 
 ### Resources and Best Practices
 -   **[Resources/](Resources/)**:
-    -   **[TerraformResourcesForAzurePoC.md](Resources/TerraformResourcesForAzurePoC.md)**: BC Government-specific Terraform guidance.
-    -   **[TerraformWithGithubActionsProcess.md](Resources/TerraformWithGithubActionsProcess.md)**: Detailed workflow implementation guide.
-    -   **[GitHubActionsResourcesForAzureFilesPoC.md](Resources/GitHubActionsResourcesForAzureFilesPoC.md)**: GitHub Actions setup and OIDC authentication.
-    -   **[AzurePipelinesResources.md](Resources/AzurePipelinesResources.md)**: Azure Pipelines integration guide (if applicable, consider if still relevant for GitHub Actions focus).
-    -   **[TerraformModuleStructure.md](Resources/TerraformModuleStructure.md)**: Module design and BC Gov requirements.
+    -   **[AzureLandingZone_Guardrails_Summary.md](Resources/AzureLandingZone_Guardrails_Summary.md)**: Summary of BC Gov Azure Landing Zone guardrails and compliance policies.
+    -   **[BCGov-IaC_CICD_BestPractices_Summary.md](Resources/BCGov-IaC_CICD_BestPractices_Summary.md)**: Infrastructure-as-Code and CI/CD best practices for BC Gov Azure.
+    -   **[BCGov-PrivateDNSandEndpoints.md](Resources/BCGov-PrivateDNSandEndpoints.md)**: Private DNS and Private Endpoint integration guidance.
+    -   **[BcGov-AzurePolicyTerraformNotes.md](Resources/BcGov-AzurePolicyTerraformNotes.md)**: Policy compliance notes and Terraform workarounds.
+    -   **[BCGov-TerraformResourcesForAzurePoC.md](Resources/BCGov-TerraformResourcesForAzurePoC.md)**: BC Government-specific Terraform guidance.
+    -   **[BCGov-TerraformWithGithubActionsProcess.md](Resources/BCGov-TerraformWithGithubActionsProcess.md)**: Detailed workflow implementation guide.
+    -   **[BCGov-GitHubActionsResourcesForAzureFilesPoC.md](Resources/BCGov-GitHubActionsResourcesForAzureFilesPoC.md)**: GitHub Actions setup and OIDC authentication.
+    -   **[BCGov-AzurePipelinesResources.md](Resources/BCGov-AzurePipelinesResources.md)**: Azure Pipelines integration guide (if applicable).
+    -   **[BCGov-TerraformModuleStructure.md](Resources/BCGov-TerraformModuleStructure.md)**: Module design and BC Gov requirements.
+    -   **[AzureResourceNamingConventions.md](Resources/AzureResourceNamingConventions.md)**: Naming conventions for Azure resources.
 
 ### Architecture Diagrams
 -   **[azure files express route.drawio](azure%20files%20express%20route.drawio)**: Source diagram (draw.io).
@@ -252,3 +257,7 @@ The **self-hosted GitHub Actions runner VM** is deployed **inside the private Az
 > **For complete setup instructions**, see [`terraform/environments/cicd/README.md`](terraform/environments/cicd/README.md)
 
 ---
+
+## Note on DNS in the Dev Environment
+
+> **Update:** DNS resources and modules have been removed from the development environment for policy compliance and simplification. For technical details and rationale, see the [terraform/README.md](terraform/README.md).
