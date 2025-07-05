@@ -1,5 +1,5 @@
 # In /.github/workflows/main.yml
-name: Azure Files PoC Deploy Infrastructure
+name: MAIN Azure Files PoC Deploy Infrastructure
 
 permissions:
   id-token: write
@@ -41,7 +41,7 @@ jobs:
 
   terraform-dev:
     name: 'Terraform Deploy to Dev (Trusted Services Test)'
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     environment: dev # Ensures correct GitHub Environment variables/secrets are used
     env:
       ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
@@ -51,14 +51,6 @@ jobs:
       TF_VAR_service_principal_id: ${{ secrets.SERVICE_PRINCIPAL_ID }}
 
     steps:
-      - name: Debug: Find rogue terraform files
-        run: |
-          echo "PATH: $PATH"
-          find . -type f -name terraform
-          which terraform
-          ls -l $(which terraform)
-          file $(which terraform)
-
       - name: Checkout repository
         uses: actions/checkout@v4
 
