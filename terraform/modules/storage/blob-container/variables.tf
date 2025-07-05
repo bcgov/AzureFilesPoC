@@ -20,7 +20,7 @@ variable "service_principal_id" {
 }
 
 variable "metadata" {
-  description = "A map of metadata to assign to the blob container."
   type        = map(string)
+  description = "A map of metadata to assign to the share."
   default     = {}
 }
