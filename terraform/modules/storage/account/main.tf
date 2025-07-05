@@ -21,11 +21,13 @@ resource "azurerm_storage_account" "main" {
   account_tier             = "Standard"
   account_replication_type = "LRS" # Local-redundant storage
 
-  # --- CRITICAL SETTING for Policy Compliance ---
-  # This explicitly disables the public network endpoint. This is the only
-  # networking-related argument we will provide to create the cleanest
-  # possible API request for the policy engine.
+  # --- CRITICAL SETTINGS for BC Gov Policy Compliance ---
+  # This explicitly disables the public network endpoint
   public_network_access_enabled = false
+  
+  # THIS IS THE MISSING SETTING - Required by BC Gov policy
+  # The policy error specifically checks for allowBlobPublicAccess = false
+  allow_nested_items_to_be_public = false
   
   # NOTE: All other optional arguments like 'large_file_share_enabled',
   # 'network_rules', etc., have been removed to prevent the provider from

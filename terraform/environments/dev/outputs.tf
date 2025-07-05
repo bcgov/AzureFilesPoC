@@ -118,3 +118,14 @@ output "service_principal_id" {
 # output "private_dns_zone_name" {
 #   value = module.private_dns_zone.name
 # }
+output "storage_private_endpoint_id" {
+  value = module.storage_private_endpoint.private_endpoint_id
+}
+
+output "storage_private_endpoint_ip_addresses" {
+  value = module.storage_private_endpoint.private_endpoint_ip_addresses
+}
+
+output "storage_private_endpoint_name" {
+  value = module.storage_private_endpoint.private_endpoint_name
+}

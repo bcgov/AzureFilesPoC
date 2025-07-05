@@ -74,18 +74,25 @@ module "poc_storage_account" {
 
 # This module creates the private endpoint and connects it to the storage account.
 # It will now succeed because the storage account creation is no longer blocked by policy.
-# module "storage_private_endpoint" {
-#   source                          = "../../modules/networking/private-endpoint"
-#   private_endpoint_name           = "pe-${var.storage_account_name}"
-#   location                        = var.azure_location
-#   resource_group                  = data.azurerm_resource_group.main.name
-#   private_endpoint_subnet_id      = module.storage_nsg.storage_subnet_id
-#   private_service_connection_name = "conn-to-${var.storage_account_name}"
-#   private_connection_resource_id  = module.poc_storage_account.id
-#   subresource_names               = ["file"]
-#   common_tags                     = var.common_tags
-#   service_principal_id            = var.service_principal_id
-# }
+# note:  Private Endpoints Required: Access to most Azure PaaS services 
+# (like Storage Accounts, Key Vault, SQL Databases, etc.) is restricted to 
+# private endpoints only. This means that these services will not have 
+# public IP addresses and will only be accessible from within your virtual 
+# network (or peered networks). Creating a PaaS service without configuring 
+# a private endpoint, or attempting to enable public access after creation, 
+#will be blocked by a "Deny" policy
+module "storage_private_endpoint" {
+  source                          = "../../modules/networking/private-endpoint"
+  private_endpoint_name           = "pe-${var.storage_account_name}"
+  location                        = var.azure_location
+  resource_group                  = data.azurerm_resource_group.main.name
+  private_endpoint_subnet_id      = module.storage_nsg.storage_subnet_id
+  private_service_connection_name = "conn-to-${var.storage_account_name}"
+  private_connection_resource_id  = module.poc_storage_account.id
+  subresource_names               = ["file"]
+  common_tags                     = var.common_tags
+  service_principal_id            = var.service_principal_id
+}
 
 #================================================================================
 # SECTION 2.4: PRIVATE DNS ZONE (REMOVED)
