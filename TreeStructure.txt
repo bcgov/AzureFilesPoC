@@ -70,6 +70,7 @@
 │   ├── BCGov-GitHubActionsResourcesForAzureFilesPoC.md
 │   ├── BCGov-IaC_CICD_BestPractices_Summary.md
 │   ├── BCGov-NetworkingSummary.md
+│   ├── BCGov-OnPremConnections.md
 │   ├── BCGov-PrivateDNSandEndpoints.md
 │   ├── BCGov-TerraformModuleStructure.md
 │   ├── BCGov-TerraformResourcesForAzurePoC.md
@@ -256,4 +257,4 @@
     └── troubleshooting
         └── terraform-cicd-issues-from-github-summary.md
 
-66 directories, 182 files
+66 directories, 183 files
