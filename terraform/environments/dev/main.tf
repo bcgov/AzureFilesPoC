@@ -3,8 +3,10 @@
 terraform {
   required_version = ">= 1.6.6"
   required_providers {
-    # Force a recent provider version to ensure all resource features are supported.
-    azurerm = { source = "hashicorp/azurerm", version = ">= 3.100.0" }
+    # --- CHANGE: Pin to a specific, known-stable version ---
+    # This version has a different implementation for storage account creation
+    # that is more likely to be compliant with strict policies.
+    azurerm = { source = "hashicorp/azurerm", version = "= 3.75.0" }
     
     azapi   = { source = "azure/azapi", version = "~> 1.0" }
     time    = { source = "hashicorp/time", version = ">= 0.9.1" }
