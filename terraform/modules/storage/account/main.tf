@@ -13,11 +13,15 @@ resource "azurerm_storage_account" "main" {
 
   # --- TEMPORARY CHANGE FOR PIPELINE SUCCESS ---
   # Enable public access to allow the pipeline runner to connect.
-  public_network_access_enabled = true 
+  public_network_access_enabled = false 
   
   network_rules {
     # This now becomes the default action when public access is enabled.
-    default_action = "Allow"
+    default_action = "Deny"
+    virtual_network_subnet_ids = [
+      var.runner_subnet_id,   # <-- Add the resource ID of your runner subnet
+      # var.storage_subnet_id, # Optionally, add storage subnet if needed
+    ]
   }
 }
 

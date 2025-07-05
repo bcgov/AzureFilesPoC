@@ -88,7 +88,7 @@ resource "azurerm_network_security_group" "storage" {
   # Allow outbound traffic to VNet for private endpoints
   security_rule {
     name                       = "AllowVNetOutbound"
-    priority                   = 100
+    priority                   = 105
     direction                  = "Outbound"
     access                     = "Allow"
     protocol                   = "*"

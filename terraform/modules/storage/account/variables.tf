@@ -34,3 +34,8 @@ variable "service_principal_id" {
   description = "The object ID of the service principal for role assignments."
   type        = string
 }
+
+variable "runner_subnet_id" {
+  description = "The resource ID of the runner subnet allowed to access the storage account."
+  type        = string
+}

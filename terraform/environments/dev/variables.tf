@@ -190,6 +190,21 @@ variable "tfstate_container" {
   default     = ""
 }
 
+variable "runner_subnet_name" {
+  description = "The name of the subnet hosting the GitHub self-hosted runner."
+  type        = string
+}
+
+variable "runner_vnet_address_space" {
+  description = "The address space for the runner subnet's VNet."
+  type        = list(string)
+}
+
+variable "runner_network_security_group" {
+  description = "The name of the NSG for the runner subnet."
+  type        = string
+}
+
 #variable "my_home_ip_address" {
 #  description = "The home IP address for access control."
 #  type        = string

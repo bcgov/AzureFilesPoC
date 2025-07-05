@@ -152,6 +152,14 @@ data "azurerm_virtual_network" "spoke_vnet" {
   resource_group_name = var.vnet_resource_group
 }
 
+# Lookup the runner subnet by name in the existing VNet
+
+data "azurerm_subnet" "runner" {
+  name                 = var.runner_subnet_name
+  virtual_network_name = var.vnet_name
+  resource_group_name  = var.vnet_resource_group
+}
+
 #================================================================================
 # SECTION 2: CORE INFRASTRUCTURE (NETWORKING & STORAGE)
 #================================================================================
@@ -260,6 +268,7 @@ module "poc_storage_account" {
   azure_location       = var.azure_location
   tags                 = var.common_tags
   service_principal_id = var.service_principal_id
+  runner_subnet_id     = data.azurerm_subnet.runner.id
 
   # NOTE: The storage account module should be configured to allow public access
   # for this initial deployment step, otherwise the GitHub runner will be blocked

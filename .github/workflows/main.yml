@@ -133,6 +133,13 @@ jobs:
           #gateway_subnet_address_prefix = ${{ vars.GATEWAY_SUBNET_ADDRESS_PREFIX }}
           
           # =============================================================================
+          # GITHUB RUNNER NETWORKING CONFIGURATION
+          # =============================================================================
+          runner_subnet_name = "${{ vars.RUNNER_SUBNET_NAME }}"
+          runner_vnet_address_space = ${{ vars.RUNNER_VNET_ADDRESS_SPACE }}
+          runner_network_security_group = "${{ vars.RUNNER_NETWORK_SECURITY_GROUP }}"
+
+          # =============================================================================
           # SECURITY AND ACCESS CONFIGURATION
           # =============================================================================
           my_github_actions_spn_object_id = "${{ vars.MY_GITHUB_ACTIONS_SPN_OBJECT_ID }}"
