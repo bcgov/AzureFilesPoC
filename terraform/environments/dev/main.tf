@@ -158,6 +158,19 @@ resource "time_sleep" "wait_for_blob_role_propagation" {
   depends_on      = [azurerm_role_assignment.storage_data_contributor_for_blobs]
 }
 
+resource "azurerm_role_assignment" "storage_account_contributor" {
+  role_definition_name = "Storage Account Contributor"
+  scope                = module.poc_storage_account.id
+  principal_id         = var.service_principal_id
+  depends_on           = [module.poc_storage_account]
+}
+
+resource "time_sleep" "wait_for_storage_account_role" {
+  create_duration = "180s"
+  triggers        = { role_assignment_id = azurerm_role_assignment.storage_account_contributor.id }
+  depends_on      = [azurerm_role_assignment.storage_account_contributor]
+}
+
 #================================================================================
 # SECTION 3: DATA PLANE RESOURCES (DISABLED FOR TEST)
 #================================================================================
@@ -187,11 +200,15 @@ module "poc_file_share" {
 # --------------------------------------------------------------------------------
 module "poc_blob_container" {
   source = "../../modules/storage/blob-container"
-  depends_on              = [time_sleep.wait_for_blob_role_propagation]
+  depends_on = [
+    time_sleep.wait_for_blob_role_propagation,
+    time_sleep.wait_for_storage_account_role,
+    azurerm_role_assignment.storage_data_contributor_for_blobs,
+    azurerm_role_assignment.storage_account_contributor
+  ]
 
   storage_account_name    = module.poc_storage_account.name
   container_name          = var.blob_container_name
-  #"private" = no public access, only authorized users/apps can access the data.
   container_access_type   = "private"
   service_principal_id    = var.service_principal_id
   metadata              = {
