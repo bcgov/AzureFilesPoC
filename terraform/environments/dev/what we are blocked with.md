@@ -3,15 +3,15 @@
 ---
 ## 🚩 Big Change Update (July 5, 2025)
 **All major roadblocks are now resolved.**
-- The pipeline can now deploy a private, policy-compliant Azure Files share and all dependencies (Storage Account, Networking, Private Endpoint, RBAC) in the BC Gov Azure environment, both locally and via CI/CD.
-- File share creation is fully automated and unblocked. No errors or policy issues remain.
-- The previous role assignment duplication issue has been fixed; only one assignment exists at the storage account level.
+- The pipeline can now deploy a private, policy-compliant Azure Files share and blob container (using AzAPI) and all dependencies (Storage Account, Networking, Private Endpoint, RBAC) in the BC Gov Azure environment, both locally and via CI/CD.
+- File share and blob container creation are fully automated and unblocked. No errors or policy issues remain.
+- The previous role assignment duplication issue is fixed; only one assignment exists at the storage account level.
 - All outputs are as expected, and the infrastructure is policy-compliant.
 
 ---
 
 ## 1. The Goal
-The primary objective is to deploy a **private Azure Files share** and its dependencies (Storage Account, Networking) into the BC Government Azure environment using a secure CI/CD pipeline. The infrastructure is defined in Terraform and deployed via GitHub Actions.
+The primary objective is to deploy a **private Azure Files share and blob container** and their dependencies (Storage Account, Networking) into the BC Government Azure environment using a secure CI/CD pipeline. The infrastructure is defined in Terraform and deployed via GitHub Actions.
 
 ## 2. What is Working (✅ SUCCESS)
 - **Foundational CI/CD infrastructure** is built and validated to BC Government security standards.
@@ -36,8 +36,9 @@ The primary objective is to deploy a **private Azure Files share** and its depen
 - **Data Plane Role Assignment & Propagation Wait (github CI/CD):**
   - Successfully assigned the "Storage File Data SMB Share Contributor" role to the service principal for the storage account and waited for propagation using a `time_sleep` resource. This enables automated file share creation in the pipeline.
   - Verified in GitHub Actions workflow with `terraform apply` that both resources were created and outputs were as expected.
-- **Blob Data Plane Role Assignment (Local & CI/CD):**
+- **Blob Data Plane Role Assignment & AzAPI (Local & CI/CD):**
   - Successfully assigned the "Storage Blob Data Contributor" role to the service principal for the storage account and waited for propagation using a `time_sleep` resource. This enables automated blob container creation in the pipeline.
+  - Switched to using the AzAPI provider for blob container creation, which resolved RBAC propagation and provider limitations.
   - Verified in GitHub Actions workflow with `terraform apply` that both resources were created and outputs were as expected.
 - **File Share Creation (Local & CI/CD):**
   - The file share module is now enabled and working. No errors or policy issues remain. The previous duplicate role assignment error is resolved.
@@ -55,18 +56,20 @@ The primary objective is to deploy a **private Azure Files share** and its depen
 - **Isolation Test:** Successfully deployed only the NSG to confirm the runner and pipeline are working for resource creation.
 - **Iterative Testing:** Repeatedly tested storage account creation with minimal settings until policy was satisfied.
 - **Role Assignment Error:** Duplicate role assignment for file share was removed; now only assigned at the storage account level.
+- **Blob Container Creation:** Switched to AzAPI provider for blob container creation to resolve RBAC propagation and provider limitations.
 
 ## 5. The Final Solution (Tested & Working Locally and in CI/CD)
 - **All Terraform files have been updated for policy compliance:**
   - The `storage/account` module now creates a storage account with `public_network_access_enabled = false` and **no** `network_rules` block.
   - The `dev/main.tf` file uses the standard pattern: calls the fixed `poc_storage_account` module first, then a separate `storage_private_endpoint` module.
   - The file share module is enabled and working, with no duplicate role assignment.
+  - The blob container is now created using AzAPI, which is robust against RBAC propagation delays.
 - **Result:**
-  - `terraform apply` on the self-hosted runner and in the GitHub Actions workflow both successfully created the storage account, private endpoint, and file share with no policy errors.
+  - `terraform apply` on the self-hosted runner and in the GitHub Actions workflow both successfully created the storage account, private endpoint, file share, and blob container with no policy errors.
 
 ## Next Steps
 - **Expand Automation:**
-  - Enable and test additional modules (blob, monitoring, management policies, etc.) as needed.
+  - Enable and test additional modules (monitoring, management policies, etc.) as needed.
   - Update documentation and status blocks as new resources are verified in CI/CD.
 - **Refactor/Cleanup:**
   - Refactor code for clarity and maintainability as the project grows.
