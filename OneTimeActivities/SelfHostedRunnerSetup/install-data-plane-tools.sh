@@ -22,6 +22,14 @@ sudo apt install -y python3-pip
 # Node.js and npm (for GitHub Actions and scripts)
 sudo apt install -y nodejs npm
 
+# Install latest Terraform (1.12.2)
+TERRAFORM_VERSION="1.12.2"
+wget https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip
+unzip -o terraform_${TERRAFORM_VERSION}_linux_amd64.zip
+sudo mv terraform /usr/local/bin/
+rm terraform_${TERRAFORM_VERSION}_linux_amd64.zip
+terraform --version
+
 # Optional: Monitoring tools
 sudo apt install -y htop ncdu
 

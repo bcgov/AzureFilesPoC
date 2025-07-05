@@ -51,6 +51,14 @@ jobs:
       TF_VAR_service_principal_id: ${{ secrets.SERVICE_PRINCIPAL_ID }}
 
     steps:
+      - name: Debug: Find rogue terraform files
+        run: |
+          echo "PATH: $PATH"
+          find . -type f -name terraform
+          which terraform
+          ls -l $(which terraform)
+          file $(which terraform)
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
