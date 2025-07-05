@@ -1,14 +1,15 @@
 # terraform/modules/storage/file-share/variables.tf
 
+# --- FIX for azurerm v3.75.0 ---
+# This variable now correctly expects the NAME of the storage account.
+variable "storage_account_name" {
+  type        = string
+  description = "The name of the existing storage account where the share will be created."
+}
+
 variable "file_share_name" {
   type        = string
   description = "The name of the file share to create."
-}
-
-# --- FIX: Changed from 'storage_account_name' to 'storage_account_id' ---
-variable "storage_account_id" {
-  type        = string
-  description = "The resource ID of the existing storage account where the share will be created."
 }
 
 variable "quota_gb" {
@@ -41,8 +42,8 @@ variable "acls" {
     start       = optional(string)
     expiry      = optional(string)
   }))
-  description = "A list of Access Control Lists for the file share. See azurerm_storage_share documentation for details."
-  default     = [] # Default to no ACLs for simplicity
+  description = "A list of Access Control Lists for the file share."
+  default     = []
 }
 
 variable "service_principal_id" {
@@ -50,32 +51,15 @@ variable "service_principal_id" {
   type        = string
 }
 
+# Optional variables for completeness
 variable "enabled_onboarded_windows_acl" {
   type        = bool
-  description = "Enable NTFS ACL support for Azure Files. (enabledOnboardedWindowsACL)"
+  description = "Enable NTFS ACL support for Azure Files."
   default     = false
 }
 
 variable "root_squash" {
   type        = string
-  description = "Root squash setting for NFS shares. Possible values: 'NoRootSquash', 'RootSquash', 'AllSquash'. (rootSquash)"
+  description = "Root squash setting for NFS shares."
   default     = null
-}
-
-variable "backup_enabled" {
-  type        = bool
-  description = "Enable Azure Backup for the file share. (backupEnabled)"
-  default     = false
-}
-
-variable "delete_retention_policy" {
-  type = object({
-    enabled = bool
-    days    = number
-  })
-  description = "Soft delete retention policy for the file share. (deleteRetentionPolicy)"
-  default = {
-    enabled = false
-    days    = 7
-  }
 }

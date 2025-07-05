@@ -5,6 +5,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
+      # This module is now compatible with provider version 3.75.0
       version = ">= 3.0"
     }
   }
@@ -14,21 +15,18 @@ terraform {
 # NOTE: Role, RBAC, and ACL Requirements for File Share
 #
 # - The service principal or user creating/managing the file share must have:
-#   * Azure RBAC: "Storage File Data SMB Share Contributor" (or higher) assigned at the STORAGE ACCOUNT LEVEL (recommended by Microsoft).
-#   * ACLs: If granular access is required, ensure NTFS ACLs are set on the file share after creation.
+#   * Azure RBAC: "Storage File Data SMB Share Contributor" (or higher) assigned at the STORAGE ACCOUNT LEVEL.
 # - RBAC controls management plane (create/delete/configure) and grants mount/access rights.
 # - ACLs (NTFS/Windows permissions) control data plane (read/write/list within the share).
-# - Both RBAC and ACLs are required for full access:
-#     - RBAC allows mounting and basic access to the share.
-#     - ACLs enforce per-file and per-folder permissions (preserved if migrated with tools like robocopy/AzCopy).
-# - To use ACLs, set enabledOnboardedWindowsACL = true on the file share and enable Azure AD authentication on the storage account.
-# - Assign RBAC roles to Entra (Azure AD) users/groups at the storage account level and set NTFS ACLs for granular access control.
 # --------------------------------------------------------------------------------
 resource "azurerm_storage_share" "main" {
-  name = var.file_share_name
-  # FIX: Changed to use the storage account's resource ID to resolve the deprecation warning.
-  storage_account_id = var.storage_account_id
-  quota              = var.quota_gb
+  # --- FIX for azurerm v3.75.0 ---
+  # This older provider version requires 'storage_account_name' instead of 'storage_account_id'.
+  # This argument specifies the name of the Storage Account in which the File Share should exist.
+  storage_account_name = var.storage_account_name
+
+  name   = var.file_share_name
+  quota  = var.quota_gb
 
   # Corresponds to properties.enabledProtocols in an Azure export
   enabled_protocol = var.enabled_protocol
@@ -40,7 +38,9 @@ resource "azurerm_storage_share" "main" {
   # Corresponds to the metadata property
   metadata = var.metadata
 
-  # Defines file and folder-level permissions
+  # Defines file and folder-level permissions via Shared Access Policies.
+  # Note: For granular identity-based access, you must configure NTFS ACLs
+  # on the mounted share after creation.
   dynamic "acl" {
     for_each = var.acls
     content {
@@ -55,10 +55,11 @@ resource "azurerm_storage_share" "main" {
 }
 
 #==================================================================================
-# Assign least-privilege role to the file share resource
+# Assign least-privilege role to the file share resource.
+# This ensures the service principal can manage data within the share.
 #==================================================================================
 resource "azurerm_role_assignment" "file_share_contributor" {
   scope                = azurerm_storage_share.main.id
-  role_definition_name = "Storage File Data SMB Share Contributor" # Adjust if a more restrictive or custom role is appropriate
+  role_definition_name = "Storage File Data SMB Share Contributor"
   principal_id         = var.service_principal_id
 }
