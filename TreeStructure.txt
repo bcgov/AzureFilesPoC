@@ -1,8 +1,8 @@
 .
 ├── Architecture
 │   ├── ArchitectureOverview.md
-│   ├── azure files express route.drawio
-│   ├── azure files express route.drawio.png
+│   ├── azure_files_poc_architecture_diagram.drawio
+│   ├── azure_files_poc_architecture_diagram.drawio.png
 │   └── OptionsAnalysis
 │       └── AzureFilesNetworkConnectivityOptionsAnalysis.md
 ├── llm_code_snapshot.js

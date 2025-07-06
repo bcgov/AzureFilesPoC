@@ -58,8 +58,8 @@ The BC Government is exploring Azure Files as a solution to address several chal
     -   **[AzureResourceNamingConventions.md](Resources/AzureResourceNamingConventions.md)**: Naming conventions for Azure resources.
 
 ### Architecture Diagrams
--   **[azure files express route.drawio](azure%20files%20express%20route.drawio)**: Source diagram (draw.io).
--   **[azure files express route.drawio.png](azure%20files%20express%20route.drawio.png)**: Rendered diagram.
+-   **[azure_files_poc_architecture_diagram_sanitized.drawio](Architecture/azure_files_poc_architecture_diagram_sanitized.drawio)**: Sanitized source diagram (draw.io).
+-   **[azure_files_poc_architecture_diagram_sanitized.drawio.png](Architecture/azure_files_poc_architecture_diagram_sanitized.drawio.png)**: Rendered sanitized diagram.
 
 ## Key Evaluation Areas
 
@@ -74,7 +74,7 @@ The BC Government is exploring Azure Files as a solution to address several chal
 ## Architecture at a Glance
 
 This PoC implements a hybrid connectivity model with Azure Files accessed via Private Endpoint and optional integration with Azure Blob Storage for tiering:
-![azure files express route drawio](https://github.com/user-attachments/assets/e2ef13f6-501c-466a-82ee-654add681e0a)
+![azure_files_poc_architecture_diagram_sanitized](Architecture/azure_files_poc_architecture_diagram_sanitized.drawio.png)
 
 ## Getting Started
 

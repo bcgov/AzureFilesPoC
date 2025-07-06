@@ -25,7 +25,7 @@ For more details on the BC Government's Azure landing zone architecture, see the
 ## Architecture Diagram
 
 
-![azure files express route drawio](https://github.com/user-attachments/assets/403dafc8-8523-4eb2-b8a2-3e9b91a4f8ab)
+![azure_files_poc_architecture_diagram_sanitized](azure_files_poc_architecture_diagram_sanitized.drawio.png)
 
 
 This diagram illustrates the hybrid connectivity model using VPN and ExpressRoute, with Azure Files accessed via Private Endpoint and optional integration with Azure Blob Storage for tiering.
@@ -60,8 +60,8 @@ This diagram illustrates the hybrid connectivity model using VPN and ExpressRout
 
 For a detailed comparison of network connectivity methods—including VPN, ExpressRoute, and Private Endpoints—see [Azure Files Network Connectivity Options](./OptionsAnalysis/AzureFilesNetworkConnectivityOptionsAnalysis.md).
 
-[Draw.io Version](azure%20files%20express%20route.drawio)
-This link points to the `.drawio` source file for the architecture diagram. Ensure that the file `azure files express route.drawio` exists in the same directory as your markdown file. If you want to provide access to the editable diagram (not just the PNG image), this link is correct.
+[Draw.io Version](azure_files_poc_architecture_diagram_sanitized.drawio)
+This link points to the `.drawio` source file for the architecture diagram. Ensure that the file `azure_files_poc_architecture_diagram_sanitized.drawio` exists in the same directory as your markdown file. If you want to provide access to the editable diagram (not just the PNG image), this link is correct.
 
 ### Monitoring & Security
 
