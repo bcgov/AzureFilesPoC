@@ -154,12 +154,42 @@ graph TD
 
 ---
 
+## Protected Network Resources in the BC Gov Landing Zone
+
+To maintain the security and compliance of the Azure Landing Zone, certain network resources are protected and cannot be modified or created by project teams. These restrictions ensure all traffic is routed and inspected centrally, and prevent configuration drift or policy violations. The following actions are not permitted:
+
+- **Modifying the Virtual Network (VNet) DNS settings:**
+  - All DNS traffic must be routed through the central firewall for compliance.
+- **Modifying the Virtual Network (VNet) address space:**
+  - Prevents overlapping IP address ranges in the Landing Zone.
+- **Creating ExpressRoute circuits, VPN Sites, VPN/NAT/Local Gateways, or Route Tables:**
+  - Ensures all traffic passes through the central firewall and is not bypassed.
+- **Creating Virtual Networks:**
+  - Avoids overlapping IP address ranges that may conflict with other Project Sets.
+- **Creating Virtual Network peering with other VNets:**
+  - Ensures all spoke-to-spoke traffic is managed centrally through the firewall.
+- **Deleting the setbypolicy Diagnostics Settings:**
+  - You may add your own diagnostics settings, but the default policy-enforced settings cannot be removed.
+
+> **Tested Portal Behavior:**
+> Attempts to create a VPN Gateway, ExpressRoute circuit, or Route Table in the Azure Portal—even if the UI allows you to fill out the form—will fail at deployment time due to BC Gov Landing Zone policy restrictions. You may see errors such as "The virtual network already has a gateway of this type or the existing gateway in the virtual network does not support coexistence" or a policy denial message. All such connectivity must be requested and provisioned by the Public Cloud team.
+
+For any required changes or exceptions, submit a request to the Public Cloud team. Always consult the latest BC Gov Landing Zone documentation and your platform team for guidance.
+
+---
+
 ## Exposing Services to the Internet & User Defined Routes (UDRs)
 
 - Use Azure Application Gateway (with Web Application Firewall/WAF) to securely expose applications to the internet, as direct public IPs and open management ports are not permitted in the BC Gov Landing Zone.
 - Backend health probes for Application Gateway may show as "Unknown" if traffic is routed through the central firewall. In such cases, a custom User Defined Route (UDR) may be required to ensure correct health probe routing. **Custom UDRs cannot be created directly; you must request them via the Public Cloud team.**
 - For Azure File Sync and other services that may require special routing, always consult with the platform and security teams to ensure compliance with government policy and architecture standards. See the Architecture Overview for more details.
 - All routing, including UDRs, is centrally managed. No custom UDRs or route tables are permitted without explicit approval and implementation by the platform team.
+
+> **Tested Portal Behavior:**
+> Attempts to create a User Defined Route (UDR) or route table in the Azure Portal—even if the UI allows you to fill out the form—will fail at deployment time due to the "Deny Creating Protected Networking Resource" policy assignment in the BC Gov Landing Zone. You will see a policy denial message. All custom routing must be requested and provisioned by the Public Cloud team.
+
+> **Policy Assignment:**
+> The "Deny Creating Protected Networking Resource" policy will prevent users from creating ExpressRoute circuits, VPN Sites, VPN/NAT/Local Gateways, or Route Tables. This is enforced at deployment time in the BC Gov Landing Zone.
 
 > **Note:** For government-specific policies regarding User-Defined Routes (UDRs), Application Gateway, and Azure File Sync, always consult with platform and security teams as referenced in the architecture overview and landing zone guardrails.
 
