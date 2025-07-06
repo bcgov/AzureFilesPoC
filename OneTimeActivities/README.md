@@ -109,7 +109,9 @@ After completing all onboarding scripts and confirming your GitHub secrets are s
 
 1. Follow the complete [Validation Process](ValidationProcess.md) for step-by-step instructions and troubleshooting.
 2. Use the [Azure Login Validation workflow](../../.github/workflows/azure-login-validation.yml) to verify OIDC authentication.
-3. Use the [Terraform Validation workflow](../../.github/workflows/terraform-validation.yml) to validate the end-to-end CI/CD pipeline.
+3. Use the [Test Self-Hosted Runner workflow](../../.github/workflows/test-self-hosted-runner.yml) to verify the runner is operational.
+4. Use the [Runner Infra workflow](../../.github/workflows/runner-infra.yml) to deploy the CI/CD runner infrastructure.
+5. Use the [Main workflow](../../.github/workflows/main.yml) to deploy storage infrastructure in dev using the self-hosted runner.
 
 ## Security Considerations
 

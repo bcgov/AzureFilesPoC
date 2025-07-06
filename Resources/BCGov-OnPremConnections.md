@@ -2,6 +2,54 @@
 
 _Last updated: July 2025_
 
+## Connectivity Options for Azure Files
+
+There are several ways to connect on-premises users to Azure Files. The following options have been evaluated for the PoC:
+
+### 1. VPN + Private Endpoint (Current Setup)
+- Users connect via VPN to access Azure Files through a private endpoint.
+- **Pros:** Already in place, secure, no major changes needed.
+- **Cons:** Requires VPN client; not seamless if VPN disconnects.
+
+### 2. ExpressRoute + Private Endpoint
+- Once ExpressRoute is ready, users can access Azure Files without VPN.
+- **Pros:** Seamless, high-performance, private routing.
+- **Cons:** Requires ExpressRoute setup and routing configuration.
+
+### 3. Azure File Sync (Hybrid Model)
+- Keep using your on-prem file server, but sync it with Azure Files.
+- **Pros:** No user disruption, hybrid flexibility (branch caching, backup, migration).
+- **Cons:** Requires agent installation, server management, and some storage cost overhead.
+
+### 4. Web App + App Gateway / Azure Front Door
+- Expose file access via a web interface behind a secure ingress layer.
+- **Note:** Not feasible for SMB/NFS file access; only suitable for HTTP-based apps.
+
+---
+
+## Quick Checklist: Azure Files Private Endpoint Access
+
+To ensure successful access to Azure Files over a private endpoint, confirm the following:
+
+- **Private Endpoints:**
+  - Devices can reach the private IP address of the Azure Storage account (DNS and routing configured).
+- **Firewall/NSG/UDR Rules:**
+  - Allow SMB (TCP 445) to the storage account's private IP.
+  - Storage account network rules only allow traffic from your VNet.
+- **DNS Resolution:**
+  - Use Azure Private DNS Zones (e.g., privatelink.file.core.windows.net) linked to your VNet.
+  - If accessing from on-prem, configure DNS conditional forwarding to Azure.
+- **Routing:**
+  - Ensure traffic from on-prem to Azure Files is routed correctly (VPN or ExpressRoute).
+- **Port Access:**
+  - TCP Port 445 must be open for SMB access (or the appropriate port for NFS if used).
+- **IP Addresses:**
+  - Allow access to the private IP assigned to the Azure Files private endpoint in your VNet.
+- **Storage Account Network Rules:**
+  - In the Azure portal, set to Selected networks, add your VNet, and optionally enable “Allow trusted Microsoft services.”
+
+---
+
 ## Current Status
 - **ExpressRoute is NOT yet available in production** (only in internal Test environment).
 - **Blockers:**

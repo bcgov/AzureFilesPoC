@@ -38,11 +38,10 @@ The BC Government is exploring Azure Files as a solution to address several chal
 
 ### GitHub Actions Workflows
 -   **[.github/workflows/](.github/workflows/)**:
-    -   **[terraform-common.yml](.github/workflows/terraform-common.yml)**: Reusable Terraform workflow with OIDC authentication.
-    -   **[main.yml](.github/workflows/main.yml)**: Environment-specific deployment workflow (e.g., orchestrates `terraform-common.yml`).
-    -   **[runner-infra.yml](.github/workflows/runner-infra.yml)**: Deploys CI/CD self-hosted runner infrastructure.
-    -   **[azure-login-validation.yml](.github/workflows/azure-login-validation.yml)**: Simple workflow for validating Azure authentication.
-    -   **[terraform-validation.yml](.github/workflows/terraform-validation.yml)**: Workflow for validating end-to-end Terraform deployment.
+    -   **[main.yml](.github/workflows/main.yml)**: Deploys storage infrastructure in the dev environment using self-hosted runners.
+    -   **[runner-infra.yml](.github/workflows/runner-infra.yml)**: Deploys CI/CD self-hosted runner infrastructure (runner VM, Bastion, NSG, etc).
+    -   **[azure-login-validation.yml](.github/workflows/azure-login-validation.yml)**: Validates Azure authentication via OIDC (manual trigger).
+    -   **[test-self-hosted-runner.yml](.github/workflows/test-self-hosted-runner.yml)**: Tests the self-hosted runner with a simple scenario.
 
 ### Resources and Best Practices
 -   **[Resources/](Resources/)**:
@@ -154,7 +153,6 @@ The following diagram illustrates the GitHub Actions and Terraform deployment pr
 sequenceDiagram
     actor Dev as Developer
     participant Git as GitHub Repository<br/>.github/workflows/main.yml
-    participant CommonFlow as Common Workflow<br/>.github/workflows/terraform-common.yml
     participant Runner as BC Gov Self-Hosted Runner
     participant AzureAD as Azure Active Directory (Microsoft Entra ID)
     participant KeyVault as Azure Key Vault
@@ -164,8 +162,7 @@ sequenceDiagram
 
     Dev->>Git: Push changes to 'dev' branch / Create Pull Request (targeting 'dev')
 
-    Git->>CommonFlow: Call reusable workflow<br/>(e.g., terraform-dev.yml)
-    CommonFlow->>Runner: Execute with 'dev' environment context
+    Git->>Runner: Execute with 'dev' environment context
 
     Note over Runner,AzureAD: GitHub Actions OIDC Authentication
     Runner->>AzureAD: 1. Request OIDC Token (via GitHub's OIDC Provider)

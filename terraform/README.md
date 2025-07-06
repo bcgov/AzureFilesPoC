@@ -380,47 +380,24 @@ For more details, see the onboarding and validation documentation referenced abo
 
 ### Example Flow (GitHub Actions Use Case)
 
-This project is designed for both local and CI/CD (GitHub Actions) workflows. Below is an example flow for the GitHub Actions use case, referencing the main workflow file: `.github/workflows/main.yml` (which uses `terraform-common.yml` and `reusable-terraform-workflow.yml`).
+This project is designed for both local and CI/CD (GitHub Actions) workflows. Below is an example flow for the GitHub Actions use case, referencing the main workflow file: `.github/workflows/main.yml` (which uses self-hosted runners for dev storage infra).
+
+#### Active Workflows
+- `.github/workflows/main.yml`: Main storage infrastructure deployment (dev) using self-hosted runners.
+- `.github/workflows/runner-infra.yml`: CI/CD self-hosted runner infrastructure deployment.
+- `.github/workflows/azure-login-validation.yml`: Validates Azure authentication via OIDC.
+- `.github/workflows/test-self-hosted-runner.yml`: Tests the self-hosted runner with a simple scenario.
 
 #### Example Flow
 
 - A developer pushes code or triggers a workflow in GitHub.
 - The workflow defined in `.github/workflows/main.yml` starts, using the selected environment (e.g., `dev`).
-- The workflow calls the reusable workflow (`terraform-common.yml` or `reusable-terraform-workflow.yml`), which:
-  - Logs into Azure using OIDC and GitHub secrets.
-  - Sets up Terraform and quality gates (format, lint, security scan).
-  - Loads environment-specific variables (from GitHub secrets, workflow inputs, or a generated `terraform.tfvars`).
-  - Runs `terraform init`, `plan`, and (optionally) `apply` in the correct environment directory (e.g., `environments/dev`).
-  - Passes mapped variables to the modules.
-  - Provisions resources in Azure using the module code.
-  - Returns outputs and results to the workflow for review, PR comments, or further automation.
-
-#### Visual Sequence Diagram
-
-```mermaid
-sequenceDiagram
-    participant Dev as Developer (Push/PR/Dispatch)
-    participant GH as GitHub Actions Workflow (main.yml)
-    participant Reusable as Reusable Workflow (terraform-common.yml)
-    participant Env as Environment Config (main.tf, variables.tf, terraform.tfvars)
-    participant Mod as Module (e.g., storage/account)
-    participant Azure as Azure
-
-    Dev->>GH: Push code / trigger workflow
-    GH->>Reusable: Call reusable workflow with environment/vars
-    Reusable->>Env: Load environment config and variables
-    Env->>Mod: Pass mapped variables to module
-    Mod->>Azure: Provision resources using variables
-    Azure-->>Mod: Return resource outputs
-    Mod-->>Env: Outputs returned to environment
-    Env-->>Reusable: Outputs for workflow
-    Reusable-->>GH: Status, plan/apply results, PR comment
-    GH-->>Dev: Show results in GitHub UI
-```
+- The workflow runs all Terraform steps directly (no reusable workflow is called).
+- Terraform initializes, plans, and applies the changes in the specified environment.
+- The developer is notified of the results, and any outputs are displayed in the GitHub UI.
 
 > **Reference:**
 > - Main workflow: `.github/workflows/main.yml`
-> - Reusable workflow: `.github/workflows/terraform-common.yml` or `.github/workflows/reusable-terraform-workflow.yml`
 > - Validation workflow: `.github/workflows/terraform-validation.yml`
 
 This diagram and flow show how GitHub Actions, environment configuration, and modules work together to automate secure, policy-compliant Azure deployments.

@@ -60,67 +60,16 @@ Note: `AZURE_CLIENT_SECRET` not needed with mandatory OIDC authentication
 The GitHub Actions and Terraform workflow involves several key files that work together:
 
 ### 1. GitHub Actions Workflow Files
-- `.github/workflows/main.yml`: Entry point workflow that triggers for pull requests and pushes
-  - Calls the reusable common workflow
-  - Specifies environment-specific variables and secrets
-  - References environment-specific Terraform directories
-
-- `.github/workflows/terraform-common.yml`: Reusable workflow containing core Terraform logic
-  - Handles OIDC authentication to Azure
-  - Executes Terraform init/plan/apply steps
-  - Manages workspace selection and state handling
-
-### 2. Terraform Configuration Files
-- `terraform/environments/<env>/main.tf`: Environment-specific configuration
-  - References shared modules
-  - Sets environment-specific variables
-  - Configures provider and backend settings
-
-- `terraform/environments/<env>/terraform.tfvars`: Environment variables
-  - Contains environment-specific values
-  - Overrides default module variables
-  - Sets resource naming and tagging
-
-- `terraform/modules/*/main.tf`: Shared resource modules
-  - Implements BC Gov-compliant resources
-  - Uses AzAPI provider where required
-  - Follows Landing Zone patterns
-
-### 3. Resource Dependencies
-```mermaid
-graph TD
-    A[main.yml] -->|calls| B[terraform-common.yml]
-    B -->|uses| C[terraform/environments/dev/main.tf]
-    B -->|uses| D[terraform/environments/test/main.tf]
-    B -->|uses| E[terraform/environments/prod/main.tf]
-    C -->|references| F[terraform/modules/**/main.tf]
-    D -->|references| F
-    E -->|references| F
-    C -->|uses vars from| G[terraform/terraform.tfvars]
-    D -->|uses vars from| H[terraform/terraform.tfvars]
-    E -->|uses vars from| I[terraform/terraform.tfvars]
-```
-#### Future after have multiple environments in azure
-```mermaid
-graph TD
-    A[main.yml] -->|calls| B[terraform-common.yml]
-    B -->|uses| C[terraform/environments/dev/main.tf]
-    B -->|uses| D[terraform/environments/test/main.tf]
-    B -->|uses| E[terraform/environments/prod/main.tf]
-    C -->|references| F[terraform/modules/**/main.tf]
-    D -->|references| F
-    E -->|references| F
-    C -->|uses vars from| G[terraform/environments/dev/terraform.tfvars]
-    D -->|uses vars from| H[terraform/environments/test/terraform.tfvars]
-    E -->|uses vars from| I[terraform/environments/prod/terraform.tfvars]
-```
+- `.github/workflows/main.yml`: Main entry point workflow for storage infrastructure (dev) using self-hosted runners.
+- `.github/workflows/runner-infra.yml`: Deploys CI/CD self-hosted runner infrastructure (runner VM, Bastion, NSG, etc).
+- `.github/workflows/azure-login-validation.yml`: Validates Azure authentication via OIDC (manual trigger).
+- `.github/workflows/test-self-hosted-runner.yml`: Tests the self-hosted runner with a simple scenario.
 
 ## Workflow Sequence
 ```mermaid
 sequenceDiagram
     actor Developer
     participant GitHub as GitHub Repository<br/>.github/workflows/main.yml
-    participant CommonFlow as Common Workflow<br/>.github/workflows/terraform-common.yml
     participant Runner as BC Gov Self-Hosted Runner
     participant AzureAD as Azure Active Directory
     participant TFState as State Management<br/>terraform/backend.tf
@@ -128,8 +77,7 @@ sequenceDiagram
     participant Azure as Azure Resource Manager
 
     Developer->>GitHub: Push/Pull Request to branch
-    GitHub->>CommonFlow: Call reusable workflow<br/>with environment params
-    CommonFlow->>Runner: Initialize job with<br/>environment context
+    GitHub->>Runner: Initialize job with<br/>environment context
     
     Note over Runner,AzureAD: BC Gov OIDC Authentication
     Runner->>AzureAD: Authenticate via OIDC<br/>(azure/login@v1)
@@ -151,8 +99,7 @@ sequenceDiagram
     Azure-->>TFConfig: Resource Status
     TFConfig-->>Runner: Apply Complete
     
-    Runner-->>CommonFlow: Workflow Results
-    CommonFlow-->>GitHub: Update Status
+    Runner-->>GitHub: Update Status
 ```
 
 ## Implementation Guide

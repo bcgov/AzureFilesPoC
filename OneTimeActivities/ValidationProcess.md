@@ -184,3 +184,14 @@ Remember: When troubleshooting, start with the simplest possible test (Azure log
 - [BC Government IaC and CI/CD Best Practices](https://developer.gov.bc.ca/docs/default/component/public-cloud-techdocs/azure/best-practices/iac-and-ci-cd/)
 - [GitHub Actions for Terraform](https://learn.hashicorp.com/tutorials/terraform/github-actions)
 - [Azure Authentication for GitHub Actions](https://docs.microsoft.com/en-us/azure/developer/github/connect-from-azure)
+
+## Active Workflows
+
+This section summarizes the four active workflows for the Azure Files PoC project:
+
+- [Azure Login Validation workflow](../../.github/workflows/azure-login-validation.yml): Validates OIDC authentication.
+- [Test Self-Hosted Runner workflow](../../.github/workflows/test-self-hosted-runner.yml): Verifies the self-hosted runner is operational.
+- [Runner Infra workflow](../../.github/workflows/runner-infra.yml): Deploys CI/CD runner infrastructure.
+- [Main workflow](../../.github/workflows/main.yml): Deploys storage infrastructure in dev using the self-hosted runner.
+
+These workflows are essential for validating and deploying the Azure Files PoC infrastructure. Ensure you understand their purpose and monitor their execution during the validation process.
