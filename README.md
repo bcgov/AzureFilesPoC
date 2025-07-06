@@ -2,6 +2,17 @@
 
 This repository contains documentation and resources for evaluating Azure Files as a cost-effective, performant, and secure replacement for on-premises file storage infrastructure in a government context, specifically for the **BC Government**.
 
+## Project Status (as of July 6, 2025)
+
+- **Bastion host deployed and operational**: Secure SSH access to the private VNet is working.
+- **Self-hosted GitHub Actions runner installed and registered**: CI/CD jobs now run from a private, policy-compliant VM.
+- **Terraform (dev) updated to use self-hosted runner**: Storage infrastructure (Azure Files and Blob container) successfully deployed using the private runner.
+- **Documentation and architecture diagrams sanitized**: All sensitive values removed, and only sanitized diagrams are referenced throughout the project.
+- **GitHub Actions workflows reviewed and cleaned up**: Only four active workflows remain; unused workflows archived and documentation updated for clarity.
+- **Azure Files connectivity documentation streamlined**: Outdated and duplicate analysis merged and removed; main connectivity options and status are clearly documented.
+- **Repository structure and documentation up to date**: Tree structure, module references, and onboarding/validation guides are current and reflect the latest state.
+- **Current blocker:** Site-to-site VPN connectivity is not yet enabled. Awaiting support from Landing Zone administrators to complete VPN setup and enable on-premises access to Azure Files.
+
 ## Project Overview
 
 The BC Government is exploring Azure Files as a solution to address several challenges with current on-premises file storage:
