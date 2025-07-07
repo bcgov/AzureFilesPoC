@@ -94,8 +94,6 @@ For detailed technical architecture, see the [Architecture Overview](./Architect
 
 ## Important Rule for Resource Creation
 
-**CRITICAL: DO NOT CREATE ANY RESOURCES IN AZURE WITHOUT EXPLICIT CONSENT AND REVIEW.**
-
 All infrastructure code, scripts, and templates must undergo thorough review and documentation before any resources are deployed to Azure. This ensures:
 -   Compliance with BC Government guidelines and security requirements.
 -   Cost control and proper resource allocation.
