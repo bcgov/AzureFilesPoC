@@ -797,3 +797,5 @@ If using Azure DevOps, leverage Managed DevOps Pools through the sample implemen
 4. **Cross-Subscription Deployment**: If deploying runners in a different subscription than resources, ensure firewall rules are configured to allow cross-subscription access.
 
 5. **Secure Variables**: Never store sensitive variables in version control. Use GitHub Secrets, Azure KeyVault, or Azure DevOps variable groups.
+
+- **Landing Zone Samples Reference:** See [BCGov-AzureLandingZoneSamplesSummary.md](BCGov-AzureLandingZoneSamplesSummary.md) for a summary of the official BC Gov Azure Landing Zone sample modules, best practices, and recommendations for future enhancements and alignment.

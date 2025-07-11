@@ -66,3 +66,4 @@ Azure Landing Zone "guardrails" are security and compliance rules enforced by Az
 - Guardrails are enforced automatically to ensure security, compliance, and cost control.
 - Most restrictions are handled by policy; users should design infrastructure to comply with these rules.
 - For technical details, refer to the Azure Policy definitions or contact the platform team.
+- The [bcgov/azure-lz-samples](https://github.com/bcgov/azure-lz-samples) repository provides up-to-date, modular, and policy-aligned Terraform samples for BC Gov Azure Landing Zones. See [BCGov-AzureLandingZoneSamplesSummary.md](BCGov-AzureLandingZoneSamplesSummary.md) for a summary and recommendations for alignment.
