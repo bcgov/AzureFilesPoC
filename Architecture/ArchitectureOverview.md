@@ -22,6 +22,8 @@ In our PoC architecture:
 
 For more details on the BC Government's Azure landing zone architecture, see the [BC Government's Azure Landing Zone Overview](https://developer.gov.bc.ca/docs/default/component/public-cloud-techdocs/azure/get-started-with-azure/bc-govs-azure-landing-zone-overview/#monitoring-and-logging).
 
+> **Update July 2025:** Site-to-site VPN is not permitted in the BC Gov Landing Zone for this project. All on-premises connectivity will be via ExpressRoute once provisioned by the platform team. Remove references to VPN as a short-term solution.
+
 ## Architecture Diagram
 
 

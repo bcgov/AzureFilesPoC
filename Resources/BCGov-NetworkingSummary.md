@@ -51,7 +51,7 @@ This document summarizes the key networking components, security controls, and b
 ## Protected Network Resources
 - The following actions are restricted or not allowed:
   - Modifying VNet DNS settings or address space
-  - Creating ExpressRoute circuits, VPNs, gateways, or route tables
+  - Creating ExpressRoute circuits, VPNs, gateways, or route tables is restricted. For this project, only ExpressRoute will be provisioned for on-premises connectivity; VPN is not permitted.
   - Creating new VNets or VNet peering
   - Deleting default diagnostic settings (setbypolicy)
 - All such changes must go through the Public Cloud team.

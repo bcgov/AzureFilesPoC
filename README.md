@@ -11,7 +11,7 @@ This repository contains documentation and resources for evaluating Azure Files 
 - **GitHub Actions workflows reviewed and cleaned up**: Only four active workflows remain; unused workflows archived and documentation updated for clarity.
 - **Azure Files connectivity documentation streamlined**: Outdated and duplicate analysis merged and removed; main connectivity options and status are clearly documented.
 - **Repository structure and documentation up to date**: Tree structure, module references, and onboarding/validation guides are current and reflect the latest state.
-- **Current blocker:** Site-to-site VPN connectivity is not yet enabled. Awaiting support from Landing Zone administrators to complete VPN setup and enable on-premises access to Azure Files.
+- **Current blocker:** Site-to-site VPN connectivity will not be enabled in our Landing Zone. We have been directed to wait for ExpressRoute to be provisioned by the platform team for on-premises access to Azure Files.
 
 ## Project Overview
 
@@ -103,9 +103,8 @@ All infrastructure code, scripts, and templates must undergo thorough review and
 ## Network Connectivity Options
 
 Multiple connectivity approaches are being evaluated, including:
--   VPN + Private Endpoint (short-term).
--   ExpressRoute + Private Endpoint (long-term).
--   Azure File Sync (hybrid model).
+-   ExpressRoute + Private Endpoint (pending platform team provisioning).
+-   VPN connectivity is not permitted in our Landing Zone; all on-premises access will be via ExpressRoute once available.
 
 Details on these options are available in the [Network Connectivity Options Analysis](./Architecture/OptionsAnalysis/AzureFilesNetworkConnectivityOptionsAnalysis.md).
 

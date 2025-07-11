@@ -24,7 +24,7 @@ When working in the BC Gov Azure Landing Zone, private connectivity and DNS inte
 - **Access Limitations:**
   - These resources are not accessible from outside the VNet.
   - To access them, use Azure Bastion or Azure Virtual Desktop (AVD) from within the VNet.
-  - In the future, ExpressRoute or VPN may provide on-premises access.
+  - In the future, ExpressRoute may provide on-premises access. VPN connectivity is not permitted in our Landing Zone for this project.
 
 ---
 
