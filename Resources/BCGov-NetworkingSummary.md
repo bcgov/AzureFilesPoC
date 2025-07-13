@@ -1,3 +1,7 @@
+
+For step-by-step architecture and configuration details for hybrid on-premises connectivity, see:
+- [Connecting Remote VPN Users to Azure via ExpressRoute and Gateway Transit](./BCGov-ConnectingCiscoCiscoVPNWillWorkwithExpressRoute.md)
+- [Connecting On-Premises Data Center Resources to Azure via ExpressRoute and Gateway Transit](./BCGov-ConnectingOnPremDataCenterResourcesViaExpressRoute.md)
 # Networking in the Azure Landing Zone (BC Gov)
 
 _Last updated: June 16, 2025_

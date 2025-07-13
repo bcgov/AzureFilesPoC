@@ -241,8 +241,12 @@ For any required changes or exceptions, submit a request to the Public Cloud tea
 
 > **Note:** For government-specific policies regarding User-Defined Routes (UDRs), Application Gateway, and Azure File Sync, always consult with platform and security teams as referenced in the architecture overview and landing zone guardrails.
 
+
 **Tip:**
 - Coordinate with your network, security, and platform teams for any required changes or troubleshooting.
+- For step-by-step architecture and configuration details for hybrid on-premises connectivity, see:
+  - [Connecting Remote VPN Users to Azure via ExpressRoute and Gateway Transit](./BCGov-ConnectingCiscoCiscoVPNWillWorkwithExpressRoute.md)
+  - [Connecting On-Premises Data Center Resources to Azure via ExpressRoute and Gateway Transit](./BCGov-ConnectingOnPremDataCenterResourcesViaExpressRoute.md)
 - For more details, see:
   - [BCGov-NetworkingSummary.md](./BCGov-NetworkingSummary.md)
   - [BCGov-PrivateDNSandEndpoints.md](./BCGov-PrivateDNSandEndpoints.md)
