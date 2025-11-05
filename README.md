@@ -27,7 +27,7 @@ The BC Government is exploring Azure Files as a solution to address several chal
 
 ### Documentation
 -   **[ProofOfConceptPlan.md](ProofOfConceptPlan.md)**: Comprehensive plan outlining objectives, evaluation criteria, and timeline.
--   **[ArchitectureOverview.md](ArchitectureOverview.md)**: Detailed architecture design for Azure Files implementation.
+-   **[ArchitectureOverview.md](Architecture/ArchitectureOverview.md)**: Detailed architecture design for Azure Files implementation.
 -   **[ValidationProcess.md](WorkTracking/OneTimeActivities/ValidationProcess.md)**: Step-by-step guide for validating the end-to-end CI/CD pipeline and implementation process.
 
 ### Infrastructure as Code
