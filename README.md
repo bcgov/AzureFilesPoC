@@ -142,6 +142,57 @@ For detailed implementation guidance, see:
 -   [GitHub Actions Process](Resources/TerraformWithGithubActionsProcess.md)
 -   [BC Gov GitHub Actions Setup](Resources/GitHubActionsResourcesForAzureFilesPoC.md)
 
+## Governance & mandatory repository files
+
+This repository follows BC Government requirements for public GitHub repositories. The repository includes the mandatory governance files and guidance contributors must follow:
+
+- `LICENSE` — project is licensed under the Apache License 2.0 (see `./LICENSE`).
+- `CONTRIBUTING.md` — contribution rules, formatting and verification guidance (see `./CONTRIBUTING.md`).
+- `CODE_OF_CONDUCT.md` — expected behaviour for contributors (see `./CODE_OF_CONDUCT.md`).
+
+File header and footer guidance:
+
+- Documentation (including `README.md`) must include a short Apache footer that points to the `LICENSE` file. Example (bottom of this file):
+
+    > Copyright 2025 British Columbia — Licensed under the Apache License, Version 2.0: http://www.apache.org/licenses/LICENSE-2.0
+
+- Source code files should include a short header comment with copyright and license reference. Example header (use the appropriate comment syntax for the file type):
+
+    /*
+     Copyright 2025 British Columbia
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     See the LICENSE file in the repository root for full license text.
+    */
+
+If you need a template for specific languages, see the `CONTRIBUTING.md` or ask the maintainers for a small header template to copy into new source files.
+
+## Repository verification & test scripts
+
+Instead of generic test instructions, prefer the repository-specific verification scripts and guides that are maintained here. Key locations:
+
+- One-time onboarding and OIDC/registration scripts: `OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/` (both `unix/` and `windows/` subfolders). These automate app registration, OIDC federation, TF state storage setup and validation steps referenced by the onboarding docs in `OneTimeActivities/`.
+- CI/CD and self-hosted runner setup: `SelfHostedRunnerSetup/` (installer scripts and documentation) and `terraform/environments/cicd/README.md` for deploying the private runner infra.
+- Terraform verification and environment scripts: see `terraform/README.md` and `terraform/environments/*` for environment-specific guidance and validation steps.
+
+Suggested local verification steps (Windows PowerShell):
+
+1. Review the onboarding and environment scripts you plan to run (see `OneTimeActivities/RegisterApplicationInAzureAndOIDC/` and `terraform/environments/cicd/`).
+2. For Terraform changes, run:
+
+```powershell
+cd terraform/environments/<env>
+terraform init
+terraform validate
+terraform plan
+```
+
+3. To validate self-hosted runner and OIDC, follow the explicit scripts in `OneTimeActivities/RegisterApplicationInAzureAndOIDC/scripts/` (see README in that folder for exact commands for Windows vs Unix).
+
+4. For additional repository verification and developer-level checks, see `CONTRIBUTING.md` — it lists project-specific verification scripts maintained for this repo.
+
+If you maintain or add automated tests (unit/integration), indicate them in `CONTRIBUTING.md` and wire them into GitHub Actions workflows under `.github/workflows/`.
+
 ## Terraform Development
 
 See the [terraform](./terraform/) directory for infrastructure code. Key aspects:
