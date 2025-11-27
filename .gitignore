@@ -15,6 +15,13 @@ crash.log
 crash.*.log
 .terraform.lock.hcl
 
+ARCHIVE\questionsforazureadmin.md
+azure.env.old
+
+ARCHIVE/
+Resources/azure-lz-samples/
+
+
 # Terraform plan output
 tfplan
 *.plan
@@ -32,6 +39,7 @@ terraform.rc
 # Except for template files
 !.env/*.template.json
 
+Resources/azure-lz-samples/
 # Ignore Azure application registration details file anywhere in the codebase
 **/AzureAppRegistrationDetails.txt
 # Original path-specific ignore (redundant but kept for backwards compatibility)
@@ -44,6 +52,9 @@ WorkTracking/OneTimeActivities/AzureAppRegistrationDetails.txt
 # Ignore existing Azure resource inventory (contains sensitive resource IDs)
 .env/azure-existing-resources.json
 .env/azure_full_inventory.json
+
+# Ignore Azure inventory outputs
+azure-inventory/
 
 # Editor specific files
 .vscode/
@@ -58,7 +69,6 @@ Thumbs.db
 #ignore the packaged code as a bundle .txt
 llm_code_snapshot.txt
 node_modules/
-package.json
 package-lock.json
 
 # Ignore downloaded Terraform zip archives
@@ -75,6 +85,8 @@ terraform/environments/cicd/privatekey.txt
 sshkey.txt
 **/sshkey.txt
 
+# Ignore script output
+llm_code_snapshot.txt
 # Scripts with real sensitive values (keep templates only)
 **/step6.2_assign_roles_to_resource_group.sh
 
