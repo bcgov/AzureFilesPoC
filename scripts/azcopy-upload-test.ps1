@@ -3,8 +3,13 @@
 
 param(
     [string]$FilePath = "azcopy-test-upload.txt",
-    [string]$SasUrl = "https://stagpssgazurepocdev01.blob.core.windows.net/blob-ag-pssg-azure-files-poc-dev-01?sp=racwdl&st=2025-11-12T19:38:47Z&se=2025-11-13T03:53:47Z&sip=108.172.9.11&spr=https&sv=2024-11-04&sr=c&sig=NQB0y%2FK2YHIFKulCp8XqeB2kOBnuwUH88fdCtLeQj9o%3D"
+    [string]$SasUrl = "<YOUR_SAS_URL_HERE>" # Provide your SAS URL as a parameter or via environment variable
 )
+
+if ($SasUrl -eq '<YOUR_SAS_URL_HERE>') {
+    Write-Host "ERROR: Please provide a valid SAS URL as a parameter or set it in the script."
+    exit 1
+}
 
 # Create a test file if it doesn't exist
 if (-not (Test-Path $FilePath)) {
