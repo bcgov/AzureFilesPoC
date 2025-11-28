@@ -1,0 +1,52 @@
+---
+title: Azure Landing Zone Architecture
+---
+
+```mermaid
+flowchart TD
+    subgraph RG["rg-ag-pssg-azure-files-azure-foundry"]
+        VNET["Existing VNet: d5007d-dev-vwan-spoke"]
+        SUBNET_VM["Subnet: snet-ag-pssg-azure-files-vm"]
+        SUBNET_BASTION["Subnet: AzureBastionSubnet"]
+        SUBNET_PE["Subnet: snet-ag-pssg-azure-files-pe"]
+        NSG_VM["NSG: nsg-ag-pssg-azure-files-azure-foundry"]
+        NSG_BASTION["NSG: nsg-ag-pssg-azure-files-azure-foundry-bastion"]
+        NSG_PE["NSG: nsg-ag-pssg-azure-files-azure-foundry-pe"]
+        VM["VM: vm-ag-pssg-azure-files-01"]
+        NIC_VM["NIC: vm-ag-pssg-azure-files-01-nic"]
+        DISK_OS["OS Disk: vm-ag-pssg-azure-files-01-osdisk"]
+        DISK_DATA["Data Disk: vm-ag-pssg-azure-files-01-datadisk"]
+        BASTION["Azure Bastion: bastion-ag-pssg-azure-files"]
+        NIC_BASTION["NIC: bastion-ag-pssg-azure-files-nic"]
+        PIP_BASTION["Public IP: bastion-ag-pssg-azure-files-pip"]
+        FOUND["Foundry: foundry-ag-pssg-azure-files"]
+        FOUND_PROJ["Foundry Project: foundry-ag-pssg-azure-files-project"]
+        PE_STORAGE["PE: pe-ag-pssg-azure-files-storage"]
+        PE_KEYVAULT["PE: pe-ag-pssg-azure-files-keyvault"]
+        SA["Storage Account: stagpssgazurepocdev01"]
+        KV["Key Vault: kv-ag-pssg-azure-files"]
+        LAW["Log Analytics: law-ag-pssg-azure-files"]
+        UAMI["User-Assigned MI: uami-ag-pssg-azure-files"]
+    end
+
+    VNET --> SUBNET_VM
+    VNET --> SUBNET_BASTION
+    VNET --> SUBNET_PE
+    SUBNET_VM --> NSG_VM
+    SUBNET_BASTION --> NSG_BASTION
+    SUBNET_PE --> NSG_PE
+    SUBNET_VM --> NIC_VM
+    NIC_VM --> VM
+    VM --> DISK_OS
+    VM --> DISK_DATA
+    SUBNET_BASTION --> NIC_BASTION
+    NIC_BASTION --> BASTION
+    BASTION --> PIP_BASTION
+    FOUND --> FOUND_PROJ
+    SUBNET_PE --> PE_STORAGE
+    SUBNET_PE --> PE_KEYVAULT
+    PE_STORAGE --> SA
+    PE_KEYVAULT --> KV
+    VM --> LAW
+    VM --> UAMI
+```

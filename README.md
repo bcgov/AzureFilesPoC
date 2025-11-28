@@ -1,4 +1,25 @@
+
 # Azure Files Proof of Concept
+
+## Deployment Approaches
+
+This repository supports two distinct Infrastructure-as-Code (IaC) and deployment strategies:
+
+### 1. Terraform + GitHub Actions/Runners
+
+- **Location:** `terraform/`, `.github/workflows/`
+- **Description:** Uses Terraform modules and GitHub Actions (with self-hosted runners) to provision and manage Azure infrastructure.
+- **Best for:** Automated CI/CD, complex multi-resource orchestration, and BC Gov-compliant module reuse.
+- **See:** [terraform/README.md](terraform/README.md)
+
+### 2. Azure CLI + Bicep Scripts
+
+- **Location:** `bicep/`, `scripts/bicep/`
+- **Description:** Uses modular Bicep templates and PowerShell scripts to deploy resources directly via Azure CLI.
+- **Best for:** Direct, modular deployments, rapid prototyping, and scenarios where GitHub Actions is not required.
+- **See:** [bicep/](bicep/) and [scripts/bicep/](scripts/bicep/)
+
+**Note:** Both approaches are maintained for flexibility and to support different team workflows. Choose the path that best fits your automation, compliance, and operational needs.
 
 This repository contains documentation and resources for evaluating Azure Files as a cost-effective, performant, and secure replacement for on-premises file storage infrastructure in a government context, specifically for the **BC Government**.
 
