@@ -12,11 +12,6 @@ on:
         required: true
         type: boolean
         default: true
-  pull_request:
-    branches: [ main ]
-    paths:
-      - 'terraform/environments/cicd/**'
-      - '.github/workflows/runner-infra.yml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
