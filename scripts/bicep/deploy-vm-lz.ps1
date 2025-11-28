@@ -15,7 +15,9 @@ $sshPublicKey = Read-Host "Enter your SSH public key (single line)"
 
 az deployment group create `
   --resource-group $resourceGroup `
-  --template-file "../../bicep/vm-lz-compliant.bicep" `
+  --template-file "./biceps/vm-lz-compliant.bicep" `
   --parameters vmName=$vmName vnetName=$vnetName subnetName=$subnetName sshPublicKey="$sshPublicKey" location=$location
 
 Write-Host "\nDeployment complete. Check the Azure Portal or CLI for VM status."
+
+
