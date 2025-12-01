@@ -19,6 +19,18 @@ if (fs.existsSync(gitignorePath)) {
   ig = ig.add(gitignoreContent);
 }
 
+// --- Additional exclusions (security and clutter) ---
+ig.add([
+  'node_modules/',
+  'ARCHIVE/',
+  'azure.env',
+  'azure.env.old',
+  '.git/',
+  '.vscode/',
+  '*.log',
+  'llm_code_snapshot.txt'
+]);
+
 // --- Recursively collect files ---
 function collectFiles(dir) {
   let files = [];

@@ -12,6 +12,7 @@ param osDiskSizeGb int = 30
 
 // --- Existing network (do NOT create/change VNets in LZ) ---
 param vnetName string            // e.g., d5007d-<spoke>-vwan-spoke
+param vnetResourceGroup string   // resource group containing the VNet
 param subnetName string          // workload subnet name
 
 // --- NSG policy: attach at SUBNET level (guardrail) ---
@@ -45,61 +46,74 @@ param tags object = {
   dataSensitivity: 'ProtectedB'
 }
 
-// ===== Existing subnet (LZ: use platform spoke) =====
-resource subnet 'Microsoft.Network/virtualNetworks/subnets@2024-09-01' existing = {
-  name: '${vnetName}/${subnetName}'
+// ===== Existing VNet and subnet (LZ: use platform spoke) =====
+resource vnet 'Microsoft.Network/virtualNetworks@2023-11-01' existing = {
+  name: vnetName
+  scope: resourceGroup(vnetResourceGroup)
+}
+
+resource subnet 'Microsoft.Network/virtualNetworks/subnets@2023-11-01' existing = {
+  parent: vnet
+  name: subnetName
 }
 
 // ===== NSG (define rules) =====
-resource nsg 'Microsoft.Network/networkSecurityGroups@2024-09-01' = {
+resource nsg 'Microsoft.Network/networkSecurityGroups@2023-11-01' = {
   name: nsgName
   location: location
   properties: {
-    securityRules: [
-      (allowSshFrom != '' ? {
-        name: 'allow-ssh-private'
-        properties: {
-          priority: 100
-          access: 'Allow'
-          direction: 'Inbound'
-          protocol: 'Tcp'
-          sourceAddressPrefix: allowSshFrom
-          destinationAddressPrefix: '*'
-          destinationPortRange: '22'
+    securityRules: union(
+      allowSshFrom != '' ? [
+        {
+          name: 'allow-ssh-private'
+          properties: {
+            priority: 100
+            access: 'Allow'
+            direction: 'Inbound'
+            protocol: 'Tcp'
+            sourceAddressPrefix: allowSshFrom
+            sourcePortRange: '*'
+            destinationAddressPrefix: '*'
+            destinationPortRange: '22'
+          }
         }
-      } : null)
-      (length(externalAllowCidrs) > 0 ? {
-        name: 'allow-external-app-port'
-        properties: {
-          priority: 300
-          access: 'Allow'
-          direction: 'Inbound'
-          protocol: 'Tcp'
-          sourceAddressPrefixes: externalAllowCidrs
-          destinationAddressPrefix: '*'
-          destinationPortRange: externalAllowPort
+      ] : [],
+      length(externalAllowCidrs) > 0 ? [
+        {
+          name: 'allow-external-app-port'
+          properties: {
+            priority: 300
+            access: 'Allow'
+            direction: 'Inbound'
+            protocol: 'Tcp'
+            sourceAddressPrefixes: externalAllowCidrs
+            sourcePortRange: '*'
+            destinationAddressPrefix: '*'
+            destinationPortRange: externalAllowPort
+          }
         }
-      } : null)
-      {
-        name: 'allow-azurelb-probes'
-        properties: {
-          priority: 200
-          access: 'Allow'
-          direction: 'Inbound'
-          protocol: '*'
-          sourceAddressPrefix: 'AzureLoadBalancer'
-          destinationAddressPrefix: '*'
-          destinationPortRange: '*'
+      ] : [],
+      [
+        {
+          name: 'allow-azurelb-probes'
+          properties: {
+            priority: 200
+            access: 'Allow'
+            direction: 'Inbound'
+            protocol: '*'
+            sourceAddressPrefix: 'AzureLoadBalancer'
+            sourcePortRange: '*'
+            destinationAddressPrefix: '*'
+            destinationPortRange: '*'
+          }
         }
-      }
-    ]
-    // Remove nulls from the array
-    // Bicep v0.20+ supports this natively, otherwise use: | [for rule in securityRules: rule if rule != null]
+      ]
+    )
   }
 }
 
 // ===== Attach NSG to SUBNET (policy requires subnet-level NSG) =====
-resource subnetNsg 'Microsoft.Network/virtualNetworks/subnets@2024-09-01' = if (attachNsgToSubnet) {
+resource subnetNsg 'Microsoft.Network/virtualNetworks/subnets@2023-11-01' = if (attachNsgToSubnet) {
   name: '${vnetName}/${subnetName}'
   properties: {
     networkSecurityGroup: { id: nsg.id }
@@ -107,7 +121,7 @@ resource subnetNsg 'Microsoft.Network/virtualNetworks/subnets@2024-09-01' = if (
 }
 
 // ===== NIC (NO public IP) =====
-resource nic 'Microsoft.Network/networkInterfaces@2024-09-01' = {
+resource nic 'Microsoft.Network/networkInterfaces@2023-11-01' = {
   name: '${vmName}-nic'
   location: location
   properties: {
@@ -129,7 +143,7 @@ resource nic 'Microsoft.Network/networkInterfaces@2024-09-01' = {
 var identityType = uamiId == '' ? 'SystemAssigned' : 'SystemAssigned, UserAssigned'
 var userAssignedIdentities = uamiId == '' ? {} : { '${uamiId}': {} }
 
-resource vm 'Microsoft.Compute/virtualMachines@2024-11-01' = {
+resource vm 'Microsoft.Compute/virtualMachines@2024-07-01' = {
   name: vmName
   location: location
   identity: {
@@ -174,7 +188,6 @@ resource vm 'Microsoft.Compute/virtualMachines@2024-11-01' = {
         }
       }
       allowExtensionOperations: true
-      requireGuestProvisionSignal: true
     }
 
     networkProfile: { networkInterfaces: [ { id: nic.id } ] }
