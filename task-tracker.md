@@ -28,13 +28,13 @@ This document tracks the progress of deploying Azure infrastructure to support *
 - [x] Network Security Groups (NSGs)
   - [x] VM NSG (`$NSG_VM`) - `scripts\bicep\deploy-nsg-vm.ps1`
   - [x] Bastion NSG (`$NSG_BASTION`) - `scripts\bicep\deploy-nsg-bastion.ps1`
-  - [x] Private Endpoints NSG (`$NSG_PE`) - `scripts\bicep\deploy-nsg-pe.ps1`
+  - [x] Private Endpoints NSG (`$NSG_PE`) - manually via az command see `scripts\bicep\deploy-nsg-pe.ps1`
 - [x] Subnets in Landing Zone VNet (`$VNET_SPOKE`)
   - [x] VM Subnet (`$SUBNET_VM` / `$SUBNET_VM_PREFIX`) - `scripts\bicep\deploy-subnet-vm.ps1`
   - [x] Bastion Subnet (`$SUBNET_BASTION` / `$SUBNET_BASTION_PREFIX`) - `scripts\bicep\deploy-subnet-bastion.ps1`
   - [x] Private Endpoints Subnet (`$SUBNET_PE` / `$SUBNET_PE_PREFIX`) - Manual az command (script fixed)
 
-### Phase 2: Storage, Security & Monitoring (Data Plane Foundation) 🔄 NEXT
+### Phase 2: Storage, Security & Monitoring (Data Plane Foundation) ✅ COMPLETE
 **Dependencies:** Phase 1 complete
 
 - [x] **Storage Account** (`$STORAGE_ACCOUNT`) - `scripts\bicep\deploy-storage.ps1` ✅
@@ -43,48 +43,66 @@ This document tracks the progress of deploying Azure infrastructure to support *
   - ✅ **Network Access**: VPN IP ranges configured in `networkAcls.ipRules`
   - 🔐 **SAS Tokens**: Generate via Azure Portal or `az storage container generate-sas` for secure access
   
-- [ ] **Key Vault** (`$KEYVAULT_NAME`) - `scripts\bicep\deploy-keyvault.ps1`
+- [x] **Key Vault** (`$KEYVAULT_NAME`) - `scripts\bicep\deploy-keyvault.ps1` ✅
   - Manages secrets, API keys, connection strings
   - Required for: VM access, AI Foundry authentication
+  - ⚠️ **Access**: Public network disabled (BC Gov policy), requires Private Endpoint (Phase 4)
   
-- [ ] **User Assigned Managed Identity** (`$UAMI_NAME`) - `scripts\bicep\deploy-uami.ps1`
+- [x] **User Assigned Managed Identity** (`$UAMI_NAME`) - `scripts\bicep\deploy-uami.ps1` ✅
   - Enables passwordless authentication for VM → Storage/Key Vault/Foundry
   - Required for: VM deployment, Private Endpoints
+  - 🔑 **Principal ID**: Use for RBAC assignments to Storage/Key Vault/Foundry
   
-- [ ] **Log Analytics Workspace** (`$LAW_NAME`) - `scripts\bicep\deploy-law.ps1`
+- [x] **Log Analytics Workspace** (`$LAW_NAME`) - `scripts\bicep\deploy-law.ps1` ✅
   - Centralized logging and diagnostics
   - Required for: Monitoring all resources
+  - 📊 **30-day retention**: Configure diagnostic settings for all resources
 
-### Phase 3: Compute Resources (Execution Environment) ⏳ PENDING
+### Phase 3: Compute Resources (Execution Environment) ✅ COMPLETE
 **Dependencies:** Phase 2 complete (especially UAMI, Key Vault)
 
-- [ ] **Virtual Machine** (`$VM_NAME`) - `scripts\bicep\deploy-vm-lz.ps1`
-  - Windows/Linux VM to run AI consumption scripts
-  - Uses Managed Identity to access Foundry APIs
+- [x] **Virtual Machine** (`$VM_NAME`) - `scripts\bicep\deploy-vm-lz.ps1` ✅ DEPLOYED
+  - Ubuntu 24.04 LTS VM to run AI consumption scripts
+  - Uses System + User-Assigned Managed Identity for passwordless auth
   - No public IP (private subnet only)
+  - 📋 **Extensions**: Azure Monitor Agent (AMA) ✅, Azure Policy ✅, MDE disabled (PoC)
+  - 🔑 **SSH Access**: Requires SSH public key, connect via Bastion or VPN
+  - ✅ **Status**: Provisioning succeeded, all extensions installed
   
-- [ ] **Bastion Host** (`$BASTION_NAME`) - `scripts\bicep\deploy-bastion.ps1`
+- [x] **Bastion Host** (`$BASTION_NAME`) - `scripts\bicep\deploy-bastion.ps1` ✅ DEPLOYED
   - Secure RDP/SSH access to VM (no public IPs needed)
-  - Includes Public IP and NIC
+  - Public IP: 4.205.202.195
+  - DNS: bst-a38a713d-0edb-42c3-9f39-54904e3b0316.bastion.azure.com
+  - ✅ **Status**: Provisioning succeeded, ready for VM access
 
 ### Phase 4: Private Connectivity (Zero-Trust Networking) ⏳ PENDING
-**Dependencies:** Phase 2 (Storage, Key Vault), Phase 1 (PE Subnet)
+**Dependencies:** Phase 2 (Storage, Key Vault), Phase 1 (PE Subnet), Phase 5 (Foundry for PE_FOUNDRY)
 
 - [ ] **Private Endpoints** - `scripts\bicep\deploy-private-endpoints.ps1`
-  - PE for Storage Account (`$PE_STORAGE`)
-  - PE for Key Vault (`$PE_KEYVAULT`)
+  - PE for Storage Account (`$PE_STORAGE`) - canadacentral
+  - PE for Key Vault (`$PE_KEYVAULT`) - canadacentral
+  - PE for Foundry (`$PE_FOUNDRY`) - **Cross-region**: PE in canadacentral subnet → Foundry in canadaeast
   - Enables private, secure access from VM without internet exposure
+  - 🌐 **Cross-Region Pattern**: Foundry PE follows BC Gov OpenAI standard - PE deployed in canadacentral connects to Foundry resource in canadaeast
 
 ### Phase 5: AI Services (Azure AI Foundry) ⏳ PENDING
-**Dependencies:** Phase 2 (Storage, Key Vault, UAMI), Phase 4 (Private Endpoints)
+**Dependencies:** Phase 2 (Storage, Key Vault, UAMI)
 
 - [ ] **AI Foundry Workspace** (`$FOUNDRY_NAME`) - `scripts\bicep\deploy-foundry.ps1`
+  - 🌐 **Region**: Deploy in **canadaeast** (`$TARGET_AZURE_FOUNDRY_REGION`) - LLMs only available in this region
   - Azure AI Studio workspace for model hosting
   - Connects to Storage for artifacts, Key Vault for secrets
+  - Uses UAMI for authentication
+  - ⚠️ **Important**: Deploy Foundry BEFORE creating its Private Endpoint (Phase 4)
   
 - [ ] **AI Foundry Project** (`$FOUNDRY_PROJECT`) - `scripts\bicep\deploy-foundry-project.ps1`
   - Project container for AI models and endpoints
   - Where your API-accessible models will be deployed
+  
+- [ ] **Private Endpoint for Foundry** (created in Phase 4 after Foundry exists)
+  - PE resource location: canadacentral (in `$SUBNET_PE`)
+  - PE target: Foundry workspace in canadaeast
+  - Pattern: Cross-region PE connection (matches BC Gov OpenAI projects)
 
 ## Deployment Workflow (Recommended Order)
 
@@ -168,23 +186,23 @@ Once complete, you'll have:
 2. [ ] `teardown-foundry.ps1` - Remove Foundry Workspace
 
 ### Phase 4 Teardown (Private Connectivity)
-3. [ ] `teardown-private-endpoints.ps1` - Remove Private Endpoints (Storage, Key Vault)
+3. [ ] `teardown-private-endpoints.ps1` - Remove Private Endpoints (Storage, Key Vault, Foundry)
 
 ### Phase 3 Teardown (Compute)
-4. [ ] `teardown-bastion.ps1` - Remove Bastion Host (NIC, PIP)
-5. [ ] `teardown-vm-lz.ps1` - Remove Virtual Machine
+4. [x] `teardown-bastion.ps1` - Remove Bastion Host, Public IP ✅
+5. [x] `teardown-vm-lz.ps1` - Remove VM, NICs, NSGs, Disks ✅
 
 ### Phase 2 Teardown (Storage & Security)
-6. [ ] `teardown-law.ps1` - Remove Log Analytics Workspace
-7. [ ] `teardown-uami.ps1` - Remove Managed Identity
-8. [ ] `teardown-keyvault.ps1` - Remove Key Vault (must purge soft-delete)
-9. [ ] `teardown-storage.ps1` - Remove Storage Account
+6. [x] `teardown-law.ps1` - Remove Log Analytics Workspace ✅
+7. [x] `teardown-uami.ps1` - Remove Managed Identity ✅
+8. [x] `teardown-keyvault.ps1` - Remove Key Vault (soft-delete + purge option) ✅
+9. [x] `teardown-storage.ps1` - Remove Storage Account ✅
 
 ### Phase 1 Teardown (Foundation)
 10. [x] `teardown-subnet-pe.ps1` - Remove PE Subnet (EXISTS)
-11. [ ] `teardown-subnet-bastion.ps1` - Remove Bastion Subnet
-12. [ ] `teardown-subnet-vm.ps1` - Remove VM Subnet
-13. [ ] `teardown-nsgs.ps1` - Remove all NSGs
+11. [x] `teardown-subnet-bastion.ps1` - Remove Bastion Subnet ✅
+12. [x] `teardown-subnet-vm.ps1` - Remove VM Subnet ✅
+13. [x] `teardown-nsgs.ps1` - Remove all NSGs (VM, Bastion, PE) ✅
 
 ### Master Teardown
 - [ ] `teardown-all.ps1` - Master orchestration script
