@@ -1,5 +1,15 @@
+# IMPORTANT: Subnet and NSG Deployment Scoping
 
-# Azure Files Proof of Concept
+* Always deploy subnet Bicep modules at the VNet's resource group scope (e.g., RG_NETWORKING), not the PoC RG.
+* The vnetResourceGroup parameter and --resource-group argument must match the VNet's actual resource group.
+* NSGs are created in the PoC RG (RG_AZURE_FILES), but subnets must be created in the VNet's RG (RG_NETWORKING).
+* All subnet-related az commands (existence checks, creation, confirmation) must use RG_NETWORKING. All NSG-related commands must use RG_AZURE_FILES.
+
+# Azure AI Foundry Landing Zone (Azure Files PoC)
+
+This repository deploys Azure infrastructure to support **Azure AI Foundry** services with secure access via Bastion. The goal is to run AI model consumption scripts from a VM that securely connects to AI Foundry APIs through private endpoints.
+
+> **Current Status:** Phase 1 (Network & Security Foundation) complete. Ready to deploy Phase 2 (Storage, Key Vault, Monitoring). See [`task-tracker.md`](task-tracker.md) for deployment status and next steps.
 
 ## Deployment Approaches
 
@@ -36,20 +46,28 @@ This repository contains documentation and resources for evaluating Azure Files 
 
 ## Project Overview
 
-The BC Government is exploring Azure Files as a solution to address several challenges with current on-premises file storage:
+The BC Government is building an Azure AI Foundry landing zone to enable secure AI model consumption while also exploring Azure Files as a solution to address several challenges with current on-premises file storage:
 
--   **Rising Infrastructure Costs**: Reducing operational expenditures for storage hardware.
--   **Storage Optimization**: Implementing automated tiering strategies for cost-effective data lifecycle management.
--   **Administrative Efficiency**: Decreasing technical overhead while maintaining or improving service levels.
--   **Media File Management**: Better handling of large video/audio files with appropriate archiving capabilities.
--   **Resource Stewardship**: Demonstrating responsible use of taxpayer resources.
+### AI Foundry Use Case
+-   **Secure AI Access**: VM-based script execution environment for AI model APIs
+-   **Private Connectivity**: Zero-trust networking with private endpoints (no public internet)
+-   **Bastion Access**: Secure RDP/SSH to VMs without public IPs
+-   **Managed Identity**: Passwordless authentication to Azure services
+
+### Azure Files Use Case
+-   **Rising Infrastructure Costs**: Reducing operational expenditures for storage hardware
+-   **Storage Optimization**: Implementing automated tiering strategies for cost-effective data lifecycle management
+-   **Administrative Efficiency**: Decreasing technical overhead while maintaining or improving service levels
+-   **Media File Management**: Better handling of large video/audio files with appropriate archiving capabilities
+-   **Resource Stewardship**: Demonstrating responsible use of taxpayer resources
 
 ## Repository Structure and Key Resources
 
 ### Documentation
--   **[ProofOfConceptPlan.md](ProofOfConceptPlan.md)**: Comprehensive plan outlining objectives, evaluation criteria, and timeline.
--   **[ArchitectureOverview.md](Architecture/ArchitectureOverview.md)**: Detailed architecture design for Azure Files implementation.
--   **[ValidationProcess.md](WorkTracking/OneTimeActivities/ValidationProcess.md)**: Step-by-step guide for validating the end-to-end CI/CD pipeline and implementation process.
+-   **[task-tracker.md](task-tracker.md)**: **START HERE** - Current deployment status, phase-by-phase deployment commands, and next steps
+-   **[ProofOfConceptPlan.md](ProofOfConceptPlan.md)**: Comprehensive plan outlining objectives, evaluation criteria, and timeline
+-   **[ArchitectureOverview.md](Architecture/ArchitectureOverview.md)**: Detailed architecture design for Azure Files implementation
+-   **[ValidationProcess.md](WorkTracking/OneTimeActivities/ValidationProcess.md)**: Step-by-step guide for validating the end-to-end CI/CD pipeline and implementation process
 
 ### Infrastructure as Code
 -   **[terraform/](terraform/)**: Infrastructure code and deployment configurations.
