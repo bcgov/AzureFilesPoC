@@ -29,8 +29,8 @@ This document summarizes the key networking components, security controls, and b
 - **Every subnet must have an associated Network Security Group (NSG).**
   - Recommended: Create the NSG first, then the subnet with the NSG attached.
   - All subnets must be private (no direct internet access).
-- For Terraform guidance, see the IaC and CI/CD documentation.
-
+- **IMPORTANT:** When automating subnet creation (Bicep, Terraform, etc.), always deploy the subnet at the VNet's resource group scope (e.g., RG_NETWORKING), not the PoC/app RG. The VNet resource group must be used for both the deployment scope and as a parameter to the module/script.
+  - This is required for Azure to find the correct VNet and is enforced by policy.
 ## Spoke-to-Spoke Connectivity
 - Disabled by default for security.
 - If needed (e.g., for Dev/Test/Prod/Tools environments), submit a request to the Public Cloud team for review and firewall changes.
