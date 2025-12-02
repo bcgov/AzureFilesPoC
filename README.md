@@ -9,40 +9,73 @@
 
 This repository deploys Azure infrastructure to support **Azure AI Foundry** services with secure access via Bastion. The goal is to run AI model consumption scripts from a VM that securely connects to AI Foundry APIs through private endpoints.
 
-> **Current Status:** Phase 1 (Network & Security Foundation) complete. Ready to deploy Phase 2 (Storage, Key Vault, Monitoring). See [`task-tracker.md`](task-tracker.md) for deployment status and next steps.
+> **Current Status:** All 5 phases deployed successfully using Bicep scripts. Optional Phase 2: Convert to CI/CD pipeline with self-hosted GitHub runner. See [`task-tracker.md`](task-tracker.md) for deployment status and next steps.
 
-## Deployment Approaches
+## Primary Deployment Approach: Azure CLI + Bicep Scripts
 
-This repository supports two distinct Infrastructure-as-Code (IaC) and deployment strategies:
-
-### 1. Terraform + GitHub Actions/Runners
-
-- **Location:** `terraform/`, `.github/workflows/`
-- **Description:** Uses Terraform modules and GitHub Actions (with self-hosted runners) to provision and manage Azure infrastructure.
-- **Best for:** Automated CI/CD, complex multi-resource orchestration, and BC Gov-compliant module reuse.
-- **See:** [terraform/README.md](terraform/README.md)
-
-### 2. Azure CLI + Bicep Scripts
+**This is the KEY FIRST PHASE** - All infrastructure is deployed using modular Bicep templates and PowerShell scripts via Azure CLI.
 
 - **Location:** `bicep/`, `scripts/bicep/`
-- **Description:** Uses modular Bicep templates and PowerShell scripts to deploy resources directly via Azure CLI.
-- **Best for:** Direct, modular deployments, rapid prototyping, and scenarios where GitHub Actions is not required.
-- **See:** [bicep/](bicep/) and [scripts/bicep/](scripts/bicep/)
+- **Status:** ✅ **COMPLETE** - All 5 phases deployed successfully
+- **Best for:** Direct deployment, validation, and operational use
+- **See:** [scripts/bicep/](scripts/bicep/) and [task-tracker.md](task-tracker.md)
 
-**Note:** Both approaches are maintained for flexibility and to support different team workflows. Choose the path that best fits your automation, compliance, and operational needs.
+### Quick Start with Bicep Scripts
+```powershell
+cd scripts\bicep
+
+# Phase 1: Foundation
+.\deploy-subnet-all.ps1
+.\deploy-nsgs.ps1
+
+# Phase 2: Storage & Security
+.\deploy-storage.ps1
+.\deploy-keyvault.ps1
+.\deploy-uami.ps1
+.\deploy-law.ps1
+
+# Phase 3: Compute
+.\deploy-vm-lz.ps1
+.\deploy-bastion.ps1
+
+# Phase 4: AI Foundry
+.\deploy-foundry.ps1
+.\deploy-foundry-project.ps1
+
+# Phase 5: Private Endpoints
+.\deploy-private-endpoints.ps1
+```
+
+## Optional Phase 2: CI/CD Pipeline with Self-Hosted GitHub Runner
+
+**LATER OPTIONAL PHASE** - Convert the working Bicep deployments into an automated CI/CD pipeline.
+
+This repository also supports a Terraform + GitHub Actions deployment strategy for automated CI/CD:
+
+- **Location:** `terraform/`, `.github/workflows/`
+- **Status:** 🔄 **OPTIONAL** - Working CI/CD infrastructure exists but not currently used (pivoted to Bicep for primary deployment)
+- **Best for:** Automated CI/CD after manual Bicep validation is complete
+- **See:** [terraform/README.md](terraform/README.md)
+
+**Note:** The CI/CD approach was initially developed but the project pivoted to Bicep scripts for the primary deployment path. The CI/CD infrastructure remains available for future automation.
 
 This repository contains documentation and resources for evaluating Azure Files as a cost-effective, performant, and secure replacement for on-premises file storage infrastructure in a government context, specifically for the **BC Government**.
 
-## Project Status (as of July 6, 2025)
+## Project Status (as of December 1, 2025)
 
-- **Bastion host deployed and operational**: Secure SSH access to the private VNet is working.
-- **Self-hosted GitHub Actions runner installed and registered**: CI/CD jobs now run from a private, policy-compliant VM.
-- **Terraform (dev) updated to use self-hosted runner**: Storage infrastructure (Azure Files and Blob container) successfully deployed using the private runner.
-- **Documentation and architecture diagrams sanitized**: All sensitive values removed, and only sanitized diagrams are referenced throughout the project.
-- **GitHub Actions workflows reviewed and cleaned up**: Only four active workflows remain; unused workflows archived and documentation updated for clarity.
-- **Azure Files connectivity documentation streamlined**: Outdated and duplicate analysis merged and removed; main connectivity options and status are clearly documented.
-- **Repository structure and documentation up to date**: Tree structure, module references, and onboarding/validation guides are current and reflect the latest state.
-- **Current blocker:** Site-to-site VPN connectivity will not be enabled in our Landing Zone. We have been directed to wait for ExpressRoute to be provisioned by the platform team for on-premises access to Azure Files.
+- **✅ All 5 Phases Complete**: Full Azure AI Foundry landing zone deployed using Bicep scripts
+- **✅ Private Endpoints Operational**: Zero-trust networking with cross-region Foundry connectivity
+- **✅ VM & Bastion Working**: Secure access to private resources without public IPs
+- **🔄 Optional Phase 2**: CI/CD pipeline conversion (existing Terraform/GHA code available but not currently used)
+- **📋 Scripts Enhanced**: All PowerShell scripts include filename comments and comprehensive verification
+- **📊 Task Tracker Updated**: Complete deployment status and teardown procedures documented
+
+**Current Architecture:**
+- **VM** in private subnet with managed identity
+- **Bastion** for secure SSH access (no public IPs)
+- **Private Endpoints** for Storage, Key Vault, and AI Foundry
+- **Cross-region connectivity** (infrastructure in canadacentral, Foundry in canadaeast)
+- **Zero-trust security** with passwordless authentication
 
 ## Project Overview
 
@@ -64,34 +97,20 @@ The BC Government is building an Azure AI Foundry landing zone to enable secure 
 ## Repository Structure and Key Resources
 
 ### Documentation
--   **[task-tracker.md](task-tracker.md)**: **START HERE** - Current deployment status, phase-by-phase deployment commands, and next steps
--   **[ProofOfConceptPlan.md](ProofOfConceptPlan.md)**: Comprehensive plan outlining objectives, evaluation criteria, and timeline
--   **[ArchitectureOverview.md](Architecture/ArchitectureOverview.md)**: Detailed architecture design for Azure Files implementation
--   **[ValidationProcess.md](WorkTracking/OneTimeActivities/ValidationProcess.md)**: Step-by-step guide for validating the end-to-end CI/CD pipeline and implementation process
+-   **[task-tracker.md](task-tracker.md)**: **START HERE** - Complete deployment status, phase-by-phase commands, and teardown procedures
+-   **[docs/azure-ai-foundry-deployment-guide.md](docs/azure-ai-foundry-deployment-guide.md)**: Comprehensive deployment manual
+-   **[ProofOfConceptPlan.md](ProofOfConceptPlan.md)**: Project objectives and evaluation criteria
+-   **[ArchitectureOverview.md](Architecture/ArchitectureOverview.md)**: Technical architecture design
 
-### Infrastructure as Code
--   **[terraform/](terraform/)**: Infrastructure code and deployment configurations.
-    -   **[README.md](terraform/README.md)**: Setup, usage instructions, and module documentation.
-    -   **[environments/](terraform/environments/)**: Environment-specific configurations.
-        -   `cicd/`: CI/CD infrastructure (self-hosted runners, Bastion host).
-        -   `dev/`: Development environment resources and variables.
-        -   `test/`: Test environment resources and variables.
-        -   `prod/`: Production environment resources and variables.
-    -   **[modules/](terraform/modules/)**: Reusable BC Gov-compliant Terraform modules.
-        -   `bastion/`: Azure Bastion host with native SSH/RDP support.
-        -   `runner/`: GitHub Actions self-hosted runner infrastructure.
-        -   `vm/`: Virtual machine module for runner deployment.
-        -   `networking/`: Network components (VNet, Subnet, NSG).
-        -   `storage/`: Storage resources (Account, File Share, Blob).
-        -   `security/`: Security components (NSG, Firewall).
-        -   `dns/`: DNS configuration (Private DNS, Resolver).
+### Primary Deployment: Bicep Scripts
+-   **[scripts/bicep/](scripts/bicep/)**: **MAIN DEPLOYMENT SCRIPTS** - All 25+ PowerShell scripts for phased deployment
+-   **[bicep/](bicep/)**: Modular Bicep templates for each resource type
+-   **Status:** ✅ **COMPLETE** - All infrastructure deployed and operational
 
-### GitHub Actions Workflows
--   **[.github/workflows/](.github/workflows/)**:
-    -   **[main.yml](.github/workflows/main.yml)**: Deploys storage infrastructure in the dev environment using self-hosted runners.
-    -   **[runner-infra.yml](.github/workflows/runner-infra.yml)**: Deploys CI/CD self-hosted runner infrastructure (runner VM, Bastion, NSG, etc).
-    -   **[azure-login-validation.yml](.github/workflows/azure-login-validation.yml)**: Validates Azure authentication via OIDC (manual trigger).
-    -   **[test-self-hosted-runner.yml](.github/workflows/test-self-hosted-runner.yml)**: Tests the self-hosted runner with a simple scenario.
+### Optional CI/CD Pipeline (Phase 2)
+-   **[terraform/](terraform/)**: Infrastructure code for automated CI/CD deployment
+-   **[.github/workflows/](.github/workflows/)**: GitHub Actions workflows
+-   **Status:** 🔄 **OPTIONAL** - Working code exists but not currently used (pivoted to Bicep for primary deployment)
 
 ### Resources and Best Practices
 -   **[Resources/](Resources/)**:
@@ -127,7 +146,20 @@ This PoC implements a hybrid connectivity model with Azure Files accessed via Pr
 
 ## Getting Started
 
-Review the [Proof of Concept Plan](ProofOfConceptPlan.md) for an understanding of project objectives and evaluation criteria.
+**START HERE:** Review the [task-tracker.md](task-tracker.md) for current deployment status and next steps.
+
+### Primary Path: Deploy with Bicep Scripts
+1. **Check Status**: See [task-tracker.md](task-tracker.md) - all 5 phases are complete
+2. **Environment Setup**: Copy `azure.env.template` to `azure.env` and configure
+3. **Deploy**: Use the PowerShell scripts in `scripts/bicep/` for each phase
+4. **Validate**: Run `scripts\azure-inventory.ps1` to verify all resources
+
+### Optional Path: Convert to CI/CD Pipeline
+After Bicep deployment is validated, optionally convert to automated CI/CD:
+1. **Review Existing Code**: Terraform modules in `terraform/` are ready to use
+2. **Deploy CI/CD Infra**: Use `terraform/environments/cicd/` for self-hosted runner
+3. **Convert Workflows**: Adapt existing GitHub Actions workflows
+4. **Automate**: Move from manual Bicep scripts to automated pipeline
 
 For detailed technical architecture, see the [Architecture Overview](./Architecture/ArchitectureOverview.md).
 
@@ -149,32 +181,20 @@ Details on these options are available in the [Network Connectivity Options Anal
 
 ## Development Process
 
-This project implements a secure, compliant infrastructure development process using GitHub Actions and Terraform:
+### Primary: Manual Bicep Deployment
+1. **Environment Setup**: Configure `azure.env` with your values
+2. **Phased Deployment**: Use PowerShell scripts in `scripts/bicep/` 
+3. **Validation**: Test each phase before proceeding
+4. **Documentation**: All steps tracked in `task-tracker.md`
 
-### Local Development
-1.  Clone repository and set up local environment.
-2.  Use Azure CLI authentication for development (`az login`).
-3.  Create feature branch for changes.
-4.  Test changes locally with `terraform plan`.
+### Optional: Automated CI/CD Pipeline
+After manual validation, convert to automated deployment:
+1. **CI/CD Infrastructure**: Deploy self-hosted runner using `terraform/environments/cicd/`
+2. **Pipeline Conversion**: Adapt working Bicep scripts to GitHub Actions workflows
+3. **Automated Validation**: Implement automated testing and compliance checks
+4. **Production Deployment**: Use approved pipelines for production environments
 
-### Automated Validation
-1.  Push changes to GitHub.
-2.  Create Pull Request (targeting `dev` for dev validation, `main` for production).
-3.  Automated workflows run:
-    -   Terraform validation.
-    -   BC Gov policy compliance checks.
-    -   Security scanning.
-    -   Cost estimation.
-
-### Deployment Process
-1.  Pull Request review and approval.
-2.  Merge to target branch (e.g., `dev` for dev deployment, `main` for production).
-3.  Automated deployment via GitHub Actions:
-    -   OIDC authentication to Azure.
-    -   Resource creation/update.
-    -   Validation checks.
-
-> **Important**: All deployments must follow BC Government security requirements and use approved runners. For policy-compliant deployments, use the self-hosted runner infrastructure deployed via `terraform/environments/cicd/`.
+> **Current Status**: All infrastructure deployed manually with Bicep. CI/CD pipeline code exists but is not currently active.
 
 For detailed implementation guidance, see:
 -   [Terraform Resources Guide](Resources/TerraformResourcesForAzurePoC.md)
@@ -243,9 +263,9 @@ See the [terraform](./terraform/) directory for infrastructure code. Key aspects
 
 For more information on working with Terraform in this project, see the [Terraform README](terraform/README.md).
 
-## Deployment Workflow Summary (Dev Environment)
+## Optional Phase 2: CI/CD Deployment Workflow Summary (Dev Environment)
 
-The following diagram illustrates the GitHub Actions and Terraform deployment process specifically for the **development environment** in the BC Government context:
+The following diagram illustrates the GitHub Actions and Terraform deployment process specifically for the **development environment** in the BC Government context (Optional Phase 2):
 
 ```mermaid
 sequenceDiagram
@@ -296,15 +316,15 @@ sequenceDiagram
     end
 ````
 
-## CI/CD Infrastructure: Self-Hosted GitHub Actions Runner
+## Optional Phase 2: CI/CD Infrastructure (Self-Hosted GitHub Actions Runner)
 
-### Why Self-Hosted Runners Are Required
+**STATUS: OPTIONAL - Complete infrastructure deployed manually with Bicep. This section describes how to optionally convert to automated CI/CD.**
 
-BC Government Azure environments implement strict security policies that **forbid creating resources with public network access enabled**. This creates a challenge for CI/CD:
+BC Government Azure environments implement strict security policies that forbid creating resources with public network access enabled. This creates challenges for CI/CD:
 
 - **Standard GitHub-hosted runners** operate from the public internet
 - When Terraform tries to create storage accounts or file shares, it requires network access
-- If public access is disabled (per policy), the firewall blocks the runner → **403 Forbidden errors**
+- If public access is disabled (per policy), the firewall blocks the runner → 403 Forbidden errors
 - If we try to enable public access, **Azure Policy blocks the action**
 
 ### The Solution: Private Network Runner
@@ -323,7 +343,9 @@ The **self-hosted GitHub Actions runner VM** is deployed **inside the private Az
 3. **Network Security Groups**: Policy-compliant subnet creation with required firewall rules
 4. **Private Networking**: Runner communicates with storage accounts via private endpoints
 
-### Quick Setup
+### When to Use This (Optional Phase 2)
+
+After validating your Bicep deployment works correctly:
 
 1. **Deploy the CI/CD infrastructure:**
    ```bash
@@ -331,28 +353,28 @@ The **self-hosted GitHub Actions runner VM** is deployed **inside the private Az
    terraform init && terraform apply
    ```
 
-2. **Connect to the runner via Bastion:**
-   ```bash
-   az network bastion ssh \
-     --name <bastion-name> \
-     --resource-group <cicd-resource-group> \
-     --target-resource-id /subscriptions/<subscription-id>/resourceGroups/<cicd-resource-group>/providers/Microsoft.Compute/virtualMachines/<runner-vm-name> \
-     --auth-type SSHKey --username <admin-username>
-   ```
+2. **Convert manual scripts to automated workflows:**
+   - Adapt the working Bicep scripts to GitHub Actions
+   - Implement automated validation and testing
+   - Set up approval gates for production deployments
 
-   > **Note**: Replace placeholders with actual values from your `terraform.tfvars` file:
-   > - `<bastion-name>`: Value of `bastion_name`
-   > - `<cicd-resource-group>`: Value of `cicd_resource_group_name`  
-   > - `<subscription-id>`: Your Azure subscription ID
-   > - `<runner-vm-name>`: Value of `runner_vm_name`
-   > - `<admin-username>`: Value of `runner_vm_admin_username`
+**See:** [Azure AI Foundry Deployment Guide](docs/azure-ai-foundry-deployment-guide.md) for detailed CI/CD conversion procedures.
 
-3. **Update workflows** to use `runs-on: self-hosted`
-
-> **For complete setup instructions**, see [`terraform/environments/cicd/README.md`](terraform/environments/cicd/README.md)
+> **Note**: This CI/CD infrastructure was initially developed but the project pivoted to Bicep scripts for primary deployment. The Terraform code remains available for future automation needs.
 
 ---
 
-## Note on DNS in the Dev Environment
+## Current Project Status Summary
 
-> **Update:** DNS resources and modules have been removed from the development environment for policy compliance and simplification. For technical details and rationale, see the [terraform/README.md](terraform/README.md).
+- **✅ Bicep Deployment Complete**: All 5 phases successfully deployed using PowerShell scripts
+- **✅ Private Endpoints Operational**: Zero-trust networking working across regions
+- **✅ Infrastructure Validated**: All resources verified and documented in task tracker
+- **🔄 Optional CI/CD**: Terraform and GitHub Actions code exists for future automation
+- **📋 Well-Documented**: Comprehensive guides and teardown procedures available
+
+**Next Steps:**
+1. Use the deployed infrastructure for AI model consumption
+2. Optionally convert to CI/CD pipeline using existing Terraform code
+3. Monitor and maintain using Log Analytics and Azure Monitor
+
+For immediate use, see [task-tracker.md](task-tracker.md) for operational status and access procedures.

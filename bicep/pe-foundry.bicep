@@ -1,5 +1,5 @@
-﻿// bicep/pe-keyvault.bicep
-// Private Endpoint for Key Vault
+﻿// bicep/pe-foundry.bicep
+// Private Endpoint for Azure AI Foundry (AML Workspace)
 @description('Name of the private endpoint')
 param peName string
 
@@ -9,11 +9,11 @@ param location string
 @description('Resource ID of the subnet for private endpoint')
 param subnetId string
 
-@description('Resource ID of the Key Vault')
-param keyVaultId string
+@description('Resource ID of the Azure AI Foundry (AML) workspace')
+param foundryId string
 
-// Private Endpoint
-resource peKeyVault 'Microsoft.Network/privateEndpoints@2024-05-01' = {
+// Private Endpoint for AML workspace
+resource peFoundry 'Microsoft.Network/privateEndpoints@2024-05-01' = {
   name: peName
   location: location
   properties: {
@@ -22,11 +22,11 @@ resource peKeyVault 'Microsoft.Network/privateEndpoints@2024-05-01' = {
     }
     privateLinkServiceConnections: [
       {
-        name: 'keyvault-connection'
+        name: 'foundry-connection'
         properties: {
-          privateLinkServiceId: keyVaultId
+          privateLinkServiceId: foundryId
           groupIds: [
-            'vault'
+            'amlworkspace' // current groupId for AML Workspaces
           ]
         }
       }

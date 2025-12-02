@@ -5,6 +5,7 @@ This document tracks the progress of deploying Azure infrastructure to support *
 ## Quick Reference
 
 - **Deployment Manual**: See `docs\deployment-scripts-manual.md` for comprehensive guide
+- **Complete Deployment Guide**: See `docs\azure-ai-foundry-deployment-guide.md` for step-by-step instructions
 - **Inventory Script**: Run `scripts\azure-inventory.ps1` to list all Azure resources
 - **Environment Config**: Copy `azure.env.template` to `azure.env` and fill in your values (gitignored) 
 
@@ -127,17 +128,20 @@ This document tracks the progress of deploying Azure infrastructure to support *
   - ✅ **Status**: Provisioning succeeded, Workspace ID: 3bbe6d98-be5b-4879-a97f-59d14f8c6717
   - ✅ **Parent Hub**: Connected to foundry-ag-pssg-azure-files (hubResourceId reference)
 
-### Phase 5: Private Connectivity (Zero-Trust Networking) ⏳ PENDING
+### Phase 5: Private Connectivity (Zero-Trust Networking) ✅ COMPLETE
 **Dependencies:** Phase 2 (Storage, Key Vault), Phase 4 (Foundry), Phase 1 (PE Subnet)
 
-- [ ] **All Private Endpoints** - `scripts\bicep\deploy-private-endpoints.ps1`
-  - PE for Storage Account (`$PE_STORAGE`) - canadacentral → blob subresource
-  - PE for Key Vault (`$PE_KEYVAULT`) - canadacentral → vault subresource  
-  - PE for Foundry (`$PE_FOUNDRY`) - **Cross-region**: PE in canadacentral → Foundry in canadaeast
+- [x] **All Private Endpoints** - `scripts\bicep\deploy-private-endpoints.ps1` ✅ DEPLOYED
+  - [x] PE for Storage Account (`$PE_STORAGE`) - canadacentral → blob subresource
+  - [x] PE for Key Vault (`$PE_KEYVAULT`) - canadacentral → vault subresource  
+  - [x] PE for Foundry (`$PE_FOUNDRY`) - **Cross-region**: PE in canadacentral → Foundry in canadaeast
   - ⚠️ **Deploy after Phase 4** - Requires all target resources (Storage, Key Vault, Foundry) to exist
   - Enables private, secure access from VM without internet exposure
   - 🌐 **Cross-Region Pattern**: Foundry PE follows BC Gov OpenAI standard
   - 💡 **Benefit**: Test resources work first, then lock down with private connectivity
+  - ✅ **Scripts Enhanced**: Added comprehensive verification instructions and improved parsing
+  - ✅ **Bicep Templates Updated**: Policy-compliant, reference existing DNS zones
+  - ✅ **Status**: All private endpoints deployed successfully, DNS resolution verified
 
 ## Deployment Workflow (Recommended Order)
 
@@ -177,7 +181,7 @@ cd c:\Users\RICHFREM\source\repos\AzureFilesPoC\scripts\bicep
 .\deploy-foundry-project.ps1
 ```
 
-### ⏳ Phase 5 - Private Endpoints (After Phase 4)
+### ⏳ Phase 5 - Private Endpoints (After Phase 4) ✅ COMPLETE
 
 ```powershell
 # Deploy all private endpoints (Storage, Key Vault, Foundry)
@@ -212,16 +216,46 @@ Once complete, you'll have:
 - Ensure Azure CLI is logged in and subscription is set before running scripts
 - Scripts use idempotent operations where possible (check for existing resources)
 
+## Comprehensive Deployment Guide
+
+✅ **Complete Deployment Guide Created**: `docs\azure-ai-foundry-deployment-guide.md`
+
+This comprehensive guide includes:
+- Prerequisites and environment setup
+- SSH key creation and VM access procedures
+- Phase-by-phase deployment instructions with commands
+- Validation and testing procedures for each phase
+- Troubleshooting common issues
+- Complete resource inventory and cleanup procedures
+- Architecture diagrams and explanations
+- Security considerations and best practices
+
+**Next Steps:**
+1. **✅ Phase 5 Complete**: All private endpoints deployed and verified operational
+2. **Test End-to-End**: Connect to VM via Bastion and test all private connectivity
+3. **Deploy AI Models**: Use Azure AI Studio to deploy models to your Foundry project
+4. **Monitor & Maintain**: Use Log Analytics Workspace for monitoring and alerting
+
 ## Cleanup and Teardown Scripts
 
 **Teardown Order:** Reverse of deployment phases (Phase 5 → 4 → 3 → 2 → 1)
 
+### Quick Teardown (Recommended)
+```powershell
+cd scripts\bicep
+.\teardown-all.ps1  # Interactive master teardown with confirmations
+.\teardown-all.ps1 -Force  # Non-interactive teardown (dangerous!)
+```
+
+### Manual Teardown (Individual Scripts)
+**⚠️ WARNING**: Use individual scripts only if master teardown fails. Order is critical!
+
 ### Phase 5 Teardown (Private Connectivity)
-1. [ ] `teardown-private-endpoints.ps1` - Remove Private Endpoints (Storage, Key Vault, Foundry)
+1. [x] `teardown-private-endpoints.ps1` - Remove Private Endpoints (Storage, Key Vault, Foundry) ✅ CREATED
 
 ### Phase 4 Teardown (AI Services)
-2. [ ] `teardown-foundry-project.ps1` - Remove Foundry Project
-3. [ ] `teardown-foundry.ps1` - Remove Foundry Workspace
+2. [x] `teardown-foundry-project.ps1` - Remove Foundry Project ✅
+3. [x] `teardown-foundry.ps1` - Remove Foundry Workspace ✅
 
 ### Phase 3 Teardown (Compute)
 4. [x] `teardown-bastion.ps1` - Remove Bastion Host, Public IP ✅
@@ -240,7 +274,7 @@ Once complete, you'll have:
 13. [x] `teardown-nsgs.ps1` - Remove all NSGs (VM, Bastion, PE) ✅
 
 ### Master Teardown
-- [ ] `teardown-all.ps1` - Master orchestration script
+- [x] `teardown-all.ps1` - Master orchestration script ✅ CREATED
   - Reverse phase order (5→4→3→2→1)
   - Confirmation prompts per phase
   - Parallel teardown within phases where safe
