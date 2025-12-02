@@ -1,3 +1,4 @@
+# Filename: scripts/bicep/teardown-foundry.ps1
 # Teardown Azure AI Foundry Hub
 # This script removes the Foundry Hub workspace
 # NOTE: Delete all Projects first before deleting the Hub

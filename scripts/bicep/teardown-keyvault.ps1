@@ -1,3 +1,4 @@
+# Filename: scripts/bicep/teardown-keyvault.ps1
 # Teardown Key Vault
 # This script removes the Key Vault created for the AI Foundry Landing Zone
 

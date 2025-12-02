@@ -1,4 +1,6 @@
 ﻿
+# Filename: scripts/bicep/deploy-foundry-project.ps1
+
 # Deploy Azure AI Foundry Project
 # This script deploys a Project workspace under the Foundry Hub
 # Docs: https://learn.microsoft.com/azure/ai-studio/how-to/create-projects

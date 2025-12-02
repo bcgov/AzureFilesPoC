@@ -1,3 +1,4 @@
+# Filename: scripts/bicep/teardown-nsgs.ps1
 # Teardown All Network Security Groups
 # This script removes all NSGs created for the AI Foundry Landing Zone
 

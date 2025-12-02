@@ -1,3 +1,4 @@
+# Filename: scripts/bicep/deploy-bastion.ps1
 # Load environment variables from azure.env
 $envFile = "..\..\azure.env"
 if (Test-Path $envFile) {

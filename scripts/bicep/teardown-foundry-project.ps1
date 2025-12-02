@@ -1,3 +1,4 @@
+# Filename: scripts/bicep/teardown-foundry-project.ps1
 # Teardown Azure AI Foundry Project
 # This script removes the Foundry Project workspace
 

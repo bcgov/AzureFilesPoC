@@ -1,4 +1,6 @@
 ﻿
+# Filename: scripts/bicep/deploy-foundry.ps1
+
 # Deploy Azure AI Foundry Hub Workspace
 # This script deploys an Azure Machine Learning workspace with kind='Hub' (AI Foundry)
 # Documentation: https://learn.microsoft.com/azure/ai-studio/how-to/create-azure-ai-resource

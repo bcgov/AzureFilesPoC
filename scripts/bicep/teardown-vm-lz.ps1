@@ -1,3 +1,4 @@
+# Filename: scripts/bicep/teardown-vm-lz.ps1
 # Teardown Virtual Machine
 # This script removes the VM and associated resources created for the AI Foundry Landing Zone
 

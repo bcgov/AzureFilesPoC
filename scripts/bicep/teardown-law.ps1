@@ -1,3 +1,4 @@
+# Filename: scripts/bicep/teardown-law.ps1
 # Teardown Log Analytics Workspace
 # This script removes the Log Analytics Workspace created for the AI Foundry Landing Zone
 

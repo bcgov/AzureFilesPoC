@@ -1,3 +1,4 @@
+# Filename: scripts/bicep/deploy-subnet-pe.ps1
 <#
     Deploy Private Endpoint Subnet in Existing VNet using Bicep and azure.env
     

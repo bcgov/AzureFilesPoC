@@ -1,3 +1,4 @@
+# Filename: scripts/bicep/teardown-subnet-vm.ps1
 # Teardown VM Subnet
 # This script removes the VM subnet created for the AI Foundry Landing Zone
 

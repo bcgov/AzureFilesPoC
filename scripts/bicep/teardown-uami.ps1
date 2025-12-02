@@ -1,3 +1,4 @@
+# Filename: scripts/bicep/teardown-uami.ps1
 # Teardown User-Assigned Managed Identity
 # This script removes the User-Assigned Managed Identity created for the AI Foundry Landing Zone
 

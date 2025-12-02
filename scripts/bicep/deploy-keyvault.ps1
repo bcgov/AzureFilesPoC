@@ -1,3 +1,4 @@
+# Filename: scripts/bicep/deploy-keyvault.ps1
 <#
     Deploy Azure Key Vault with Network ACLs
     
