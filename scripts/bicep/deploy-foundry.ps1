@@ -12,6 +12,12 @@
 #   .\deploy-foundry.ps1 -UseKeyVault              # Include Key Vault
 #   .\deploy-foundry.ps1 -UseUAMI                  # Include UAMI
 #   .\deploy-foundry.ps1 -UseKeyVault -UseUAMI     # Full deployment with all resources
+#
+# Confirm hub install succeeded with:
+# az resource list --resource-group rg-ag-pssg-azure-files-azure-foundry `
+#   --query "[?type=='Microsoft.MachineLearningServices/workspaces' && kind=='Hub'].{Name:name,Kind:kind,Location:location}" -o table
+
+
 
 param(
     [switch]$UseKeyVault = $false,

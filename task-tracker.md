@@ -121,9 +121,11 @@ This document tracks the progress of deploying Azure infrastructure to support *
   - ⚠️ **Important**: Deploy Foundry BEFORE creating its Private Endpoint (Phase 5)
   - ✅ **Status**: Provisioning succeeded, Discovery URL: https://canadaeast.api.azureml.ms/discovery
   
-- [ ] **AI Foundry Project** (`$FOUNDRY_PROJECT`) - `scripts\bicep\deploy-foundry-project.ps1`
+- [x] **AI Foundry Project** (`$FOUNDRY_PROJECT`) - `scripts\bicep\deploy-foundry-project.ps1` ✅ DEPLOYED
   - Project container for AI models and endpoints
   - Where your API-accessible models will be deployed
+  - ✅ **Status**: Provisioning succeeded, Workspace ID: 3bbe6d98-be5b-4879-a97f-59d14f8c6717
+  - ✅ **Parent Hub**: Connected to foundry-ag-pssg-azure-files (hubResourceId reference)
 
 ### Phase 5: Private Connectivity (Zero-Trust Networking) ⏳ PENDING
 **Dependencies:** Phase 2 (Storage, Key Vault), Phase 4 (Foundry), Phase 1 (PE Subnet)
