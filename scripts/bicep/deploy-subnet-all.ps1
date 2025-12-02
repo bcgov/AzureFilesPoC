@@ -1,3 +1,4 @@
+# Filename: scripts/bicep/deploy-subnet-all.ps1
 # Deploy all subnets (VM, Bastion, PE) in Existing VNet using Bicep and azure.env
 
 $ErrorActionPreference = 'Stop'

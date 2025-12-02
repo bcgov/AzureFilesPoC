@@ -1,3 +1,4 @@
+# Filename: scripts/bicep/deploy-storage.ps1
 <#
     Deploy Storage Account with Network ACLs
     

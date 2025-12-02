@@ -1,3 +1,4 @@
+# Filename: scripts/bicep/deploy-subnet-vm.ps1
 # IMPORTANT: Always deploy the subnet Bicep module at the VNet's resource group scope (e.g., RG_NETWORKING), not the PoC RG.
 # The vnetResourceGroup parameter and --resource-group argument must match the VNet's actual resource group.
 # Deploy VM Subnet in Existing VNet using Bicep and azure.env

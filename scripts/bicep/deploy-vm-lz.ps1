@@ -1,3 +1,4 @@
+# Filename: scripts/bicep/deploy-vm-lz.ps1
 # Deploy Virtual Machine (Landing Zone Compliant)
 # This script deploys a Linux VM for running AI consumption scripts with secure access
 

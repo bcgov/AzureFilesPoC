@@ -1,3 +1,4 @@
+# Filename: scripts/bicep/teardown-storage.ps1
 # Teardown Storage Account
 # This script removes the Storage Account created for the AI Foundry Landing Zone
 

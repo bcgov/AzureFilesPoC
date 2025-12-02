@@ -1,3 +1,4 @@
+# Filename: scripts/bicep/teardown-subnet-bastion.ps1
 # Teardown Bastion Subnet
 # This script removes the Bastion subnet created for the AI Foundry Landing Zone
 

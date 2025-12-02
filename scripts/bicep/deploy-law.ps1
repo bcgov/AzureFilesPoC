@@ -1,3 +1,4 @@
+# Filename: scripts/bicep/deploy-law.ps1
 <#
     Deploy Log Analytics Workspace (LAW)
     

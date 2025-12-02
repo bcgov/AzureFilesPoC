@@ -1,3 +1,4 @@
+# Filename: scripts/bicep/teardown-subnet-pe.ps1
 <#
     Teardown Private Endpoint Subnet from Existing VNet using Azure CLI
 #>

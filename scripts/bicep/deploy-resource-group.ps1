@@ -1,3 +1,4 @@
+# Filename: scripts/bicep/deploy-resource-group.ps1
 # Create the resource group for the landing zone using variables from azure.env
 # Always use the project root azure.env
 $envPath = Join-Path $PSScriptRoot "..\..\azure.env"

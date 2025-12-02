@@ -1,3 +1,4 @@
+# Filename: scripts/bicep/deploy-uami.ps1
 <#
     Deploy User-Assigned Managed Identity (UAMI)
     
