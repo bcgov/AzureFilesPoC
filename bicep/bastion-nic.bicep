@@ -1,4 +1,4 @@
-
+// filename: bicep/bastion-nic.bicep
 // Bastion NIC (modular, parameterized)
 @description('Location for the NIC')
 param location string
