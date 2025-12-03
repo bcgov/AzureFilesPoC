@@ -129,6 +129,69 @@ The BC Government is building an Azure AI Foundry landing zone to enable secure 
 -   **[azure_files_poc_architecture_diagram_sanitized.drawio](Architecture/azure_files_poc_architecture_diagram_sanitized.drawio)**: Sanitized source diagram (draw.io).
 -   **[azure_files_poc_architecture_diagram_sanitized.drawio.png](Architecture/azure_files_poc_architecture_diagram_sanitized.drawio.png)**: Rendered sanitized diagram.
 
+## Resource Inventory and Summary
+
+After deployment, you can gather a comprehensive inventory of all deployed Azure resources and view organized summaries.
+
+### Running the Inventory Script
+
+The inventory script automatically discovers and catalogs all Azure resources in your subscription:
+
+```powershell
+cd scripts
+.\azure-inventory.ps1
+```
+
+**What it collects:**
+- Virtual Machines and VM extensions
+- Virtual Networks and subnets
+- Network Security Groups and rules
+- Storage Accounts and containers/fileshares
+- Key Vaults and their contents
+- Azure AI/ML Services (Foundry workspaces)
+- Managed Identities
+- Private Endpoints and DNS zones
+- Bastion hosts and public IPs
+- Log Analytics workspaces
+- Role assignments and policies
+
+### Viewing the Summary Report
+
+The inventory script automatically generates a comprehensive Markdown summary:
+
+```powershell
+# The script creates:
+# - azure-inventory/ directory with detailed raw data
+# - azure-inventory-summary.md with organized tables
+```
+
+**Summary includes:**
+- **Complete resource counts** by type
+- **Detailed tables** with Name, Location, Resource Group, and type-specific properties
+- **Organized sections** for each resource category
+- **Cross-referenced information** (e.g., VM extensions, NSG rules)
+
+**Example summary sections:**
+- Virtual Machines (with OS details)
+- Virtual Networks (with subnet counts)
+- Storage Accounts (with SKU and kind)
+- Azure AI/ML Services (Foundry workspaces)
+- Private Endpoints (with connection details)
+
+### Inventory Files
+
+- **`azure-inventory/`**: Directory containing detailed raw inventory data (JSON and text formats)
+- **`azure-inventory-summary.md`**: Human-readable Markdown summary with tables
+- **Both files are gitignored** to prevent committing sensitive resource information
+
+### Troubleshooting Inventory Issues
+
+If the inventory script fails:
+1. **Check Azure CLI login**: `az account show`
+2. **Verify permissions**: Ensure you have Reader access to all resource groups
+3. **Check for missing extensions**: The script handles missing ML extensions gracefully
+4. **Review error messages**: Common issues are permission-related or network connectivity
+
 ## Key Evaluation Areas
 
 1.  **File Access & Management**: Ensuring compatibility with existing workflows, including folder operations and metadata preservation.
@@ -152,7 +215,13 @@ This PoC implements a hybrid connectivity model with Azure Files accessed via Pr
 1. **Check Status**: See [task-tracker.md](task-tracker.md) - all 5 phases are complete
 2. **Environment Setup**: Copy `azure.env.template` to `azure.env` and configure
 3. **Deploy**: Use the PowerShell scripts in `scripts/bicep/` for each phase
-4. **Validate**: Run `scripts\azure-inventory.ps1` to verify all resources
+4. **Gather Inventory**: Run `scripts\azure-inventory.ps1` to collect comprehensive resource inventory
+   - Discovers all Azure resources (VMs, networks, storage, AI services, etc.)
+   - Creates detailed JSON data in `azure-inventory/` directory
+5. **Review Summary**: Check `azure-inventory-summary.md` for organized tables of all deployed resources
+   - Includes resource counts, locations, and configuration details
+   - Helps verify deployment completeness and configuration
+6. **Validate**: Verify all expected resources are present and properly configured
 
 ### Optional Path: Convert to CI/CD Pipeline
 After Bicep deployment is validated, optionally convert to automated CI/CD:
