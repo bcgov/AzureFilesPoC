@@ -73,76 +73,29 @@ az account show --output table
 
 ## Infrastructure Deployment
 
-All infrastructure is deployed using Bicep templates in the correct dependency order.
+**Note:** This guide assumes you have already deployed the complete Azure AI Foundry infrastructure. If you need to deploy the infrastructure first, follow the comprehensive deployment guide:
 
-### Phase 1: Foundation (Network & Security)
+### Complete Infrastructure Deployment
 
-```powershell
-cd scripts\bicep
+📋 **[Azure AI Foundry Deployment Guide](docs/azure-ai-foundry-deployment-guide.md)** - Step-by-step instructions for deploying all required infrastructure
 
-# 1. Create Resource Group
-.\deploy-resource-group.ps1
-
-# 2. Deploy Network Security Groups
-.\deploy-nsgs.ps1
-
-# 3. Create Subnets
-.\deploy-subnet-all.ps1
-```
-
-### Phase 2: Storage & Security Services
-
-```powershell
-# 4. Storage Account (required for AI Foundry)
-.\deploy-storage.ps1
-
-# 5. Key Vault (optional but recommended)
-.\deploy-keyvault.ps1
-
-# 6. User-Assigned Managed Identity
-.\deploy-uami.ps1
-
-# 7. Log Analytics Workspace
-.\deploy-law.ps1
-```
-
-### Phase 3: Compute Resources
-
-```powershell
-# 8. Virtual Machine (Ubuntu 24.04 LTS)
-.\deploy-vm-lz.ps1
-
-# 9. Bastion Host (for secure VM access)
-.\deploy-bastion.ps1
-```
-
-### Phase 4: AI Services
-
-```powershell
-# 10. AI Foundry Hub Workspace (in canadaeast region)
-.\deploy-foundry.ps1
-
-# 11. AI Foundry Project (references the hub)
-.\deploy-foundry-project.ps1
-```
-
-### Phase 5: Private Connectivity
-
-```powershell
-# 12. Private Endpoints (for secure access)
-.\deploy-private-endpoints.ps1
-```
+**Quick Reference:** The deployment consists of 5 phases:
+1. **Foundation**: Network security groups and subnets
+2. **Storage & Security**: Storage account, Key Vault, managed identity, Log Analytics
+3. **Compute**: Virtual machine and Bastion host
+4. **AI Services**: Azure AI Foundry hub and project workspaces
+5. **Private Connectivity**: Private endpoints for secure access
 
 ### Deployment Verification
 
 After deployment, run the inventory script to verify all resources:
 
 ```powershell
-cd ..\  # Back to scripts directory
+cd scripts
 .\azure-inventory.ps1
 ```
 
-Check the generated `azure-inventory-summary.md` for deployment status.
+Check the generated `azure-inventory-summary.md` for deployment status and ensure all resources are present before proceeding with model testing.
 
 ## Bastion Connection Setup
 
