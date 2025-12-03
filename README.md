@@ -1,11 +1,6 @@
-# IMPORTANT: Subnet and NSG Deployment Scoping
-
-* Always deploy subnet Bicep modules at the VNet's resource group scope (e.g., RG_NETWORKING), not the PoC RG.
-* The vnetResourceGroup parameter and --resource-group argument must match the VNet's actual resource group.
-* NSGs are created in the PoC RG (RG_AZURE_FILES), but subnets must be created in the VNet's RG (RG_NETWORKING).
-* All subnet-related az commands (existence checks, creation, confirmation) must use RG_NETWORKING. All NSG-related commands must use RG_AZURE_FILES.
-
 # Azure AI Foundry Landing Zone (Azure Files PoC)
+
+> **⚠️ Important Deployment Note**: See [Subnet and NSG Deployment Scoping](docs/subnet-nsg-deployment-scoping.md) for critical resource group scoping requirements.
 
 This repository deploys Azure infrastructure to support **Azure AI Foundry** services with secure access via Bastion. The goal is to run AI model consumption scripts from a VM that securely connects to AI Foundry APIs through private endpoints.
 
@@ -442,8 +437,9 @@ After validating your Bicep deployment works correctly:
 - **📋 Well-Documented**: Comprehensive guides and teardown procedures available
 
 **Next Steps:**
-1. Use the deployed infrastructure for AI model consumption
-2. Optionally convert to CI/CD pipeline using existing Terraform code
-3. Monitor and maintain using Log Analytics and Azure Monitor
+1. **Test AI Models**: Follow the [Complete AI Model Test Guide](AI-Model-Test-Guide.md) for end-to-end testing
+2. Use the deployed infrastructure for AI model consumption
+3. Optionally convert to CI/CD pipeline using existing Terraform code
+4. Monitor and maintain using Log Analytics and Azure Monitor
 
 For immediate use, see [task-tracker.md](task-tracker.md) for operational status and access procedures.
