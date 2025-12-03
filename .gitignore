@@ -57,6 +57,7 @@ WorkTracking/OneTimeActivities/AzureAppRegistrationDetails.txt
 
 # Ignore Azure inventory outputs
 azure-inventory/
+azure-inventory-summary.md
 
 # Editor specific files
 .vscode/
