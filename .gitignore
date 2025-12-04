@@ -1,4 +1,4 @@
-# Terraform files
+# Terraform state and sensitive files (but track terraform code itself)
 **/.terraform/
 *.tfstate
 *.tfstate.*
@@ -9,20 +9,22 @@
 **/backend.tfvars
 **/terraformbackend.tfvars
 **/secrets.tfvars
-*.tfvars.bak
 secrets.tfvars.bak
 crash.log
 crash.*.log
 .terraform.lock.hcl
 
-ARCHIVE\questionsforazureadmin.md
+# Old archive location (now using scripts/ARCHIVE/)
+ARCHIVE/questionsforazureadmin.md
 azure.env
 azure.env.old
 !azure.env.template
 
+# Keep old ARCHIVE/ in root gitignored (legacy)
 ARCHIVE/
-Resources/azure-lz-samples/
-
+# But DO track scripts/ARCHIVE/ (contains terraform code for reference)
+!scripts/ARCHIVE/
+!scripts/ARCHIVE/**
 
 # Terraform plan output
 tfplan
@@ -41,7 +43,6 @@ terraform.rc
 # Except for template files
 !.env/*.template.json
 
-Resources/azure-lz-samples/
 # Ignore Azure application registration details file anywhere in the codebase
 **/AzureAppRegistrationDetails.txt
 # Original path-specific ignore (redundant but kept for backwards compatibility)
@@ -51,13 +52,22 @@ WorkTracking/OneTimeActivities/AzureAppRegistrationDetails.txt
 **/*credentials.json
 !**/*credentials.template.json
 
+# Ignore .env files with real values (keep templates)
+**/.env
+!**/.env.template
+**/azure.env
+**/azure.env.old
+
+# Ignore cloned external repos (nested git repos)
+docs/bcgov-references/azure-lz-samples/
+
 # Ignore existing Azure resource inventory (contains sensitive resource IDs)
 .env/azure-existing-resources.json
 .env/azure_full_inventory.json
 
-# Ignore Azure inventory outputs
-azure-inventory/
-azure-inventory-summary.md
+# Ignore Azure inventory outputs (contains sensitive resource IDs)
+scripts/azure-inventory/
+scripts/azure-inventory-summary.md
 
 # Editor specific files
 .vscode/

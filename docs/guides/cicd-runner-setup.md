@@ -356,6 +356,23 @@ az extension update --name ssh
 
 ### 2. Connect to the VM via Bastion from Your Terminal
 
+#### Prerequisites: Verify VM is Running
+
+Before attempting to connect, ensure the VM is in a running state:
+
+```bash
+# Check VM power state
+az vm show --name <vm-name> --resource-group <resource-group> --query "powerState" -o tsv
+
+# Expected output: VM running
+# If not running, start the VM:
+az vm start --name <vm-name> --resource-group <resource-group>
+```
+
+**Important:** The VM must be running before you can connect via Bastion. If the VM was stopped (common for cost savings), it may take 2-3 minutes to fully start.
+
+#### Connection Methods
+
 **Option 1: Use the readiness check script (recommended)**
 ```bash
 # Script will provide the exact connection command
@@ -366,12 +383,12 @@ az extension update --name ssh
 Replace the SSH key path if you use a different private key file.
 ```sh
 az network bastion ssh \
-  --name <bastion-name> \
-  --resource-group <cicd-resource-group-name> \
-  --target-resource-id <VM resource ID> \
-  --auth-type "SSHKey" \
-  --username <vm-admin-username> \
-  --ssh-key ~/.ssh/id_rsa
+  --name bastion-ag-pssg-azure-files \
+  --resource-group rg-ag-pssg-azure-files-azure-foundry \
+  --target-resource-id "/subscriptions/YOUR-SUBSCRIPTION-ID/resourceGroups/rg-ag-pssg-azure-files-azure-foundry/providers/Microsoft.Compute/virtualMachines/YOUR-VM-NAME" \
+  --auth-type ssh-key \
+  --username azureuser \
+  --ssh-key ~/.ssh/id_rsa_azure
 ```
 - If you see a prompt to install an extension, answer `y` or follow the instructions.
 - If you see an error about the `ssh` extension, run `az extension add -n ssh` and try again.
