@@ -8,8 +8,8 @@
 // Example: az deployment group create --resource-group <VNET_RG> --template-file subnet-create.bicep --parameters vnetResourceGroup=<VNET_RG> ...
 
 param vnetName string
-// vnetResourceGroup is only used by the parent Bicep file to set the module scope
-param vnetResourceGroup string
+// Note: vnetResourceGroup is passed by the parent Bicep file to set the module deployment scope
+// It is not used directly in this module as the scope is determined at deployment time
 param subnetName string
 param addressPrefix string
 param nsgResourceId string = '' // Optional: NSG to associate

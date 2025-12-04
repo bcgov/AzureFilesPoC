@@ -1,12 +1,3 @@
-# Export all private endpoints for each resource group
-Write-Host "Exporting all private endpoints for each resource group..."
-$resourceGroups = az group list --query "[].name" -o tsv
-foreach ($rg in $resourceGroups) {
-    $peFile = "$baseDir/private-endpoints-$rg.txt"
-    Write-Host "  - Resource Group: $rg"
-    az network private-endpoint list --resource-group $rg --output table > $peFile
-}
-
 # Azure Landing Zone Inventory Script
 # This script inventories all major Azure resources in the current subscription and outputs results to JSON and table files.
 # It will prompt for Azure login and subscription selection if needed.
