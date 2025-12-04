@@ -113,6 +113,7 @@ resource nsg 'Microsoft.Network/networkSecurityGroups@2023-11-01' = {
 }
 
 // ===== Attach NSG to SUBNET (policy requires subnet-level NSG) =====
+// Note: Using string concatenation for name because vnet is in a different resource group scope
 resource subnetNsg 'Microsoft.Network/virtualNetworks/subnets@2023-11-01' = if (attachNsgToSubnet) {
   name: '${vnetName}/${subnetName}'
   properties: {

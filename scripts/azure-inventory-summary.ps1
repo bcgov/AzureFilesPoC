@@ -17,7 +17,7 @@ $output += "**Inventory data from:** $InventoryPath"
 $output += ""
 
 # Function to parse table data with full column information
-function Parse-TableData {
+function ConvertFrom-TableData {
     param([string]$FilePath)
 
     if (!(Test-Path $FilePath)) {
@@ -97,6 +97,7 @@ $summary = [ordered]@{
     "Key Vaults" = @()
     "Log Analytics Workspaces" = @()
     "Azure AI/ML Services" = @()
+    "Azure OpenAI" = @()
     "Managed Identities" = @()
     "Private Endpoints" = @()
     "Private DNS Zones" = @()
@@ -104,62 +105,66 @@ $summary = [ordered]@{
 }
 
 # Parse Virtual Machines
-$vmData = Parse-TableData "$InventoryPath\all-vms.txt"
+$vmData = ConvertFrom-TableData "$InventoryPath\all-vms.txt"
 $summary["Virtual Machines"] = $vmData
 
 # Parse Virtual Networks
-$vnetData = Parse-TableData "$InventoryPath\all-vnets.txt"
+$vnetData = ConvertFrom-TableData "$InventoryPath\all-vnets.txt"
 $summary["Virtual Networks"] = $vnetData
 
 # Parse Storage Accounts
-$storageData = Parse-TableData "$InventoryPath\all-storage-accounts.txt"
+$storageData = ConvertFrom-TableData "$InventoryPath\all-storage-accounts.txt"
 $summary["Storage Accounts"] = $storageData
 
 # Parse Public IP Addresses
-$publicIpData = Parse-TableData "$InventoryPath\all-public-ips.txt"
+$publicIpData = ConvertFrom-TableData "$InventoryPath\all-public-ips.txt"
 $summary["Public IP Addresses"] = $publicIpData
 
 # Parse Log Analytics Workspaces
-$logAnalyticsData = Parse-TableData "$InventoryPath\all-log-analytics-workspaces.txt"
+$logAnalyticsData = ConvertFrom-TableData "$InventoryPath\all-log-analytics-workspaces.txt"
 $summary["Log Analytics Workspaces"] = $logAnalyticsData
 
 # Parse AI/ML Workspaces
-$mlData = Parse-TableData "$InventoryPath\all-ml-workspaces.txt"
+$mlData = ConvertFrom-TableData "$InventoryPath\all-ml-workspaces.txt"
 $summary["Azure AI/ML Services"] = $mlData
 
+# Parse Azure OpenAI accounts
+$openaiData = ConvertFrom-TableData "$InventoryPath\all-openai-accounts.txt"
+$summary["Azure OpenAI"] = $openaiData
+
 # Parse Bastion Hosts
-$bastionData = Parse-TableData "$InventoryPath\all-bastions.txt"
+$bastionData = ConvertFrom-TableData "$InventoryPath\all-bastions.txt"
 $summary["Bastion Hosts"] = $bastionData
 
 # Parse Private DNS Zones
-$dnsData = Parse-TableData "$InventoryPath\all-private-dns-zones.txt"
+$dnsData = ConvertFrom-TableData "$InventoryPath\all-private-dns-zones.txt"
 $summary["Private DNS Zones"] = $dnsData
 
 # Parse NSGs
-$nsgData = Parse-TableData "$InventoryPath\all-nsgs.txt"
+$nsgData = ConvertFrom-TableData "$InventoryPath\all-nsgs.txt"
 $summary["Network Security Groups"] = $nsgData
 
 # Parse Key Vaults
-$keyVaultData = Parse-TableData "$InventoryPath\all-keyvaults.txt"
+$keyVaultData = ConvertFrom-TableData "$InventoryPath\all-keyvaults.txt"
 $summary["Key Vaults"] = $keyVaultData
 
 # Parse Managed Identities
-$managedIdentityData = Parse-TableData "$InventoryPath\all-user-assigned-identities.txt"
+$managedIdentityData = ConvertFrom-TableData "$InventoryPath\all-user-assigned-identities.txt"
 $summary["Managed Identities"] = $managedIdentityData
 
 # Parse Subnets from subnet files
 $subnetFiles = Get-ChildItem "$InventoryPath\subnets-*.txt"
 foreach ($file in $subnetFiles) {
-    $subnetData = Parse-TableData $file.FullName
+    $subnetData = ConvertFrom-TableData $file.FullName
     $summary["Subnets"] += $subnetData
 }
 
 # Parse Role Assignments
-$roleData = Parse-TableData "$InventoryPath\role-assignments.txt"
+$roleData = ConvertFrom-TableData "$InventoryPath\role-assignments.txt"
 $summary["Role Assignments"] = $roleData
 
 # Parse Private Endpoints from all-resources.txt
-$allResourcesData = Parse-TableData "$InventoryPath\all-resources.txt"
+$allResourcesData = ConvertFrom-TableData "$InventoryPath\all-resources.txt"
 $privateEndpoints = @()
 foreach ($resource in $allResourcesData) {
     if ($resource.Type -match "Microsoft.Network/privateEndpoints") {

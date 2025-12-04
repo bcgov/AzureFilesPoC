@@ -4,9 +4,9 @@ This document tracks the progress of deploying Azure infrastructure to support *
 
 ## Quick Reference
 
-- **Documentation Index**: See `docs/README.md` for all documentation
-- **Deployment Guide**: See `docs/guides/deployment-guide.md` for step-by-step instructions
-- **AI Model Testing**: See `docs/guides/ai-model-testing.md` for model deployment & testing
+- **Documentation Index**: See [`../README.md`](../README.md) for all documentation
+- **Deployment Guide**: See [`../guides/deployment-guide.md`](../guides/deployment-guide.md) for step-by-step instructions
+- **AI Model Testing**: See [`../guides/ai-model-testing.md`](../guides/ai-model-testing.md) for model deployment & testing
 - **Inventory Script**: Run `scripts/azure-inventory.ps1` to list all Azure resources
 - **Environment Config**: Copy `azure.env.template` to `azure.env` and fill in your values (gitignored)
 - **Archived CI/CD**: See `scripts/ARCHIVE/` for Terraform and GitHub Actions code (not currently used) 

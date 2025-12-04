@@ -132,7 +132,7 @@ This creates:
 
 The architecture supports both AI Foundry and Azure Files workloads:
 
-![Architecture Diagram](docs/architecture/azure_files_poc_architecture_diagram_sanitized.drawio.png)
+![Architecture Diagram](docs/architecture/azure_files_poc_architecture_diagram.drawio.png)
 
 See [Architecture Overview](docs/architecture/overview.md) for details on:
 - Hub-spoke network topology

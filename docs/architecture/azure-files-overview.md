@@ -27,7 +27,7 @@ For more details on the BC Government's Azure landing zone architecture, see the
 ## Architecture Diagram
 
 
-![azure_files_poc_architecture_diagram_sanitized](azure_files_poc_architecture_diagram_sanitized.drawio.png)
+![docs\architecture\azure_files_poc_architecture_diagram.drawio.png](docs\architecture\azure_files_poc_architecture_diagram.drawio.png)
 
 
 This diagram illustrates the hybrid connectivity model using VPN and ExpressRoute, with Azure Files accessed via Private Endpoint and optional integration with Azure Blob Storage for tiering.

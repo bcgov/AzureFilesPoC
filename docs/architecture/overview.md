@@ -26,7 +26,7 @@ The landing zone provides a secure, BC Gov-compliant foundation with:
 | Diagram | Description |
 |---------|-------------|
 | [`landing-zone.mmd`](./landing-zone.mmd) | Current AI Foundry architecture (Mermaid) |
-| [`azure_files_poc_architecture_diagram_sanitized.drawio`](./azure_files_poc_architecture_diagram_sanitized.drawio) | Original Azure Files architecture (Draw.io) |
+| [`azure_files_poc_architecture_diagram.drawio`](./azure_files_poc_architecture_diagram.drawio) | Complete PoC architecture including AI Foundry (Draw.io) |
 
 ### Key Resources
 

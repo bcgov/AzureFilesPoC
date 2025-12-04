@@ -117,8 +117,8 @@ OneTimeActivities/SelfHostedRunnerSetup/StartingRunnerAfterInstall.sh
 **/StartingRunnerAfterInstall.sh
 
 # Ignore unsanitized architecture diagrams
-Architecture/azure_files_poc_architecture_diagram.drawio
-Architecture/azure_files_poc_architecture_diagram.drawio.png
+#Architecture/azure_files_poc_architecture_diagram.drawio
+#Architecture/azure_files_poc_architecture_diagram.drawio.png
 
 # Archived workflow YAML files
 .github/workflows/archive/terraform-common.yml

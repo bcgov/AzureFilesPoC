@@ -35,6 +35,7 @@ docs/
 │   ├── resource-inventory.md    # Required Azure objects
 │   └── landing-zone.mmd         # Mermaid architecture diagram
 ├── reference/                   # Reference documentation
+│   ├── task-tracker.md          # Deployment phases & progress
 │   ├── poc-plan.md              # PoC objectives & evaluation criteria
 │   ├── deployment-scripts.md    # Script reference manual
 │   └── subnet-nsg-scoping.md    # Deployment scoping rules
@@ -91,6 +92,7 @@ Background information and reference materials.
 
 | Document | Description |
 |----------|-------------|
+| [Task Tracker](./reference/task-tracker.md) | Deployment phases and progress tracking |
 | [PoC Plan](./reference/poc-plan.md) | Project objectives and evaluation criteria |
 | [Deployment Scripts](./reference/deployment-scripts.md) | Script usage and parameters |
 | [Subnet/NSG Scoping](./reference/subnet-nsg-scoping.md) | Resource group scoping rules |
