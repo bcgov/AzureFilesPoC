@@ -1,0 +1,15 @@
+# Placeholder workflow to satisfy CodeQL scanning
+# Active workflows are archived in scripts/ARCHIVE/github-workflows/
+# This file can be removed when real workflows are added back
+
+name: Placeholder
+
+on:
+  workflow_dispatch:  # Manual trigger only
+
+jobs:
+  placeholder:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Placeholder step
+        run: echo "This is a placeholder workflow. See scripts/ARCHIVE/github-workflows/ for archived workflows."
