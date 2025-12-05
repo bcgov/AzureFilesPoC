@@ -2,6 +2,15 @@
 
 This guide provides step-by-step instructions to test an AI model in Azure AI Foundry. For full infrastructure setup, see the [Deployment Guide](./deployment-guide.md).
 
+## Quick Reference: Scripts
+
+| Script | Location | Purpose |
+|--------|----------|---------|
+| `setup-vm-env.sh` | [examples/](../../examples/setup-vm-env.sh) | One-command VM Python environment setup |
+| `upload-to-blob.ps1` | [examples/](../../examples/upload-to-blob.ps1) | Upload files from local to blob storage |
+| `download-from-blob.sh` | [examples/](../../examples/download-from-blob.sh) | Download files on VM via private endpoint |
+| `process-blob-file.sh` | [examples/](../../examples/process-blob-file.sh) | Full pipeline: download + summarize |
+
 ## Table of Contents
 1. [Prerequisites](#prerequisites) – Ensure all required tools, access, and environment variables are set up
 2. [Environment Setup](#environment-setup) – Reference deployment guide for setup steps
@@ -210,6 +219,283 @@ curl -X POST "https://openai-ag-pssg-azure-files.openai.azure.com/openai/deploym
 | VM via Bastion | Private Endpoint → Azure OpenAI | ✅ Success |
 
 This confirms zero-trust security is working correctly.
+
+---
+
+## Advanced Testing: Document Summarization
+
+After completing the "Hello World" test above, try more realistic scenarios using Python scripts.
+
+### Option 1: Create Files Directly on VM (Recommended)
+
+The simplest approach - paste commands directly in your SSH session.
+
+**Step 1: Create the examples directory and script**
+
+```bash
+# Create directory
+mkdir -p ~/examples
+cd ~/examples
+
+# Create the summarization script
+cat > summarize-document.py << 'EOF'
+#!/usr/bin/env python3
+"""Summarize documents using Azure OpenAI via private endpoint."""
+import os, sys
+from openai import AzureOpenAI
+
+def main():
+    if len(sys.argv) < 2:
+        print("Usage: python summarize-document.py <filename>")
+        sys.exit(1)
+    
+    filepath = sys.argv[1]
+    endpoint = os.environ.get("AZURE_OPENAI_ENDPOINT")
+    api_key = os.environ.get("AZURE_OPENAI_KEY")
+    deployment = os.environ.get("AZURE_OPENAI_DEPLOYMENT", "gpt-5-nano")
+    
+    if not endpoint or not api_key:
+        print("Error: Set AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_KEY")
+        sys.exit(1)
+    
+    with open(filepath, 'r') as f:
+        text = f.read()
+    
+    print(f"Summarizing: {filepath} ({len(text)} characters)")
+    print("-" * 50)
+    
+    client = AzureOpenAI(
+        azure_endpoint=endpoint,
+        api_key=api_key,
+        api_version="2024-12-01-preview"
+    )
+    
+    response = client.chat.completions.create(
+        model=deployment,
+        messages=[
+            {"role": "system", "content": "Summarize documents concisely with key points."},
+            {"role": "user", "content": f"Summarize this document:\n\n{text}"}
+        ],
+        max_completion_tokens=500
+    )
+    
+    print("\n📄 SUMMARY:\n")
+    print(response.choices[0].message.content)
+    print("\n" + "-" * 50)
+    print("✅ Generated via private endpoint")
+
+if __name__ == "__main__":
+    main()
+EOF
+```
+
+**Step 2: Create a sample document to summarize**
+
+```bash
+cat > sample-document.txt << 'EOF'
+BC Government Digital Services Policy Framework - Version 2.1
+December 2025
+
+EXECUTIVE SUMMARY
+The Province of British Columbia is committed to delivering modern, secure, and 
+citizen-centric digital services. This policy establishes guidelines for all 
+ministries deploying cloud-based solutions within the BC Government Azure Landing Zone.
+
+KEY PRINCIPLES:
+1. Security First - Zero-trust networking required. Private endpoints mandatory for
+   all PaaS services. Public endpoints prohibited for sensitive workloads.
+
+2. Data Residency - All Protected B data must remain in Canadian data centers.
+   Primary regions: Canada Central (Toronto) and Canada East (Quebec City).
+
+3. Cost Optimization - Auto-shutdown policies required for non-production VMs.
+   Reserved instances recommended for workloads exceeding 12 months.
+
+4. Identity Management - Azure AD integration mandatory. Service accounts must use
+   managed identities. API keys stored in Azure Key Vault with RBAC.
+
+5. Monitoring - All resources must send diagnostic logs to central Log Analytics.
+   Azure Policy enforces compliance with guardrails automatically.
+
+AI AND MACHINE LEARNING WORKLOADS:
+- Azure AI Foundry for ML model development
+- Private endpoints required for Cognitive Services
+- Model inference must occur within landing zone boundary
+
+COMPLIANCE TIMELINE:
+- Q1 2025: All new deployments must comply
+- Q4 2025: Full compliance required for existing workloads
+
+Contact: Cloud Center of Excellence - cloud.coe@gov.bc.ca
+EOF
+```
+
+**Step 3: Install dependencies and set environment variables**
+
+```bash
+# Install venv package and create virtual environment (required on Ubuntu 24.04+)
+sudo apt install -y python3.12-venv
+python3 -m venv ~/venv
+source ~/venv/bin/activate
+
+# Install Python OpenAI SDK
+pip install openai
+
+# Set environment variables
+export AZURE_OPENAI_ENDPOINT="https://openai-ag-pssg-azure-files.openai.azure.com"
+export AZURE_OPENAI_DEPLOYMENT="gpt-5-nano"
+
+# Get API key (requires az login first)
+export AZURE_OPENAI_KEY=$(az cognitiveservices account keys list \
+  --name openai-ag-pssg-azure-files \
+  --resource-group rg-ag-pssg-azure-files-azure-foundry \
+  --query key1 -o tsv)
+
+# Verify key was retrieved
+echo "API Key set: ${AZURE_OPENAI_KEY:0:10}..."
+```
+
+> **Note:** Ubuntu 24.04+ uses externally-managed Python environments. Using a virtual environment
+> (`venv`) is required. Remember to run `source ~/venv/bin/activate` in new SSH sessions.
+
+**Step 4: Run the summarization**
+
+```bash
+python summarize-document.py sample-document.txt
+```
+
+**Expected output:**
+```
+Summarizing: sample-document.txt (1247 characters)
+--------------------------------------------------
+
+📄 SUMMARY:
+
+This BC Government policy framework establishes cloud deployment guidelines:
+
+**Key Points:**
+• Zero-trust security with mandatory private endpoints (no public access)
+• Data must stay in Canadian regions (Canada Central/East)
+• Cost controls: VM auto-shutdown, reserved instances for long-term workloads
+• Azure AD required; managed identities for service accounts
+• Central logging via Log Analytics with policy enforcement
+
+**AI/ML Requirements:**
+• Use Azure AI Foundry with private endpoints
+• All inference within landing zone boundary
+
+**Timeline:** New deployments comply Q1 2025; full compliance by Q4 2025.
+
+--------------------------------------------------
+✅ Generated via private endpoint
+```
+
+---
+
+### Option 2: Upload Files via Azure Blob Storage
+
+For larger files or automated workflows, upload to blob storage from your local machine and access from VM via private endpoint.
+
+#### Prerequisites
+- Storage account `stagpssgazurepocdev01` has firewall rules allowing BC Gov IPs (`142.28-32.0.0/16`)
+- VM accesses storage via private endpoint
+- You are logged into Azure CLI (`az login`)
+- `azcopy` installed on local machine
+
+#### Step 1: Create a temporary blob container (one-time setup)
+
+```powershell
+# From local machine (PowerShell)
+az storage container create --account-name stagpssgazurepocdev01 --name temp-ai-test --auth-mode login
+```
+
+#### Step 2: Upload files using the upload script
+
+Use the provided `scripts/upload-to-blob.ps1` script:
+
+```powershell
+# Upload default sample file
+.\scripts\upload-to-blob.ps1
+
+# Or upload a specific file
+.\scripts\upload-to-blob.ps1 -FilePath ".\path\to\myfile.txt"
+```
+
+The script:
+- Generates a short-lived (1 hour) SAS token using storage account key
+- Uploads the file with azcopy
+- Shows the download command to run on VM
+
+#### Step 3: Download on VM via private endpoint
+
+```bash
+# From VM (SSH session) - download using storage key auth
+az storage blob download \
+  --account-name stagpssgazurepocdev01 \
+  --container-name temp-ai-test \
+  --name sample-document.txt \
+  --file ~/examples/sample-from-blob.txt \
+  --auth-mode key
+
+# List blobs in container
+az storage blob list --account-name stagpssgazurepocdev01 --container-name temp-ai-test --auth-mode key -o table
+
+# Verify download
+ls -la ~/examples/
+cat ~/examples/sample-from-blob.txt
+```
+
+> **Note:** We use `--auth-mode key` because Storage Blob Data Reader role is not assigned. 
+> The VM can still access via private endpoint - the key is fetched via management plane.
+
+#### Step 4: Set up environment and process the file
+
+```bash
+# Activate Python virtual environment
+source ~/venv/bin/activate
+
+# Set environment variables (if not already set)
+export AZURE_OPENAI_ENDPOINT="https://openai-ag-pssg-azure-files.openai.azure.com"
+export AZURE_OPENAI_DEPLOYMENT="gpt-5-nano"
+export AZURE_OPENAI_KEY=$(az cognitiveservices account keys list \
+  --name openai-ag-pssg-azure-files \
+  --resource-group rg-ag-pssg-azure-files-azure-foundry \
+  --query key1 -o tsv)
+
+# Process the downloaded file
+cd ~/examples
+python summarize-document.py sample-from-blob.txt
+```
+
+#### Step 5: Cleanup (delete temp container when done)
+
+```powershell
+# From local machine (PowerShell)
+az storage container delete --account-name stagpssgazurepocdev01 --name temp-ai-test --auth-mode login
+```
+
+---
+
+### Helper Scripts Reference
+
+| Script | Location | Purpose |
+|--------|----------|---------|
+| `upload-to-blob.ps1` | `scripts/` | Upload files from local machine to blob storage |
+| `generate-sas.sh` | `~/` on VM | Generate SAS tokens (optional, for user delegation) |
+| `summarize-document.py` | `~/examples/` on VM | Summarize documents using Azure OpenAI |
+
+---
+
+### Comparison: Direct Paste vs Blob Storage
+
+| Method | Best For | Pros | Cons |
+|--------|----------|------|------|
+| **Direct Paste (Option 1)** | Quick tests, small files | Fast, no setup | Manual, not scalable |
+| **Blob Storage (Option 2)** | Large files, automation | Scalable, auditable | More setup steps |
+
+For PoC testing, start with Option 1. Use Option 2 for production workflows.
+
+---
 
 ## Troubleshooting
 

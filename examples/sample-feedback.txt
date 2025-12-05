@@ -1,0 +1,22 @@
+Customer Feedback Collection - BC Services Card Application
+
+Feedback #1:
+"The new online renewal process is so much easier than going to an ICBC office! 
+I completed everything in about 10 minutes from my phone. Great improvement!"
+
+Feedback #2:
+"I'm frustrated that the system logged me out three times while I was trying to 
+upload my photo. Had to start over each time. Please fix the session timeout!"
+
+Feedback #3:
+"The instructions were clear but I wish there was a progress bar showing how many 
+steps were left. Otherwise, decent experience."
+
+Feedback #4:
+"Absolutely terrible. The website crashed right when I was about to submit my 
+application after spending 30 minutes filling everything out. Lost all my data. 
+Very disappointed in this government service."
+
+Feedback #5:
+"Quick and efficient. The ID verification with my phone camera worked perfectly. 
+Received my new card in just 5 business days. Impressed with the turnaround time!"

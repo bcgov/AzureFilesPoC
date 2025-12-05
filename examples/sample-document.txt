@@ -1,0 +1,58 @@
+BC Government Digital Services Policy Framework
+Version 2.1 - December 2025
+
+EXECUTIVE SUMMARY
+
+The Province of British Columbia is committed to delivering modern, secure, and 
+citizen-centric digital services. This policy framework establishes guidelines 
+for all ministries and agencies deploying cloud-based solutions within the 
+BC Government Azure Landing Zone.
+
+KEY PRINCIPLES
+
+1. Security First
+   All cloud deployments must adhere to zero-trust networking principles. 
+   Public endpoints are prohibited for sensitive workloads. Private endpoints 
+   and managed identities must be used for all Azure PaaS services.
+
+2. Data Residency
+   All data classified as Protected B or higher must remain within Canadian 
+   data centers. The primary regions for BC Government workloads are 
+   Canada Central (Toronto) and Canada East (Quebec City).
+
+3. Cost Optimization
+   Ministries must implement auto-shutdown policies for non-production 
+   virtual machines. Reserved instances should be used for predictable 
+   workloads exceeding 12 months.
+
+4. Identity and Access Management
+   Azure Active Directory integration is mandatory. All service accounts 
+   must use managed identities where possible. API keys must be stored 
+   in Azure Key Vault with appropriate RBAC.
+
+5. Monitoring and Compliance
+   All resources must send diagnostic logs to the central Log Analytics 
+   Workspace. Azure Policy will enforce compliance with guardrails 
+   automatically.
+
+IMPLEMENTATION REQUIREMENTS
+
+Landing Zone Architecture:
+- Hub-spoke network topology with centralized firewall
+- ExpressRoute connectivity to on-premises data centers
+- Private DNS zones for Azure service resolution
+- Network Security Groups on all subnets
+
+AI and Machine Learning Workloads:
+- Azure AI Foundry for ML model development and deployment
+- Private endpoints required for Cognitive Services
+- Model inference must occur within the landing zone boundary
+- Data used for training must be classified and handled appropriately
+
+COMPLIANCE TIMELINE
+
+Phase 1 (Q1 2025): All new deployments must comply
+Phase 2 (Q2 2025): Existing workloads begin migration
+Phase 3 (Q4 2025): Full compliance required
+
+For questions, contact the Cloud Center of Excellence at cloud.coe@gov.bc.ca
