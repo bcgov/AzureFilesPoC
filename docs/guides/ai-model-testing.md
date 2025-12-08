@@ -1,12 +1,24 @@
 # Complete Guide: Azure AI Foundry "Hello World" Model Test
 
-This guide provides step-by-step instructions to test an AI model in Azure AI Foundry. For full infrastructure setup, see the [Deployment Guide](./deployment-guide.md).
+This guide provides step-by-step instructions to test an AI model in Azure AI Foundry.
+
+> **Prerequisites:** This guide assumes you have completed the [Deployment Guide](./deployment-guide.md) and have all Azure infrastructure deployed (VM, Bastion, Azure OpenAI, private endpoints, etc.).
+
+## Daily Operations
+
+For day-to-day usage after initial setup:
+
+| Task | Runbook |
+|------|---------|
+| **Start of day** - Start VM & Bastion | [Daily Startup Runbook](../runbooks/daily-startup.md) |
+| **End of day** - Stop VM & delete Bastion | [Daily Shutdown Runbook](../runbooks/daily-shutdown.md) |
 
 ## Quick Reference: Scripts
 
 | Script | Location | Purpose |
 |--------|----------|---------|
 | `setup-vm-env.sh` | [examples/](../../examples/setup-vm-env.sh) | One-command VM Python environment setup |
+| `activate-ai-env.sh` | [examples/](../../examples/activate-ai-env.sh) | Activate venv + set Azure OpenAI env vars |
 | `upload-to-blob.ps1` | [examples/](../../examples/upload-to-blob.ps1) | Upload files from local to blob storage |
 | `download-from-blob.sh` | [examples/](../../examples/download-from-blob.sh) | Download files on VM via private endpoint |
 | `process-blob-file.sh` | [examples/](../../examples/process-blob-file.sh) | Full pipeline: download + summarize |
@@ -331,6 +343,27 @@ EOF
 ```
 
 **Step 3: Install dependencies and set environment variables**
+
+**Option A: Automated Setup (Recommended)**
+
+Run the setup script to install everything and create helper scripts:
+```bash
+# Download and run the setup script
+curl -sL https://raw.githubusercontent.com/bcgov/AzureFilesPoC/feature/inventory-improvements/examples/setup-vm-env.sh | bash
+```
+
+This creates:
+- `~/venv/` - Python virtual environment with OpenAI SDK
+- `~/examples/activate-ai-env.sh` - Quick activation script
+- `~/examples/summarize-document.py` - Document summarization script
+- `~/load-ai-env.sh` - Environment loader (stays in current dir)
+
+For subsequent sessions, just run:
+```bash
+source ~/examples/activate-ai-env.sh
+```
+
+**Option B: Manual Setup**
 
 ```bash
 # Install venv package and create virtual environment (required on Ubuntu 24.04+)
