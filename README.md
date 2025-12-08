@@ -188,7 +188,7 @@ flowchart TD
 
   end
   
-  subgraph AIFoundryCanadaEast["Azure AI Foundry Services (Canada East)"]
+  subgraph AIFoundryCanadaEast["Azure AI Foundry Services<BR>(Canada East)"]
     direction TB
     PEFoundry["PE: Foundry"]
     PEOpenAI["PE: OpenAI"]
