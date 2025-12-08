@@ -12,6 +12,7 @@ For day-to-day usage after initial setup:
 |------|---------|
 | **Start of day** - Start VM & Bastion | [Daily Startup Runbook](../runbooks/daily-startup.md) |
 | **End of day** - Stop VM & delete Bastion | [Daily Shutdown Runbook](../runbooks/daily-shutdown.md) |
+| **Transfer files** - SCP via Bastion tunnel | [SCP File Transfer Guide](../runbooks/scp-file-transfer.md) |
 
 ## Quick Reference: Scripts
 

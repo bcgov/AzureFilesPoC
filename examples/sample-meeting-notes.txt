@@ -1,0 +1,53 @@
+Meeting Notes: Q4 Digital Transformation Review
+Date: December 5, 2025
+Attendees: Cloud CoE Team, Ministry Representatives, Security Office
+
+EXECUTIVE SUMMARY
+Quarterly review of digital transformation initiatives across BC Government ministries.
+Focus on Azure Landing Zone adoption and AI integration progress.
+
+ACTION ITEMS FROM PREVIOUS MEETING:
+[DONE] Complete private endpoint deployment for all storage accounts
+[DONE] Migrate remaining workloads from legacy data center
+[IN PROGRESS] Implement Azure AI Foundry for document processing pilot
+[PENDING] Security review of new authentication flow
+
+DISCUSSION TOPICS:
+
+1. Azure Landing Zone Adoption
+   - 12 ministries now onboarded (up from 8 last quarter)
+   - 47 applications migrated to cloud-native architecture
+   - Cost savings of $2.3M annually from VM right-sizing
+   - Challenge: Some teams still requesting public endpoints (denied per policy)
+
+2. AI Integration Pilot Results
+   - Document summarization pilot successful with 94% accuracy
+   - Processing time reduced from 4 hours to 12 minutes per batch
+   - User feedback: "Game changer for policy review workflows"
+   - Next phase: Expand to citizen feedback analysis
+
+3. Security Compliance
+   - All resources now use private endpoints (100% compliance)
+   - Zero security incidents in Q4
+   - Penetration test scheduled for January 2025
+   - New requirement: All API keys must rotate every 90 days
+
+4. Budget Review
+   - Q4 spend: $847,000 (under budget by 12%)
+   - Reserved instances saving $45,000/month
+   - Bastion costs higher than expected - implementing daily shutdown
+   - Request: Additional budget for AI compute capacity
+
+DECISIONS MADE:
+- Approve AI Foundry expansion to three additional ministries
+- Mandate daily Bastion shutdown for non-production environments
+- Schedule security training for all cloud administrators
+- Create self-service portal for common infrastructure requests
+
+NEXT STEPS:
+1. Cloud CoE to publish updated deployment guidelines by Dec 15
+2. Security team to complete API key rotation audit by Dec 20
+3. Finance to process AI compute budget request by Jan 5
+4. All teams to complete security training by Jan 31
+
+NEXT MEETING: January 9, 2025 at 2:00 PM Pacific
