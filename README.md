@@ -147,48 +147,79 @@ See [Architecture Overview](docs/architecture/overview.md) for details on:
 A compact high-level view of the landing zone is below — it provides a quick visual summary. For detailed diagrams, see the links after the diagram.
 
 ```mermaid
----
-config:
-  flowchart:
-    htmlLabels: true
-  theme: base
-  look: handDrawn
----
-flowchart LR
- subgraph s1["Canada Central - d5007d-dev-vwan-spoke"]
+%%{init: { "flowchart": { "htmlLabels": true } } }%%
+flowchart TD
+
+  subgraph subGraph_OnPremNetwork["On-premises Network"]
+    direction TB
+    OnPrem["On-Premises Network<br>(Browser, SSH Client, SCP)"]
+    HubAccess["Hub VNet Connection<br>(via ExpressRoute/VPN Gateway)"]
+    OnPrem --> HubAccess
+  end
+  
+  subgraph subGraph_CanadaCentral["Canada Central Deployment (Spoke VNet, Compute, & Local PaaS)"]
     direction LR
-        VNet["VNet: d5007d-dev-vwan-spoke"]
-        BastionSub["Subnet: AzureBastionSubnet"]
-        PESub["Subnet: snet-ag-pssg-azure-files-pe"]
-        VMsub["Subnet: snet-ag-pssg-azure-files-vm"]
-  end
- subgraph subGraph1["Administrative Access Flow"]
-    direction TB
-        Workstation["User Workstation (SSH/RDP Client)"]
-        AzurePortal["Azure Portal / Native Client (HTTPS 443)"]
-        AzureBastion["Azure Bastion Host"]
-  end
- subgraph subGraph2["PaaS Services (Canada Central)"]
-    direction TB
-        Storage["Storage: stagpssgazurepocdev01"]
-  end
- subgraph subGraph3["PaaS Services (Canada East)"]
-    direction TB
-        FoundryWS["AI Foundry: foundry-ag-pssg-azure-files"]
-        OpenAIEndpoint["OpenAI: openai-ag-pssg-azure-files"]
-        FoundryProj["Foundry Project: foundry-project-ag-pssg"]
-  end
-    VNet --> BastionSub & PESub & VMsub
-    Workstation --> AzurePortal
-    AzurePortal --> AzureBastion
-    AzureBastion -- Private IP / SSH/RDP --> VM["VM: vm-ag-pssg-azure-files-01"]
-    PESub --> PEStorage["PE: Storage"] & PEOpenAI["PE: OpenAI"] & PEFoundry["PE: Foundry"]
-    PEStorage --> Storage
-    PEOpenAI --> OpenAIEndpoint
-    PEFoundry --> FoundryWS
+    
+    subgraph subGraph_Networking["Networking - Spoke Core"]
+      direction LR
+      VNet["VNet: d5007d-dev-vwan-spoke"]
+      VNet --> BastionSub["Subnet: AzureBastionSubnet"]
+      VNet --> PESub["Subnet: snet-ag-pssg-azure-files-pe"]
+      VNet --> VMsub["Subnet: snet-ag-pssg-azure-files-vm"]
+    end
+    
+    subgraph subGraph_Compute["Azure Compute and Bastion"]
+      direction TB
+      VM["VM: vm-ag-pssg-azure-files-01"]
+      AzureBastion_Node["Azure Bastion Host"]
+      AzureBastion_Node -- Private IP / SSH/RDP --> VM
+    end
+    
+    subgraph subGraph_Storage["Azure Storage Services"]
+      direction TB
+      PEStorage["PE: Storage"]
+      Storage["Storage: stagpssgazurepocdev01"]
+      PEStorage --> Storage
+    end
+    
     VMsub --> VM
-    VM --> Storage & OpenAIEndpoint & FoundryWS
+    BastionSub -- Resource Lives Here --> AzureBastion_Node
+    PESub --> PEStorage
+
+  end
+  
+  subgraph AIFoundryCanadaEast["Azure AI Foundry Services (Canada East)"]
+    direction TB
+    PEFoundry["PE: Foundry"]
+    PEOpenAI["PE: OpenAI"]
+    
+    FoundryWS["AI Foundry: foundry-ag-pssg-azure-files"]
+    OpenAIEndpoint["OpenAI: openai-ag-pssg-azure-files"]
+    FoundryProj["Foundry Project: foundry-project-ag-pssg"]
+    
+    PEFoundry --> FoundryWS
+    PEOpenAI --> OpenAIEndpoint
     FoundryWS --> FoundryProj
+  end
+  
+  HubAccess -- VNet Peering --> VNet
+  OnPrem -->|HTTPS 443 Tunnel| AzureBastion_Node
+  PESub --> PEOpenAI
+  PESub --> PEFoundry
+  VM --> OpenAIEndpoint
+  VM --> FoundryWS
+  VM --> Storage
+
+  %% --- STYLING ---
+  style subGraph_OnPremNetwork fill:#CCCCCC,stroke:#666666,stroke-width:2px
+  style subGraph_CanadaCentral fill:#E0F7FA,stroke:#00A2C9,stroke-width:2px
+  
+  %% All nested CC services are the same neutral color as requested
+  style subGraph_Networking fill:#F0F0F0
+  style subGraph_Compute fill:#F0F0F0
+  style subGraph_Storage fill:#F0F0F0
+  
+  style AIFoundryCanadaEast fill:#FFFDE7,stroke:#FFC107,stroke-width:2px
 ```
 
 Related diagrams and runbooks:
