@@ -149,10 +149,6 @@ A compact high-level view of the landing zone is below — it provides a quick v
 ```mermaid
 ---
 config:
-  theme: base
----
----
-config:
   flowchart:
     htmlLabels: true
   theme: base
