@@ -134,7 +134,7 @@ chmod +x ~/examples/summarize-document.py
 echo "  Created: ~/examples/summarize-document.py"
 fi
 
-# Create env loader script
+# Create env loader script (in home directory)
 cat > ~/load-ai-env.sh << 'ENVEOF'
 #!/bin/bash
 # Load AI environment variables
@@ -161,6 +161,35 @@ ENVEOF
 chmod +x ~/load-ai-env.sh
 echo "  Created: ~/load-ai-env.sh"
 
+# Create activate script (in examples directory - changes to examples dir)
+cat > ~/examples/activate-ai-env.sh << 'ACTEOF'
+#!/bin/bash
+# Activate Python environment and set Azure OpenAI variables
+# Usage: source ~/examples/activate-ai-env.sh
+
+source ~/venv/bin/activate
+cd ~/examples
+
+export AZURE_OPENAI_ENDPOINT="https://openai-ag-pssg-azure-files.openai.azure.com"
+export AZURE_OPENAI_DEPLOYMENT="gpt-5-nano"
+
+echo "Fetching API key from Azure..."
+export AZURE_OPENAI_KEY=$(az cognitiveservices account keys list \
+    --name openai-ag-pssg-azure-files \
+    --resource-group rg-ag-pssg-azure-files-azure-foundry \
+    --query key1 -o tsv 2>/dev/null)
+
+if [ -z "$AZURE_OPENAI_KEY" ]; then
+    echo "WARNING: Failed to get API key. Run 'az login' first."
+else
+    echo "API Key: ${AZURE_OPENAI_KEY:0:10}..."
+    echo ""
+    echo "Ready! Run: python summarize-document.py sample-document.txt"
+fi
+ACTEOF
+chmod +x ~/examples/activate-ai-env.sh
+echo "  Created: ~/examples/activate-ai-env.sh"
+
 # Summary
 echo ""
 echo "=============================================="
@@ -173,10 +202,10 @@ echo "  AZURE_OPENAI_DEPLOYMENT=$AZURE_OPENAI_DEPLOYMENT"
 echo "  AZURE_OPENAI_KEY=${AZURE_OPENAI_KEY:0:10}..."
 echo ""
 echo "Quick commands:"
-echo "  source ~/load-ai-env.sh          # Reload environment in new session"
+echo "  source ~/examples/activate-ai-env.sh   # Activate env + cd to examples"
+echo "  source ~/load-ai-env.sh                # Just activate env (stay in current dir)"
 echo "  python ~/examples/summarize-document.py <file>"
 echo ""
 echo "To test:"
-echo "  cd ~/examples"
-echo "  echo 'Hello world test document' > test.txt"
-echo "  python summarize-document.py test.txt"
+echo "  source ~/examples/activate-ai-env.sh"
+echo "  python summarize-document.py sample-document.txt"
