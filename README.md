@@ -11,6 +11,9 @@ This repository deploys a secure Azure landing zone for **Azure AI Foundry** and
 | **Deploy infrastructure** | [Deployment Guide](docs/guides/deployment-guide.md) |
 | **Test AI models** | [AI Model Testing Guide](docs/guides/ai-model-testing.md) |
 | **Connect to VM** | [Bastion Connection](docs/runbooks/bastion-connection.md) |
+| **SCP File Transfer** | [SCP File Transfer Guide](docs/runbooks/scp-file-transfer.md) |
+| **Daily Startup** | [Daily Startup Runbook](docs/runbooks/daily-startup.md) |
+| **Daily Shutdown** | [Daily Shutdown Runbook](docs/runbooks/daily-shutdown.md) |
 | **Understand the architecture** | [Architecture Overview](docs/architecture/overview.md) |
 | **All documentation** | [Documentation Index](docs/README.md) |
 

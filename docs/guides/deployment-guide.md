@@ -379,6 +379,16 @@ Aliases:  openai-ag-pssg-azure-files.openai.azure.com
 
 The presence of the `.privatelink.` alias confirms DNS is configured correctly. From **inside the VNet** (your VM), the same command will resolve to a private IP (10.x.x.x).
 
+## Related Runbooks & Guides
+
+After Phase 5 completes you may want to follow these operational runbooks and guides to validate and operate the environment:
+
+- [SCP File Transfer via Bastion Tunnel](../runbooks/scp-file-transfer.md) — Transfer files to/from the VM using an Azure Bastion tunnel (recommended for ad-hoc uploads).
+- [AI Model Testing Guide](./ai-model-testing.md) — Full end-to-end model testing workflow (recommended test-from-VM steps and diagnostics).
+- [Daily Startup Runbook](../runbooks/daily-startup.md) — Start VM and Bastion, and perform a quick AI smoke test.
+- [Daily Shutdown Runbook](../runbooks/daily-shutdown.md) — Stop resources at end of day to save costs.
+- [Bastion Connection Guide](../runbooks/bastion-connection.md) — Troubleshooting and SSH connection details.
+
 ## Validation & Testing
 
 ### 1. Connect to VM via Bastion
