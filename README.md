@@ -62,7 +62,7 @@ See [Deployment Guide](docs/guides/deployment-guide.md) for complete instruction
 
 ### Alternative Approach: Terraform + GitHub Actions (Archived)
 
-This project originally used Terraform with GitHub Actions CI/CD. That approach is valid and the code is preserved in `scripts/ARCHIVE/terraform/` for reference. The Bicep approach was chosen for:
+The original Azure Files PoC, was originally built and deployed with Terraform, using GitHub Actions CI/CD and a self-hosted runner hosted with VM and bastion server.  That approach is valid and the code is preserved in `scripts/ARCHIVE/terraform/` for reference. The Bicep approach was chosen for:
 - Simpler Azure-native deployment
 - Faster iteration during PoC development
 - Direct Azure CLI integration
@@ -71,7 +71,7 @@ The lessons learned from Bicep deployment can be applied to Terraform if CI/CD a
 
 ## Project Background
 
-The BC Government is building an Azure AI Foundry landing zone to enable secure AI model consumption. This project also evaluates Azure Files as a solution for on-premises storage challenges:
+Originally this project evaluated Azure Files and Blob container storage to analyze storage cost reductions. That work is currently on hold; the landing zone has been repurposed to validate and test Azure AI Foundry and Azure OpenAI model deployments from a VM accessed via Azure Bastion.
 
 ### AI Foundry Use Case (Current Focus)
 - **Secure AI Access**: VM-based script execution for AI model APIs
@@ -85,7 +85,7 @@ The BC Government is building an Azure AI Foundry landing zone to enable secure 
 - **Media Management**: Large video/audio file handling
 - **Compliance**: BC Gov security requirements
 
-For detailed evaluation criteria, see [PoC Plan](docs/reference/poc-plan.md).
+For detailed evaluation of original criteria, see [PoC Plan](docs/reference/poc-plan.md).
 
 ## Repository Structure
 
@@ -141,6 +141,67 @@ See [Architecture Overview](docs/architecture/overview.md) for details on:
 - Hub-spoke network topology
 - Private endpoint configuration
 - Cross-region AI services deployment
+
+## Architecture (High Level)
+
+A compact high-level view of the landing zone is below — it provides a quick visual summary. For detailed diagrams, see the links after the diagram.
+
+```mermaid
+---
+config:
+  theme: base
+---
+---
+config:
+  flowchart:
+    htmlLabels: true
+  theme: base
+  look: handDrawn
+---
+flowchart LR
+ subgraph s1["Canada Central - d5007d-dev-vwan-spoke"]
+    direction LR
+        VNet["VNet: d5007d-dev-vwan-spoke"]
+        BastionSub["Subnet: AzureBastionSubnet"]
+        PESub["Subnet: snet-ag-pssg-azure-files-pe"]
+        VMsub["Subnet: snet-ag-pssg-azure-files-vm"]
+  end
+ subgraph subGraph1["Administrative Access Flow"]
+    direction TB
+        Workstation["User Workstation (SSH/RDP Client)"]
+        AzurePortal["Azure Portal / Native Client (HTTPS 443)"]
+        AzureBastion["Azure Bastion Host"]
+  end
+ subgraph subGraph2["PaaS Services (Canada Central)"]
+    direction TB
+        Storage["Storage: stagpssgazurepocdev01"]
+  end
+ subgraph subGraph3["PaaS Services (Canada East)"]
+    direction TB
+        FoundryWS["AI Foundry: foundry-ag-pssg-azure-files"]
+        OpenAIEndpoint["OpenAI: openai-ag-pssg-azure-files"]
+        FoundryProj["Foundry Project: foundry-project-ag-pssg"]
+  end
+    VNet --> BastionSub & PESub & VMsub
+    Workstation --> AzurePortal
+    AzurePortal --> AzureBastion
+    AzureBastion -- Private IP / SSH/RDP --> VM["VM: vm-ag-pssg-azure-files-01"]
+    PESub --> PEStorage["PE: Storage"] & PEOpenAI["PE: OpenAI"] & PEFoundry["PE: Foundry"]
+    PEStorage --> Storage
+    PEOpenAI --> OpenAIEndpoint
+    PEFoundry --> FoundryWS
+    VMsub --> VM
+    VM --> Storage & OpenAIEndpoint & FoundryWS
+    FoundryWS --> FoundryProj
+```
+
+Related diagrams and runbooks:
+
+- Network IP diagram: `docs/architecture/network-diagram.md`
+- Full architecture & draw.io source: `docs/architecture/landing-zone.mmd` and `docs/architecture/azure_files_poc_architecture_diagram.drawio`
+- SCP file transfer (via Bastion): `docs/runbooks/scp-file-transfer.md`
+- Daily startup/shutdown runbooks: `docs/runbooks/daily-startup.md`, `docs/runbooks/daily-shutdown.md`
+ - Inventory summary: `scripts/azure-inventory-summary.md`
 
 ## Getting Started
 
